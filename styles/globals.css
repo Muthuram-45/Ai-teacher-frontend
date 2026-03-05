@@ -1,0 +1,54 @@
+* {
+  box-sizing: border-box;
+}
+ 
+html {
+  color-scheme: dark;
+  background-color: #111;
+}
+ 
+html,
+body {
+  overflow: hidden;
+  width: 100%;
+  height: 100%;
+  margin: 0px;
+}
+ 
+body {
+  display: flex;
+  flex-direction: column;
+}
+ 
+/* ========================= */
+/* 🚫 DISABLE LIVEKIT CHAT UI */
+/* ========================= */
+ 
+/* Chat panel */
+.lk-chat {
+  display: none !important;
+}
+ 
+/* Chat toggle button */
+.lk-control-bar .lk-chat-toggle {
+  display: none !important;
+}
+ 
+/* Chat input + send */
+.lk-chat-form,
+.lk-chat-input,
+.lk-chat-input-container {
+  display: none !important;
+}
+ 
+@keyframes handRaiseSlideInRight {
+  0% {
+    transform: translateX(50%);
+    opacity: 0;
+  }
+ 
+  100% {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}

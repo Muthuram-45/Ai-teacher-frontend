@@ -1,0 +1,8 @@
+﻿
+> livekit-meet@0.2.0 build
+> next build --no-lint
+
+   Γû▓ Next.js 15.2.8
+   - Environments: .env.local
+
+   Creating an optimized production build ...
