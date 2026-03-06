@@ -1814,10 +1814,9 @@ function RoomContent() {
 
                     if (role === "teacher") setShowAI(true);
 
-                    // 🔊 Only students speak the broadcast — teacher already plays audio in sendToStudent()
-                    // (Teacher's own publishData echoes back, causing double voice if we don't guard here)
-                    if (msg.answer && role === "student") {
-                        const audioString = `${msg.name} asked: ${msg.text}. The answer is: ${msg.answer}`;
+                    // 🔊 Play audio for both teacher AND student via the broadcast echo
+                    if (msg.answer) {
+                        const audioString = `${msg.name} asked: ${msg.text}. ${msg.answer}`;
                         speakText(audioString, {
                             audioContext: recordingAudioContext.current,
                             destinationNode: recordingDestNode.current,
@@ -1912,13 +1911,6 @@ function RoomContent() {
             { reliable: true },
         );
         console.log("✅ sendToStudent: Published AI_ANSWER_BROADCAST");
-
-        // 🔊 Teacher side: Play audio locally since publishData doesn't echo back
-        const audioString = `${doubt.name} asked: ${doubt.text}. The answer is: ${doubt.answer}`;
-        speakText(audioString, {
-            audioContext: recordingAudioContext.current,
-            destinationNode: recordingDestNode.current,
-        }).catch((err) => console.error("Teacher TTS error:", err));
 
         setDoubts((prev) =>
             prev.map((d) => (d.id === doubt.id ? { ...d, isBroadcasting: true } : d)),
