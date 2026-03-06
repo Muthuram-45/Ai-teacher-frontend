@@ -229,6 +229,29 @@ export default function TeacherVideoController({ recordingAudioContext, recordin
           console.log('✋ Hand lowered by:', msg.name);
         }
 
+        /* 🎤 STUDENT MIC ON → auto-pause teacher video */
+        if (msg.action === 'VOICE_DOUBT_START') {
+          const isPlaying =
+            classStarted &&
+            videoRef.current &&
+            !videoRef.current.paused;
+
+          if (isPlaying) {
+            console.log('⏸ Pausing video: student mic ON by', msg.name);
+            videoRef.current.pause();
+
+            room.localParticipant.publishData(
+              new TextEncoder().encode(
+                JSON.stringify({
+                  action: 'VIDEO_PAUSE',
+                  currentTime: videoRef.current.currentTime
+                })
+              ),
+              { reliable: true }
+            );
+          }
+        }
+
         // auto hide popup
         if (msg.raised) {
           setTimeout(() => setPopupName(null), 4000);

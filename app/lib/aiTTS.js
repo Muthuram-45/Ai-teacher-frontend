@@ -9,6 +9,38 @@ let isPlaying = false;
 let abortController = null;
 let speechQueue = Promise.resolve();
 
+/**
+ * Splits text into chunks ≤ maxLen chars, breaking at sentence boundaries.
+ */
+function splitIntoChunks(text, maxLen = 200) {
+    const sentences = text.match(/[^.!?]+[.!?]*/g) || [text];
+    const chunks = [];
+    let current = "";
+
+    for (const sentence of sentences) {
+        const trimmed = sentence.trim();
+        if (!trimmed) continue;
+
+        if ((current + " " + trimmed).trim().length <= maxLen) {
+            current = (current + " " + trimmed).trim();
+        } else {
+            if (current) chunks.push(current);
+            // If a single sentence is still too long, hard-split it
+            if (trimmed.length > maxLen) {
+                for (let i = 0; i < trimmed.length; i += maxLen) {
+                    chunks.push(trimmed.slice(i, i + maxLen));
+                }
+                current = "";
+            } else {
+                current = trimmed;
+            }
+        }
+    }
+    if (current) chunks.push(current);
+    return chunks;
+}
+
+
 export async function speakText(text, options = {}) {
     if (!text) return;
 
@@ -112,21 +144,33 @@ async function playRecordableChunk(text, audioContext, destinationNode) {
         console.log("✅ Streaming finished");
     } catch (err) {
         console.warn("⚠️ Streaming failed, falling back to Google TTS:", err);
-        // Fallback to the old method if streaming fails
-        const url = `http://localhost:3001/api/tts?text=${encodeURIComponent(text)}`;
-        const response = await fetch(url);
-        if (!response.ok) return;
-        const arrayBuffer = await response.arrayBuffer();
-        const audioBuffer = await ctx.decodeAudioData(arrayBuffer);
 
-        return new Promise((resolve) => {
-            const source = ctx.createBufferSource();
-            source.buffer = audioBuffer;
-            if (audioContext && destinationNode) source.connect(destinationNode);
-            source.connect(ctx.destination);
-            source.onended = resolve;
-            source.start(0);
-        });
+        // Split text into sentence chunks ≤200 chars so Google TTS doesn't truncate
+        const chunks = splitIntoChunks(text, 200);
+        console.log(`🔊 Google TTS fallback: speaking ${chunks.length} chunk(s)`);
+
+        for (const chunk of chunks) {
+            if (stopRequested) break;
+            try {
+                const url = `http://localhost:3001/api/tts?text=${encodeURIComponent(chunk)}`;
+                const response = await fetch(url);
+                if (!response.ok) continue;
+                const arrayBuffer = await response.arrayBuffer();
+                const audioBuffer = await ctx.decodeAudioData(arrayBuffer);
+
+                await new Promise((resolve) => {
+                    const source = ctx.createBufferSource();
+                    source.buffer = audioBuffer;
+                    if (audioContext && destinationNode) source.connect(destinationNode);
+                    source.connect(ctx.destination);
+                    source.onended = resolve;
+                    activeSource = source;
+                    source.start(0);
+                });
+            } catch (chunkErr) {
+                console.warn("⚠️ Chunk TTS failed:", chunkErr);
+            }
+        }
     }
 }
 
