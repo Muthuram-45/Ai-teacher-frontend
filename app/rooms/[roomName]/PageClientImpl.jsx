@@ -1,7 +1,19 @@
-'use client';
-import { Component, useEffect, useState, useMemo, useRef, useCallback } from 'react';
-import { useSearchParams } from 'next/navigation';
-import { startClassRecording, stopClassRecording, pauseClassRecording, resumeClassRecording } from "@/lib/recording";
+"use client";
+import {
+    Component,
+    useEffect,
+    useState,
+    useMemo,
+    useRef,
+    useCallback,
+} from "react";
+import { useSearchParams } from "next/navigation";
+import {
+    startClassRecording,
+    stopClassRecording,
+    pauseClassRecording,
+    resumeClassRecording,
+} from "@/lib/recording";
 import {
     LiveKitRoom,
     VideoConference,
@@ -16,9 +28,10 @@ import {
     ParticipantContext,
     TrackRefContext,
     useTracks,
-} from '@livekit/components-react';
-import { Track } from 'livekit-client';
-import '@livekit/components-styles';
+} from "@livekit/components-react";
+import { Track } from "livekit-client";
+// @livekit/krisp-noise-filter is dynamically imported inside NoiseFilterActivator (SSR-safe)
+import "@livekit/components-styles";
 /* ---- Error boundary to swallow LiveKit pagination race ---- */
 class GridErrorBoundary extends Component {
     constructor(props) {
@@ -27,13 +40,16 @@ class GridErrorBoundary extends Component {
     }
     static getDerivedStateFromError(error) {
         // Only catch the known LiveKit pagination placeholder error
-        if (error?.message?.includes('not part of the array')) {
+        if (error?.message?.includes("not part of the array")) {
             return { hasError: true };
         }
         throw error; // re-throw anything else
     }
     componentDidCatch(error, info) {
-        console.warn('[GridErrorBoundary] Caught LiveKit pagination race — recovering…', error.message);
+        console.warn(
+            "[GridErrorBoundary] Caught LiveKit pagination race — recovering…",
+            error.message,
+        );
     }
     componentDidUpdate(prevProps, prevState) {
         // Auto-recover on next render cycle
@@ -47,61 +63,98 @@ class GridErrorBoundary extends Component {
     }
 }
 
-import QuizSidebar from './QuizSidebar';
-import StudentQuizView from './StudentQuizView';
-import StudentHandRaise from './StudentHandRaise';
-import StudentTextDoubt from './StudentTextDoubt';
-import TeacherHandPanel from './TeacherHandPanel';
-import TeacherVideoController from './TeacherVideoController';
-import StudentVideoViewer from './StudentVideoViewer';
-import AISidebar from './AISidebar';
+import QuizSidebar from "./QuizSidebar";
+import StudentQuizView from "./StudentQuizView";
+import StudentHandRaise from "./StudentHandRaise";
+import StudentTextDoubt from "./StudentTextDoubt";
+import TeacherHandPanel from "./TeacherHandPanel";
+import TeacherVideoController from "./TeacherVideoController";
+import StudentVideoViewer from "./StudentVideoViewer";
+import AISidebar from "./AISidebar";
 import { GiNotebook } from "react-icons/gi";
-import ParticipantList from './ParticipantList';
-import { speakText, stopSpeaking } from '@/app/lib/aiTTS';
-import HistorySidebar from './HistorySidebar';
-import AttendanceSidebar from './AttendanceSidebar';
-import VoiceDoubt from './VoiceDoubt';
+import ParticipantList from "./ParticipantList";
+import { speakText, stopSpeaking } from "@/app/lib/aiTTS";
+import HistorySidebar from "./HistorySidebar";
+import AttendanceSidebar from "./AttendanceSidebar";
+import VoiceDoubt from "./VoiceDoubt";
 import { HiOutlineHandRaised } from "react-icons/hi2";
 import { IoIosPeople } from "react-icons/io";
 import { LuLogs } from "react-icons/lu";
 import { LuPanelLeftClose } from "react-icons/lu";
-import { FaRobot, FaLink, FaArrowRightToBracket, FaArrowRightFromBracket, FaWhatsapp } from "react-icons/fa6";
-import { MdLogout, MdDeleteForever, MdEmail, MdOutlineQuiz } from "react-icons/md";
+import {
+    FaRobot,
+    FaLink,
+    FaArrowRightToBracket,
+    FaArrowRightFromBracket,
+    FaWhatsapp,
+} from "react-icons/fa6";
+import {
+    MdLogout,
+    MdDeleteForever,
+    MdEmail,
+    MdOutlineQuiz,
+} from "react-icons/md";
 import { FiExternalLink } from "react-icons/fi";
-import { BsQuestionSquareFill, BsRecordCircle, BsStopCircle, BsPauseCircle, BsPlayCircle, BsCloudUpload, BsFileText } from "react-icons/bs";
+import {
+    BsQuestionSquareFill,
+    BsRecordCircle,
+    BsStopCircle,
+    BsPauseCircle,
+    BsPlayCircle,
+    BsCloudUpload,
+    BsFileText,
+} from "react-icons/bs";
 
 /* ---------------- MEETING ENDED OVERLAY ---------------- */
 function MeetingEndedOverlay() {
     return (
-        <div style={{
-            position: 'fixed', inset: 0, zIndex: 99999,
-            background: 'rgba(0, 0, 0, 0.88)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            backdropFilter: 'blur(6px)',
-        }}>
-            <div style={{
-                background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)',
-                border: '1px solid rgba(244, 67, 54, 0.4)',
-                borderRadius: '20px',
-                padding: '52px 60px',
-                textAlign: 'center',
-                boxShadow: '0 30px 80px rgba(0,0,0,0.7)',
-                maxWidth: '440px',
-                width: '90%',
-                animation: 'popIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)',
-            }}>
-                <div style={{ fontSize: '4rem', marginBottom: '16px' }}>🚫</div>
-                <h2 style={{
-                    color: '#fff', fontSize: '1.6rem', fontWeight: 700,
-                    margin: '0 0 12px', fontFamily: 'Inter, sans-serif',
-                    letterSpacing: '-0.5px'
-                }}>
+        <div
+            style={{
+                position: "fixed",
+                inset: 0,
+                zIndex: 99999,
+                background: "rgba(0, 0, 0, 0.88)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                backdropFilter: "blur(6px)",
+            }}
+        >
+            <div
+                style={{
+                    background: "linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)",
+                    border: "1px solid rgba(244, 67, 54, 0.4)",
+                    borderRadius: "20px",
+                    padding: "52px 60px",
+                    textAlign: "center",
+                    boxShadow: "0 30px 80px rgba(0,0,0,0.7)",
+                    maxWidth: "440px",
+                    width: "90%",
+                    animation: "popIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)",
+                }}
+            >
+                <div style={{ fontSize: "4rem", marginBottom: "16px" }}>🚫</div>
+                <h2
+                    style={{
+                        color: "#fff",
+                        fontSize: "1.6rem",
+                        fontWeight: 700,
+                        margin: "0 0 12px",
+                        fontFamily: "Inter, sans-serif",
+                        letterSpacing: "-0.5px",
+                    }}
+                >
                     Meeting Ended
                 </h2>
-                <p style={{
-                    color: 'rgba(255,255,255,0.7)', fontSize: '1rem',
-                    margin: '0 0 24px', fontFamily: 'Inter, sans-serif', lineHeight: 1.6
-                }}>
+                <p
+                    style={{
+                        color: "rgba(255,255,255,0.7)",
+                        fontSize: "1rem",
+                        margin: "0 0 24px",
+                        fontFamily: "Inter, sans-serif",
+                        lineHeight: 1.6,
+                    }}
+                >
                     Teacher has closed the meeting.
                 </p>
             </div>
@@ -120,49 +173,104 @@ function WaitingRoom({ waitingStudents, onAdmit, onReject }) {
     if (waitingStudents.length === 0) return null;
 
     return (
-        <div style={{
-            position: 'absolute',
-            top: 20,
-            right: 20,
-            width: 300,
-            background: 'rgba(15, 23, 42, 0.95)',
-            backdropFilter: 'blur(10px)',
-            border: '1px solid rgba(33, 150, 243, 0.4)',
-            borderRadius: '16px',
-            padding: '20px',
-            color: '#fff',
-            zIndex: 10000,
-            boxShadow: '0 20px 50px rgba(0,0,0,0.5)',
-            animation: 'slideInRight 0.4s ease'
-        }}>
-            <h4 style={{ margin: '0 0 15px', color: '#2196F3', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span style={{ display: 'inline-block', width: '8px', height: '8px', background: '#2196F3', borderRadius: '50%' }}></span>
+        <div
+            style={{
+                position: "absolute",
+                top: 20,
+                right: 20,
+                width: 300,
+                background: "rgba(15, 23, 42, 0.95)",
+                backdropFilter: "blur(10px)",
+                border: "1px solid rgba(33, 150, 243, 0.4)",
+                borderRadius: "16px",
+                padding: "20px",
+                color: "#fff",
+                zIndex: 10000,
+                boxShadow: "0 20px 50px rgba(0,0,0,0.5)",
+                animation: "slideInRight 0.4s ease",
+            }}
+        >
+            <h4
+                style={{
+                    margin: "0 0 15px",
+                    color: "#2196F3",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "8px",
+                }}
+            >
+                <span
+                    style={{
+                        display: "inline-block",
+                        width: "8px",
+                        height: "8px",
+                        background: "#2196F3",
+                        borderRadius: "50%",
+                    }}
+                ></span>
                 Waiting Room ({waitingStudents.length})
             </h4>
-            <div style={{ maxHeight: '250px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            <div
+                style={{
+                    maxHeight: "250px",
+                    overflowY: "auto",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "10px",
+                }}
+            >
                 {waitingStudents.map((s) => (
-                    <div key={s.id} style={{
-                        background: 'rgba(255,255,255,0.05)',
-                        padding: '12px',
-                        borderRadius: '10px',
-                        border: '1px solid rgba(255,255,255,0.1)'
-                    }}>
-                        <div style={{ fontWeight: '600', marginBottom: '10px', fontSize: '14px' }}>{s.name}</div>
-                        <div style={{ display: 'flex', gap: '8px' }}>
+                    <div
+                        key={s.id}
+                        style={{
+                            background: "rgba(255,255,255,0.05)",
+                            padding: "12px",
+                            borderRadius: "10px",
+                            border: "1px solid rgba(255,255,255,0.1)",
+                        }}
+                    >
+                        <div
+                            style={{
+                                fontWeight: "600",
+                                marginBottom: "10px",
+                                fontSize: "14px",
+                            }}
+                        >
+                            {s.name}
+                        </div>
+                        <div style={{ display: "flex", gap: "8px" }}>
                             <button
                                 onClick={() => onAdmit(s.id)}
                                 style={{
-                                    flex: 1, padding: '6px', background: '#2196F3', border: 'none',
-                                    color: '#fff', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', fontWeight: '600'
+                                    flex: 1,
+                                    padding: "6px",
+                                    background: "#2196F3",
+                                    border: "none",
+                                    color: "#fff",
+                                    borderRadius: "6px",
+                                    cursor: "pointer",
+                                    fontSize: "12px",
+                                    fontWeight: "600",
                                 }}
-                            >Admit</button>
+                            >
+                                Admit
+                            </button>
                             <button
                                 onClick={() => onReject(s.id)}
                                 style={{
-                                    flex: 1, padding: '6px', background: 'rgba(244, 67, 54, 0.1)', border: '1px solid rgba(244, 67, 54, 0.3)',
-                                    color: '#f44336', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', fontWeight: '600'
+                                    flex: 1,
+                                    padding: "6px",
+                                    background: "rgba(244, 67, 54, 0.1)",
+                                    border: "1px solid rgba(244, 67, 54, 0.3)",
+                                    color: "#f44336",
+                                    borderRadius: "6px",
+                                    cursor: "pointer",
+                                    fontSize: "12px",
+                                    fontWeight: "600",
                                 }}
-                            >Decline</button>
+                            >
+                                Decline
+                            </button>
                         </div>
                     </div>
                 ))}
@@ -176,7 +284,20 @@ function WaitingRoom({ waitingStudents, onAdmit, onReject }) {
         </div>
     );
 }
-function TeacherOnlyUI({ doubts, onShowDoubts, onShowHistory, onShowAttendance, onShowQuiz, onGenerateQuiz, onEndMeeting, onLeaveMeeting, waitingStudents, onAdmit, onReject, onClassStatusChange }) {
+function TeacherOnlyUI({
+    doubts,
+    onShowDoubts,
+    onShowHistory,
+    onShowAttendance,
+    onShowQuiz,
+    onGenerateQuiz,
+    onEndMeeting,
+    onLeaveMeeting,
+    waitingStudents,
+    onAdmit,
+    onReject,
+    onClassStatusChange,
+}) {
     const { localParticipant } = useLocalParticipant();
     const room = useRoomContext();
     const [showExitMenu, setShowExitMenu] = useState(false);
@@ -194,53 +315,53 @@ function TeacherOnlyUI({ doubts, onShowDoubts, onShowHistory, onShowAttendance, 
 
     const handleWhatsApp = () => {
         const text = `Join my meeting on Meet Ai: ${shareLink}`;
-        window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
+        window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank");
     };
 
     const handleEmail = () => {
         const subject = `Meeting Invitation: ${room.name}`;
         const body = `Hello,\n\nYou are invited to join a meeting on Meet Ai.\n\nRoom Name: ${room.name}\nJoin Link: ${shareLink}`;
         const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&tf=1&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-        window.open(gmailUrl, '_blank');
+        window.open(gmailUrl, "_blank");
     };
 
     const shareOptionStyle = {
-        display: 'flex',
-        alignItems: 'center',
-        gap: '12px',
-        padding: '10px 12px',
-        background: 'none',
-        border: 'none',
-        color: '#fff',
-        borderRadius: '10px',
-        cursor: 'pointer',
-        transition: 'all 0.2s',
-        fontSize: '14px',
-        width: '100%',
-        textAlign: 'left'
+        display: "flex",
+        alignItems: "center",
+        gap: "12px",
+        padding: "10px 12px",
+        background: "none",
+        border: "none",
+        color: "#fff",
+        borderRadius: "10px",
+        cursor: "pointer",
+        transition: "all 0.2s",
+        fontSize: "14px",
+        width: "100%",
+        textAlign: "left",
     };
 
     const iconBoxStyle = {
-        width: '32px',
-        height: '32px',
-        borderRadius: '8px',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center'
+        width: "32px",
+        height: "32px",
+        borderRadius: "8px",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
     };
 
-    let role = '';
+    let role = "";
     try {
         role = localParticipant?.metadata
             ? JSON.parse(localParticipant.metadata).role
-            : '';
+            : "";
     } catch {
-        role = localParticipant?.metadata || '';
+        role = localParticipant?.metadata || "";
     }
 
-    if (role !== 'teacher') return null;
+    if (role !== "teacher") return null;
 
-    const unreadCount = doubts.filter(d => !d.answer).length;
+    const unreadCount = doubts.filter((d) => !d.answer).length;
 
     return (
         <>
@@ -254,37 +375,55 @@ function TeacherOnlyUI({ doubts, onShowDoubts, onShowHistory, onShowAttendance, 
             {/* 📁 Teacher Upload/Class tool */}
             <div
                 style={{
-                    position: 'absolute',
+                    position: "absolute",
                     bottom: 14,
-                    left: 'calc(50% - 365px)',
+                    left: "calc(50% - 365px)",
                     zIndex: 1000,
                 }}
             >
-                <TeacherVideoController onGenerateQuiz={onGenerateQuiz} onClassStatusChange={onClassStatusChange} />
+                <TeacherVideoController
+                    onGenerateQuiz={onGenerateQuiz}
+                    onClassStatusChange={onClassStatusChange}
+                />
             </div>
 
             {/* 🔔 Notifications & History (Near Leave button) */}
-            <div style={{
-                position: 'absolute',
-                bottom: 14,
-                left: 'calc(50% + 365px)',
-                zIndex: 1000,
-                display: 'flex',
-                gap: '12px'
-            }}>
+            <div
+                style={{
+                    position: "absolute",
+                    bottom: 14,
+                    left: "calc(50% + 365px)",
+                    zIndex: 1000,
+                    display: "flex",
+                    gap: "12px",
+                }}
+            >
                 {/* 📜 History Button */}
                 <button
                     onClick={onShowHistory}
                     title="Activity Log"
                     style={{
-                        width: 44, height: 44, borderRadius: '50%', background: 'rgba(255,255,255,0.1)',
-                        border: '1px solid rgba(255,255,255,0.2)', color: '#fff', display: 'flex',
-                        alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
-                        fontSize: '1.2rem', boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
-                        transition: 'all 0.2s', borderRadius: '8px'
+                        width: 44,
+                        height: 44,
+                        borderRadius: "50%",
+                        background: "rgba(255,255,255,0.1)",
+                        border: "1px solid rgba(255,255,255,0.2)",
+                        color: "#fff",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        cursor: "pointer",
+                        fontSize: "1.2rem",
+                        boxShadow: "0 4px 12px rgba(0,0,0,0.3)",
+                        transition: "all 0.2s",
+                        borderRadius: "8px",
                     }}
-                    onMouseOver={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.2)'}
-                    onMouseOut={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.1)'}
+                    onMouseOver={(e) =>
+                        (e.currentTarget.style.background = "rgba(255,255,255,0.2)")
+                    }
+                    onMouseOut={(e) =>
+                        (e.currentTarget.style.background = "rgba(255,255,255,0.1)")
+                    }
                 >
                     <LuLogs />
                 </button>
@@ -294,14 +433,26 @@ function TeacherOnlyUI({ doubts, onShowDoubts, onShowHistory, onShowAttendance, 
                     onClick={() => onShowAttendance && onShowAttendance()}
                     title="Attendance List"
                     style={{
-                        width: 44, height: 44, borderRadius: '8px', background: 'rgba(255,255,255,0.1)',
-                        border: '1px solid rgba(255,255,255,0.2)', color: '#fff', display: 'flex',
-                        alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
-                        fontSize: '1.2rem', boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
-                        transition: 'all 0.2s'
+                        width: 44,
+                        height: 44,
+                        borderRadius: "8px",
+                        background: "rgba(255,255,255,0.1)",
+                        border: "1px solid rgba(255,255,255,0.2)",
+                        color: "#fff",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        cursor: "pointer",
+                        fontSize: "1.2rem",
+                        boxShadow: "0 4px 12px rgba(0,0,0,0.3)",
+                        transition: "all 0.2s",
                     }}
-                    onMouseOver={(e) => e.currentTarget.style.background = 'rgba(33, 150, 243, 0.4)'}
-                    onMouseOut={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.1)'}
+                    onMouseOver={(e) =>
+                        (e.currentTarget.style.background = "rgba(33, 150, 243, 0.4)")
+                    }
+                    onMouseOut={(e) =>
+                        (e.currentTarget.style.background = "rgba(255,255,255,0.1)")
+                    }
                 >
                     <GiNotebook />
                 </button>
@@ -311,55 +462,82 @@ function TeacherOnlyUI({ doubts, onShowDoubts, onShowHistory, onShowAttendance, 
                     onClick={() => onShowQuiz && onShowQuiz()}
                     title="View Quiz Results"
                     style={{
-                        width: 44, height: 44, borderRadius: '8px', background: 'rgba(255,255,255,0.1)',
-                        border: '1px solid rgba(255,255,255,0.2)', color: '#fff', display: 'flex',
-                        alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
-                        fontSize: '1.2rem', boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
-                        transition: 'all 0.2s'
+                        width: 44,
+                        height: 44,
+                        borderRadius: "8px",
+                        background: "rgba(255,255,255,0.1)",
+                        border: "1px solid rgba(255,255,255,0.2)",
+                        color: "#fff",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        cursor: "pointer",
+                        fontSize: "1.2rem",
+                        boxShadow: "0 4px 12px rgba(0,0,0,0.3)",
+                        transition: "all 0.2s",
                     }}
-                    onMouseOver={(e) => e.currentTarget.style.background = 'rgba(76, 175, 80, 0.4)'}
-                    onMouseOut={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.1)'}
+                    onMouseOver={(e) =>
+                        (e.currentTarget.style.background = "rgba(76, 175, 80, 0.4)")
+                    }
+                    onMouseOut={(e) =>
+                        (e.currentTarget.style.background = "rgba(255,255,255,0.1)")
+                    }
                 >
                     <MdOutlineQuiz />
                 </button>
 
-
                 {/* 🔗 Share Meeting Link Button */}
-                <div style={{ position: 'relative' }}>
+                <div style={{ position: "relative" }}>
                     {showShareMenu && (
-                        <div style={{
-                            position: 'absolute',
-                            bottom: '60px',
-                            right: '0',
-                            background: 'rgba(15, 23, 42, 0.95)',
-                            backdropFilter: 'blur(12px)',
-                            border: '1px solid rgba(255, 255, 255, 0.1)',
-                            borderRadius: '12px',
-                            padding: '8px',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '4px',
-                            boxShadow: '0 20px 40px rgba(0,0,0,0.6)',
-                            animation: 'slideUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)',
-                            zIndex: 1000,
-                        }}>
+                        <div
+                            style={{
+                                position: "absolute",
+                                bottom: "60px",
+                                right: "0",
+                                background: "rgba(15, 23, 42, 0.95)",
+                                backdropFilter: "blur(12px)",
+                                border: "1px solid rgba(255, 255, 255, 0.1)",
+                                borderRadius: "12px",
+                                padding: "8px",
+                                display: "flex",
+                                alignItems: "center",
+                                gap: "4px",
+                                boxShadow: "0 20px 40px rgba(0,0,0,0.6)",
+                                animation: "slideUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)",
+                                zIndex: 1000,
+                            }}
+                        >
                             {/* Copy Option */}
                             <button
                                 onClick={() => {
                                     handleCopy();
                                     setShowShareMenu(false);
                                 }}
-                                style={{ ...shareOptionStyle, width: 'auto', padding: '8px' }}
-                                title={copied ? 'Copied!' : 'Copy Link'}
-                                onMouseOver={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
-                                onMouseOut={(e) => e.currentTarget.style.background = 'none'}
+                                style={{ ...shareOptionStyle, width: "auto", padding: "8px" }}
+                                title={copied ? "Copied!" : "Copy Link"}
+                                onMouseOver={(e) =>
+                                    (e.currentTarget.style.background = "rgba(255,255,255,0.05)")
+                                }
+                                onMouseOut={(e) => (e.currentTarget.style.background = "none")}
                             >
-                                <div style={{ ...iconBoxStyle, background: 'rgba(255,255,255,0.1)', color: '#fff' }}>
+                                <div
+                                    style={{
+                                        ...iconBoxStyle,
+                                        background: "rgba(255,255,255,0.1)",
+                                        color: "#fff",
+                                    }}
+                                >
                                     <FaLink size={14} />
                                 </div>
                             </button>
 
-                            <div style={{ width: '1px', height: '20px', background: 'rgba(255,255,255,0.1)' }} />
+                            <div
+                                style={{
+                                    width: "1px",
+                                    height: "20px",
+                                    background: "rgba(255,255,255,0.1)",
+                                }}
+                            />
 
                             {/* WhatsApp Option */}
                             <button
@@ -367,17 +545,31 @@ function TeacherOnlyUI({ doubts, onShowDoubts, onShowHistory, onShowAttendance, 
                                     handleWhatsApp();
                                     setShowShareMenu(false);
                                 }}
-                                style={{ ...shareOptionStyle, width: 'auto', padding: '8px' }}
+                                style={{ ...shareOptionStyle, width: "auto", padding: "8px" }}
                                 title="Share via WhatsApp"
-                                onMouseOver={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
-                                onMouseOut={(e) => e.currentTarget.style.background = 'none'}
+                                onMouseOver={(e) =>
+                                    (e.currentTarget.style.background = "rgba(255,255,255,0.05)")
+                                }
+                                onMouseOut={(e) => (e.currentTarget.style.background = "none")}
                             >
-                                <div style={{ ...iconBoxStyle, background: 'rgba(255,255,255,0.1)', color: '#fff' }}>
+                                <div
+                                    style={{
+                                        ...iconBoxStyle,
+                                        background: "rgba(255,255,255,0.1)",
+                                        color: "#fff",
+                                    }}
+                                >
                                     <FaWhatsapp size={16} />
                                 </div>
                             </button>
 
-                            <div style={{ width: '1px', height: '20px', background: 'rgba(255,255,255,0.1)' }} />
+                            <div
+                                style={{
+                                    width: "1px",
+                                    height: "20px",
+                                    background: "rgba(255,255,255,0.1)",
+                                }}
+                            />
 
                             {/* Email Option */}
                             <button
@@ -385,12 +577,20 @@ function TeacherOnlyUI({ doubts, onShowDoubts, onShowHistory, onShowAttendance, 
                                     handleEmail();
                                     setShowShareMenu(false);
                                 }}
-                                style={{ ...shareOptionStyle, width: 'auto', padding: '8px' }}
+                                style={{ ...shareOptionStyle, width: "auto", padding: "8px" }}
                                 title="Share via Email"
-                                onMouseOver={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
-                                onMouseOut={(e) => e.currentTarget.style.background = 'none'}
+                                onMouseOver={(e) =>
+                                    (e.currentTarget.style.background = "rgba(255,255,255,0.05)")
+                                }
+                                onMouseOut={(e) => (e.currentTarget.style.background = "none")}
                             >
-                                <div style={{ ...iconBoxStyle, background: 'rgba(255,255,255,0.1)', color: '#fff' }}>
+                                <div
+                                    style={{
+                                        ...iconBoxStyle,
+                                        background: "rgba(255,255,255,0.1)",
+                                        color: "#fff",
+                                    }}
+                                >
                                     <MdEmail size={16} />
                                 </div>
                             </button>
@@ -401,15 +601,28 @@ function TeacherOnlyUI({ doubts, onShowDoubts, onShowHistory, onShowAttendance, 
                         onClick={() => setShowShareMenu(!showShareMenu)}
                         title="Share Meeting Link"
                         style={{
-                            width: 44, height: 44, borderRadius: '8px',
-                            background: showShareMenu ? '#2196F3' : 'rgba(255,255,255,0.1)',
-                            border: '1px solid rgba(255,255,255,0.2)', color: '#fff', display: 'flex',
-                            alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
-                            fontSize: '1.2rem', boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
-                            transition: 'all 0.3s'
+                            width: 44,
+                            height: 44,
+                            borderRadius: "8px",
+                            background: showShareMenu ? "#2196F3" : "rgba(255,255,255,0.1)",
+                            border: "1px solid rgba(255,255,255,0.2)",
+                            color: "#fff",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            cursor: "pointer",
+                            fontSize: "1.2rem",
+                            boxShadow: "0 4px 12px rgba(0,0,0,0.3)",
+                            transition: "all 0.3s",
                         }}
-                        onMouseOver={(e) => !showShareMenu && (e.currentTarget.style.background = 'rgba(255,255,255,0.2)')}
-                        onMouseOut={(e) => !showShareMenu && (e.currentTarget.style.background = 'rgba(255,255,255,0.1)')}
+                        onMouseOver={(e) =>
+                            !showShareMenu &&
+                            (e.currentTarget.style.background = "rgba(255,255,255,0.2)")
+                        }
+                        onMouseOut={(e) =>
+                            !showShareMenu &&
+                            (e.currentTarget.style.background = "rgba(255,255,255,0.1)")
+                        }
                     >
                         <FiExternalLink />
                     </button>
@@ -420,26 +633,50 @@ function TeacherOnlyUI({ doubts, onShowDoubts, onShowHistory, onShowAttendance, 
                     onClick={onShowDoubts}
                     title="AI Support"
                     style={{
-                        width: 44, height: 44, borderRadius: '8px',
-                        background: unreadCount > 0 ? '#f44336' : 'rgba(33, 150, 243, 0.2)',
-                        border: unreadCount > 0 ? 'none' : '1px solid rgba(33, 150, 243, 0.4)',
-                        color: '#fff', display: 'flex',
-                        alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
-                        fontSize: '1.2rem', boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
-                        position: 'relative',
-                        transition: 'all 0.2s'
+                        width: 44,
+                        height: 44,
+                        borderRadius: "8px",
+                        background: unreadCount > 0 ? "#f44336" : "rgba(33, 150, 243, 0.2)",
+                        border:
+                            unreadCount > 0 ? "none" : "1px solid rgba(33, 150, 243, 0.4)",
+                        color: "#fff",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        cursor: "pointer",
+                        fontSize: "1.2rem",
+                        boxShadow: "0 4px 12px rgba(0,0,0,0.3)",
+                        position: "relative",
+                        transition: "all 0.2s",
                     }}
-                    onMouseOver={(e) => e.currentTarget.style.background = unreadCount > 0 ? '#d32f2f' : 'rgba(33, 150, 243, 0.4)'}
-                    onMouseOut={(e) => e.currentTarget.style.background = unreadCount > 0 ? '#f44336' : 'rgba(33, 150, 243, 0.2)'}
+                    onMouseOver={(e) =>
+                    (e.currentTarget.style.background =
+                        unreadCount > 0 ? "#d32f2f" : "rgba(33, 150, 243, 0.4)")
+                    }
+                    onMouseOut={(e) =>
+                    (e.currentTarget.style.background =
+                        unreadCount > 0 ? "#f44336" : "rgba(33, 150, 243, 0.2)")
+                    }
                 >
                     {unreadCount > 0 ? <BsQuestionSquareFill /> : <FaRobot />}
                     {unreadCount > 0 && (
-                        <span style={{
-                            position: 'absolute', top: -5, right: -5, background: '#fff',
-                            color: '#f44336', borderRadius: '50%', width: 20, height: 20,
-                            fontSize: '0.75rem', fontWeight: 'bold', display: 'flex',
-                            alignItems: 'center', justifyContent: 'center'
-                        }}>
+                        <span
+                            style={{
+                                position: "absolute",
+                                top: -5,
+                                right: -5,
+                                background: "#fff",
+                                color: "#f44336",
+                                borderRadius: "50%",
+                                width: 20,
+                                height: 20,
+                                fontSize: "0.75rem",
+                                fontWeight: "bold",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                            }}
+                        >
                             {unreadCount}
                         </span>
                     )}
@@ -447,73 +684,90 @@ function TeacherOnlyUI({ doubts, onShowDoubts, onShowHistory, onShowAttendance, 
             </div>
 
             {/* ❌ Unified Exit Menu (Right Corner) */}
-            <div style={{
-                position: 'absolute',
-                bottom: 14,
-                right: 20,
-                zIndex: 1000,
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'flex-end',
-                gap: '10px'
-            }}>
+            <div
+                style={{
+                    position: "absolute",
+                    bottom: 14,
+                    right: 20,
+                    zIndex: 1000,
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "flex-end",
+                    gap: "10px",
+                }}
+            >
                 {/* Expandable Menu */}
                 {showExitMenu && (
-                    <div style={{
-                        display: 'flex',
-                        flexDirection: 'column',
-                        gap: '8px',
-                        background: 'rgba(0,0,0,0.85)',
-                        backdropFilter: 'blur(12px)',
-                        padding: '12px',
-                        borderRadius: '16px',
-                        border: '1px solid rgba(255,255,255,0.15)',
-                        boxShadow: '0 15px 40px rgba(0,0,0,0.6)',
-                        animation: 'slideUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)',
-                    }}>
+                    <div
+                        style={{
+                            display: "flex",
+                            flexDirection: "column",
+                            gap: "8px",
+                            background: "rgba(0,0,0,0.85)",
+                            backdropFilter: "blur(12px)",
+                            padding: "12px",
+                            borderRadius: "16px",
+                            border: "1px solid rgba(255,255,255,0.15)",
+                            boxShadow: "0 15px 40px rgba(0,0,0,0.6)",
+                            animation: "slideUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)",
+                        }}
+                    >
                         {/* 🚫 Leave Button (Premium Dark Style) */}
                         <button
                             onClick={() => {
-                                if (window.confirm("Are you sure you want to leave? Students will remain in the room.")) {
+                                if (
+                                    window.confirm(
+                                        "Are you sure you want to leave? Students will remain in the room.",
+                                    )
+                                ) {
                                     onLeaveMeeting && onLeaveMeeting();
                                 }
                             }}
                             className="lk-disconnect-button"
                             style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '10px',
-                                padding: '12px 20px',
-                                background: 'linear-gradient(to right, #2c2c2c, #1a1a1a)',
-                                border: '1px solid rgba(255,255,255,0.1)',
-                                color: '#e0e0e0',
-                                borderRadius: '12px',
-                                cursor: 'pointer',
-                                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                                fontSize: '14px',
-                                fontWeight: '600',
-                                width: '200px',
-                                justifyContent: 'flex-start',
-                                letterSpacing: '0.3px',
-                                boxShadow: '0 4px 15px rgba(0,0,0,0.3)',
+                                display: "flex",
+                                alignItems: "center",
+                                gap: "10px",
+                                padding: "12px 20px",
+                                background: "linear-gradient(to right, #2c2c2c, #1a1a1a)",
+                                border: "1px solid rgba(255,255,255,0.1)",
+                                color: "#e0e0e0",
+                                borderRadius: "12px",
+                                cursor: "pointer",
+                                transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+                                fontSize: "14px",
+                                fontWeight: "600",
+                                width: "200px",
+                                justifyContent: "flex-start",
+                                letterSpacing: "0.3px",
+                                boxShadow: "0 4px 15px rgba(0,0,0,0.3)",
                             }}
                             onMouseOver={(e) => {
-                                e.currentTarget.style.background = 'linear-gradient(to right, #3d3d3d, #2a2a2a)';
-                                e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)';
-                                e.currentTarget.style.transform = 'translateX(-5px)';
-                                e.currentTarget.style.boxShadow = '0 6px 20px rgba(0,0,0,0.4)';
+                                e.currentTarget.style.background =
+                                    "linear-gradient(to right, #3d3d3d, #2a2a2a)";
+                                e.currentTarget.style.borderColor = "rgba(255,255,255,0.2)";
+                                e.currentTarget.style.transform = "translateX(-5px)";
+                                e.currentTarget.style.boxShadow = "0 6px 20px rgba(0,0,0,0.4)";
                             }}
                             onMouseOut={(e) => {
-                                e.currentTarget.style.background = 'linear-gradient(to right, #2c2c2c, #1a1a1a)';
-                                e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)';
-                                e.currentTarget.style.transform = 'translateX(0)';
-                                e.currentTarget.style.boxShadow = '0 4px 15px rgba(0,0,0,0.3)';
+                                e.currentTarget.style.background =
+                                    "linear-gradient(to right, #2c2c2c, #1a1a1a)";
+                                e.currentTarget.style.borderColor = "rgba(255,255,255,0.1)";
+                                e.currentTarget.style.transform = "translateX(0)";
+                                e.currentTarget.style.boxShadow = "0 4px 15px rgba(0,0,0,0.3)";
                             }}
                         >
-                            <div style={{
-                                width: '32px', height: '32px', background: 'rgba(255,255,255,0.1)',
-                                borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center'
-                            }}>
+                            <div
+                                style={{
+                                    width: "32px",
+                                    height: "32px",
+                                    background: "rgba(255,255,255,0.1)",
+                                    borderRadius: "8px",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                }}
+                            >
                                 <FaArrowRightFromBracket size={16} />
                             </div>
                             <span>Leave Meeting</span>
@@ -522,43 +776,56 @@ function TeacherOnlyUI({ doubts, onShowDoubts, onShowHistory, onShowAttendance, 
                         {/* 🛑 End Button (Vibrant Danger Style) */}
                         <button
                             onClick={() => {
-                                if (window.confirm("Are you sure you want to end the meeting for everyone?")) {
+                                if (
+                                    window.confirm(
+                                        "Are you sure you want to end the meeting for everyone?",
+                                    )
+                                ) {
                                     onEndMeeting && onEndMeeting();
                                 }
                             }}
                             style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '10px',
-                                padding: '12px 20px',
-                                background: 'linear-gradient(135deg, #ff416c 0%, #ff4b2b 100%)',
-                                border: 'none',
-                                color: '#fff',
-                                borderRadius: '12px',
-                                cursor: 'pointer',
-                                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                                fontSize: '14px',
-                                fontWeight: '700',
-                                width: '200px',
-                                justifyContent: 'flex-start',
-                                letterSpacing: '0.3px',
-                                boxShadow: '0 4px 15px rgba(255, 75, 43, 0.3)',
+                                display: "flex",
+                                alignItems: "center",
+                                gap: "10px",
+                                padding: "12px 20px",
+                                background: "linear-gradient(135deg, #ff416c 0%, #ff4b2b 100%)",
+                                border: "none",
+                                color: "#fff",
+                                borderRadius: "12px",
+                                cursor: "pointer",
+                                transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+                                fontSize: "14px",
+                                fontWeight: "700",
+                                width: "200px",
+                                justifyContent: "flex-start",
+                                letterSpacing: "0.3px",
+                                boxShadow: "0 4px 15px rgba(255, 75, 43, 0.3)",
                             }}
                             onMouseOver={(e) => {
-                                e.currentTarget.style.transform = 'translateX(-5px)';
-                                e.currentTarget.style.boxShadow = '0 8px 25px rgba(255, 75, 43, 0.5)';
-                                e.currentTarget.style.filter = 'brightness(1.1)';
+                                e.currentTarget.style.transform = "translateX(-5px)";
+                                e.currentTarget.style.boxShadow =
+                                    "0 8px 25px rgba(255, 75, 43, 0.5)";
+                                e.currentTarget.style.filter = "brightness(1.1)";
                             }}
                             onMouseOut={(e) => {
-                                e.currentTarget.style.transform = 'translateX(0)';
-                                e.currentTarget.style.boxShadow = '0 4px 15px rgba(255, 75, 43, 0.3)';
-                                e.currentTarget.style.filter = 'brightness(1)';
+                                e.currentTarget.style.transform = "translateX(0)";
+                                e.currentTarget.style.boxShadow =
+                                    "0 4px 15px rgba(255, 75, 43, 0.3)";
+                                e.currentTarget.style.filter = "brightness(1)";
                             }}
                         >
-                            <div style={{
-                                width: '32px', height: '32px', background: 'rgba(255,255,255,0.2)',
-                                borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center'
-                            }}>
+                            <div
+                                style={{
+                                    width: "32px",
+                                    height: "32px",
+                                    background: "rgba(255,255,255,0.2)",
+                                    borderRadius: "8px",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                }}
+                            >
                                 <MdDeleteForever size={20} />
                             </div>
                             <span>End Meeting</span>
@@ -571,20 +838,20 @@ function TeacherOnlyUI({ doubts, onShowDoubts, onShowHistory, onShowAttendance, 
                     onClick={() => setShowExitMenu(!showExitMenu)}
                     title="Exit Options"
                     style={{
-                        width: '44px',
-                        height: '44px',
-                        background: showExitMenu ? '#f44336' : '#242323ff',
-                        border: showExitMenu ? 'none' : '1px solid rgba(255,255,255,0.2)',
-                        color: '#fff',
-                        borderRadius: '10px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        cursor: 'pointer',
-                        fontSize: '22px',
-                        boxShadow: '0 4px 15px rgba(0,0,0,0.4)',
-                        transition: 'all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
-                        transform: showExitMenu ? 'rotate(90deg)' : 'rotate(0)'
+                        width: "44px",
+                        height: "44px",
+                        background: showExitMenu ? "#f44336" : "#242323ff",
+                        border: showExitMenu ? "none" : "1px solid rgba(255,255,255,0.2)",
+                        color: "#fff",
+                        borderRadius: "10px",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        cursor: "pointer",
+                        fontSize: "22px",
+                        boxShadow: "0 4px 15px rgba(0,0,0,0.4)",
+                        transition: "all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)",
+                        transform: showExitMenu ? "rotate(90deg)" : "rotate(0)",
                     }}
                 >
                     {showExitMenu ? <MdLogout /> : <FaArrowRightToBracket />}
@@ -628,17 +895,22 @@ function StudentOnlyUI({
         setCountdown(3);
         const t1 = setTimeout(() => setCountdown(2), 1000);
         const t2 = setTimeout(() => setCountdown(1), 2000);
-        return () => { clearTimeout(t1); clearTimeout(t2); };
+        return () => {
+            clearTimeout(t1);
+            clearTimeout(t2);
+        };
     }, [quizStarting]);
 
-    let role = '';
+    let role = "";
     try {
-        role = localParticipant?.metadata ? JSON.parse(localParticipant.metadata).role : '';
+        role = localParticipant?.metadata
+            ? JSON.parse(localParticipant.metadata).role
+            : "";
     } catch {
-        role = localParticipant?.metadata || '';
+        role = localParticipant?.metadata || "";
     }
 
-    if (role !== 'student') return null;
+    if (role !== "student") return null;
 
     return (
         <>
@@ -648,57 +920,81 @@ function StudentOnlyUI({
 
             {/* 🚀 Quiz Starting Pop-in for students */}
             {quizStarting && !activeQuiz && (
-                <div style={{
-                    position: 'fixed',
-                    top: 0, left: 0, right: 0, bottom: 0,
-                    background: 'rgba(0,0,0,0.88)',
-                    zIndex: 99998,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    animation: 'sqFadeIn 0.3s ease-out',
-                }}>
-                    <div style={{
-                        textAlign: 'center',
-                        animation: 'sqPopIn 0.4s cubic-bezier(0.34,1.56,0.64,1)',
-                    }}>
+                <div
+                    style={{
+                        position: "fixed",
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        background: "rgba(0,0,0,0.88)",
+                        zIndex: 99998,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        animation: "sqFadeIn 0.3s ease-out",
+                    }}
+                >
+                    <div
+                        style={{
+                            textAlign: "center",
+                            animation: "sqPopIn 0.4s cubic-bezier(0.34,1.56,0.64,1)",
+                        }}
+                    >
                         {/* Countdown circle */}
-                        <div style={{
-                            width: '120px', height: '120px',
-                            borderRadius: '50%',
-                            background: 'linear-gradient(135deg, #43a047, #1e88e5)',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            margin: '0 auto 28px',
-                            fontSize: '56px',
-                            fontWeight: '900',
-                            color: '#fff',
-                            boxShadow: '0 0 0 12px rgba(33,150,243,0.15), 0 0 0 24px rgba(33,150,243,0.07)',
-                            animation: 'sqPulseRing 0.6s ease-out',
-                            fontFamily: 'Inter, sans-serif',
-                        }}>
+                        <div
+                            style={{
+                                width: "120px",
+                                height: "120px",
+                                borderRadius: "50%",
+                                background: "linear-gradient(135deg, #43a047, #1e88e5)",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                margin: "0 auto 28px",
+                                fontSize: "56px",
+                                fontWeight: "900",
+                                color: "#fff",
+                                boxShadow:
+                                    "0 0 0 12px rgba(33,150,243,0.15), 0 0 0 24px rgba(33,150,243,0.07)",
+                                animation: "sqPulseRing 0.6s ease-out",
+                                fontFamily: "Inter, sans-serif",
+                            }}
+                        >
                             {countdown}
                         </div>
 
-                        <div style={{
-                            fontSize: '42px',
-                            marginBottom: '16px',
-                            animation: 'sqBounce 0.7s ease infinite alternate',
-                            display: 'inline-block',
-                        }}>🎯</div>
+                        <div
+                            style={{
+                                fontSize: "42px",
+                                marginBottom: "16px",
+                                animation: "sqBounce 0.7s ease infinite alternate",
+                                display: "inline-block",
+                            }}
+                        >
+                            🎯
+                        </div>
 
-                        <h2 style={{
-                            color: '#fff', fontSize: '28px', fontWeight: '800',
-                            margin: '0 0 8px', fontFamily: 'Inter, Google Sans, sans-serif',
-                            letterSpacing: '-0.5px',
-                        }}>
+                        <h2
+                            style={{
+                                color: "#fff",
+                                fontSize: "28px",
+                                fontWeight: "800",
+                                margin: "0 0 8px",
+                                fontFamily: "Inter, Google Sans, sans-serif",
+                                letterSpacing: "-0.5px",
+                            }}
+                        >
                             Quiz is Starting!
                         </h2>
-                        <p style={{
-                            color: 'rgba(255,255,255,0.6)', fontSize: '15px',
-                            margin: 0, fontFamily: 'Inter, sans-serif',
-                        }}>
+                        <p
+                            style={{
+                                color: "rgba(255,255,255,0.6)",
+                                fontSize: "15px",
+                                margin: 0,
+                                fontFamily: "Inter, sans-serif",
+                            }}
+                        >
                             Get ready to answer the questions 💪
                         </p>
                     </div>
@@ -712,56 +1008,86 @@ function StudentOnlyUI({
                 </div>
             )}
 
-            <div style={{ position: 'absolute', bottom: 14, left: 'calc(50% - 465px)', zIndex: 100 }}>
+            <div
+                style={{
+                    position: "absolute",
+                    bottom: 14,
+                    left: "calc(50% - 465px)",
+                    zIndex: 100,
+                }}
+            >
                 <StudentHandRaise isHandRaised={isHandRaised} onToggle={onToggleHand} />
             </div>
 
-            <div style={{ position: 'absolute', bottom: 14, right: 20, display: 'flex', alignItems: 'center', gap: 12, zIndex: 100 }}>
+            <div
+                style={{
+                    position: "absolute",
+                    bottom: 14,
+                    right: 20,
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 12,
+                    zIndex: 100,
+                }}
+            >
                 {isHandRaised && <StudentTextDoubt />}
 
                 {/* 👥 People Button */}
                 <button
                     onClick={() => setShowPeople(!showPeople)}
                     style={{
-                        padding: '0 16px',
-                        height: '44px',
-                        background: 'rgba(255, 255, 255, 0.05)',
-                        border: 'none',
-                        color: '#fff',
-                        borderRadius: '8px',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '8px',
-                        fontSize: '16px',
+                        padding: "0 16px",
+                        height: "44px",
+                        background: "rgba(255, 255, 255, 0.05)",
+                        border: "none",
+                        color: "#fff",
+                        borderRadius: "8px",
+                        cursor: "pointer",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "8px",
+                        fontSize: "16px",
                         fontWeight: 500,
-                        fontFamily: 'Inter, sans-serif',
-                        transition: 'background 0.2s'
+                        fontFamily: "Inter, sans-serif",
+                        transition: "background 0.2s",
                     }}
-                    onMouseOver={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'}
-                    onMouseOut={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)'}
+                    onMouseOver={(e) =>
+                        (e.currentTarget.style.background = "rgba(255, 255, 255, 0.1)")
+                    }
+                    onMouseOut={(e) =>
+                        (e.currentTarget.style.background = "rgba(255, 255, 255, 0.05)")
+                    }
                 >
-                    <IoIosPeople size={22} style={{ fontSize: '18px' }}></IoIosPeople>
+                    <IoIosPeople size={22} style={{ fontSize: "18px" }}></IoIosPeople>
                     Participants
-                    <span style={{
-                        background: '#2196F3',
-                        color: '#fff',
-                        borderRadius: '10px',
-                        minWidth: '20px',
-                        height: '20px',
-                        padding: '0 6px',
-                        fontSize: '12px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        fontWeight: 'bold'
-                    }}>
+                    <span
+                        style={{
+                            background: "#2196F3",
+                            color: "#fff",
+                            borderRadius: "10px",
+                            minWidth: "20px",
+                            height: "20px",
+                            padding: "0 6px",
+                            fontSize: "12px",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            fontWeight: "bold",
+                        }}
+                    >
                         {participants.length}
                     </span>
                 </button>
             </div>
 
-            {activeQuiz && <StudentQuizView quiz={activeQuiz} onSubmit={onQuizSubmit} onClose={onCloseQuiz} studentName={localParticipant?.identity || 'Student'} />}
+            {activeQuiz && (
+                <StudentQuizView
+                    quiz={activeQuiz}
+                    onSubmit={onQuizSubmit}
+                    onClose={onCloseQuiz}
+                    studentName={localParticipant?.identity || "Student"}
+                />
+            )}
             {showPeople && <ParticipantList onClose={() => setShowPeople(false)} />}
         </>
     );
@@ -782,7 +1108,7 @@ export function useAutoAskAI({ role, askAI, setDoubts }) {
     const scheduleAutoAsk = useCallback(
         (doubtObj, delayMs = 10000) => {
             if (!doubtObj?.id) return;
-            if (role !== 'teacher') return;
+            if (role !== "teacher") return;
 
             clearAutoAskTimer(doubtObj.id);
 
@@ -804,7 +1130,7 @@ export function useAutoAskAI({ role, askAI, setDoubts }) {
                 clearAutoAskTimer(doubtObj.id);
             }, delayMs);
         },
-        [role, askAI, setDoubts, clearAutoAskTimer]
+        [role, askAI, setDoubts, clearAutoAskTimer],
     );
 
     const markEditStart = useCallback(
@@ -812,7 +1138,7 @@ export function useAutoAskAI({ role, askAI, setDoubts }) {
             editFreezeRef.current[doubtId] = true;
             clearAutoAskTimer(doubtId);
         },
-        [clearAutoAskTimer]
+        [clearAutoAskTimer],
     );
 
     const markSaved = useCallback(
@@ -821,7 +1147,7 @@ export function useAutoAskAI({ role, askAI, setDoubts }) {
             editFreezeRef.current[doubtObj.id] = false; // ✅ unfreeze
             scheduleAutoAsk(doubtObj, delayMs);
         },
-        [scheduleAutoAsk]
+        [scheduleAutoAsk],
     );
 
     const markNewDoubt = useCallback((doubtId) => {
@@ -834,7 +1160,7 @@ export function useAutoAskAI({ role, askAI, setDoubts }) {
             clearAutoAskTimer(doubtId);
             delete editFreezeRef.current[doubtId];
         },
-        [clearAutoAskTimer]
+        [clearAutoAskTimer],
     );
 
     useEffect(() => {
@@ -860,7 +1186,6 @@ export function useAutoAskAI({ role, askAI, setDoubts }) {
 function RoomContent() {
     const { localParticipant } = useLocalParticipant();
     const participants = useParticipants();
-
 
     const [doubts, setDoubts] = useState([]);
     const [doubtsWithAnswers, setDoubtsWithAnswers] = useState([]);
@@ -888,28 +1213,34 @@ function RoomContent() {
     const audioSourceNodes = useRef(new Map()); // Map<trackSid, AudioSourceNode>
     const recordingRef = useRef({ isRecording: false }); // Sync ref
 
-    let role = '';
-    let meetingTopic = '';
+    let role = "";
+    let meetingTopic = "";
     try {
-        const metadata = localParticipant?.metadata ? JSON.parse(localParticipant.metadata) : {};
-        role = metadata.role || '';
-        meetingTopic = metadata.topic || '';
-        console.log(`👤 RoomContent: identity="${localParticipant?.identity}" role="${role}" topic="${meetingTopic}"`);
+        const metadata = localParticipant?.metadata
+            ? JSON.parse(localParticipant.metadata)
+            : {};
+        role = metadata.role || "";
+        meetingTopic = metadata.topic || "";
+        console.log(
+            `👤 RoomContent: identity="${localParticipant?.identity}" role="${role}" topic="${meetingTopic}"`,
+        );
     } catch {
-        role = localParticipant?.metadata || '';
+        role = localParticipant?.metadata || "";
     }
 
     // Polling for Waiting Students (Teacher Only)
     useEffect(() => {
-        if (role !== 'teacher' || !room?.name) return;
+        if (role !== "teacher" || !room?.name) return;
 
         const interval = setInterval(() => {
-            fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001'}/waiting-students/${room.name}`)
-                .then(r => r.json())
-                .then(data => {
+            fetch(
+                `${process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:3001"}/waiting-students/${room.name}`,
+            )
+                .then((r) => r.json())
+                .then((data) => {
                     setWaitingStudents(data.waiting || []);
                 })
-                .catch(err => console.error("Error fetching waiting students:", err));
+                .catch((err) => console.error("Error fetching waiting students:", err));
         }, 5000);
 
         return () => clearInterval(interval);
@@ -917,13 +1248,16 @@ function RoomContent() {
 
     const handleAdmit = async (requestId) => {
         try {
-            const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001'}/admit-student`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ requestId })
-            });
+            const res = await fetch(
+                `${process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:3001"}/admit-student`,
+                {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ requestId }),
+                },
+            );
             if (res.ok) {
-                setWaitingStudents(prev => prev.filter(s => s.id !== requestId));
+                setWaitingStudents((prev) => prev.filter((s) => s.id !== requestId));
             }
         } catch (err) {
             console.error("Admit error:", err);
@@ -932,20 +1266,21 @@ function RoomContent() {
 
     const handleReject = async (requestId) => {
         try {
-            const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001'}/reject-student`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ requestId })
-            });
+            const res = await fetch(
+                `${process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:3001"}/reject-student`,
+                {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ requestId }),
+                },
+            );
             if (res.ok) {
-                setWaitingStudents(prev => prev.filter(s => s.id !== requestId));
+                setWaitingStudents((prev) => prev.filter((s) => s.id !== requestId));
             }
         } catch (err) {
             console.error("Reject error:", err);
         }
     };
-
-
 
     // ✅ timers map
     const autoAskTimersRef = useRef({});
@@ -959,9 +1294,11 @@ function RoomContent() {
     };
 
     const scheduleAutoAsk = (doubtObj, delayMs = 10000) => {
-        console.log(`🕒 scheduleAutoAsk: doubt="${doubtObj?.text}" role="${role}" delay=${delayMs}ms`);
+        console.log(
+            `🕒 scheduleAutoAsk: doubt="${doubtObj?.text}" role="${role}" delay=${delayMs}ms`,
+        );
         if (!doubtObj?.id) return;
-        if (role !== 'teacher') return;
+        if (role !== "teacher") return;
 
         clearAutoAskTimer(doubtObj.id);
 
@@ -995,14 +1332,14 @@ function RoomContent() {
 
     /* ---------------- RECORDING LOGIC ---------------- */
     const searchParams = useSearchParams();
-    const classNameFromURL = searchParams.get('className');
-    const className = classNameFromURL || room?.name || 'DefaultRoom';
+    const classNameFromURL = searchParams.get("className");
+    const className = classNameFromURL || room?.name || "DefaultRoom";
 
     useEffect(() => {
-        console.log('🏫 Classroom Name detected:', {
+        console.log("🏫 Classroom Name detected:", {
             fromURL: classNameFromURL,
             roomName: room?.name,
-            final: className
+            final: className,
         });
     }, [classNameFromURL, room?.name]);
 
@@ -1016,7 +1353,7 @@ function RoomContent() {
         let timer;
         if (isRecording && !isPaused) {
             timer = setInterval(() => {
-                setRecordingDuration(prev => prev + 1);
+                setRecordingDuration((prev) => prev + 1);
             }, 1000);
         }
         return () => clearInterval(timer);
@@ -1025,18 +1362,24 @@ function RoomContent() {
     const formatTime = (totalSeconds) => {
         const m = Math.floor(totalSeconds / 60);
         const s = totalSeconds % 60;
-        return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+        return `${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
     };
 
     // 🎤 Dynamic Audio mixing logic
     const addTrackToMix = (track) => {
-        if (!recordingRef.current.isRecording || !recordingAudioContext.current || !recordingDestNode.current) return;
-        if (!track || track.kind !== 'audio' || !track.mediaStreamTrack) return;
+        if (
+            !recordingRef.current.isRecording ||
+            !recordingAudioContext.current ||
+            !recordingDestNode.current
+        )
+            return;
+        if (!track || track.kind !== "audio" || !track.mediaStreamTrack) return;
         if (audioSourceNodes.current.has(track.sid)) return;
 
         try {
             const stream = new MediaStream([track.mediaStreamTrack.clone()]);
-            const source = recordingAudioContext.current.createMediaStreamSource(stream);
+            const source =
+                recordingAudioContext.current.createMediaStreamSource(stream);
             const gainNode = recordingAudioContext.current.createGain();
 
             // Boost teacher (local) a bit, others normal
@@ -1069,51 +1412,65 @@ function RoomContent() {
         const onTrackSubscribed = (track) => addTrackToMix(track);
         const onTrackUnsubscribed = (track) => removeTrackFromMix(track.sid);
 
-        room.on('trackSubscribed', onTrackSubscribed);
-        room.on('trackUnsubscribed', onTrackUnsubscribed);
+        room.on("trackSubscribed", onTrackSubscribed);
+        room.on("trackUnsubscribed", onTrackUnsubscribed);
 
         return () => {
-            room.off('trackSubscribed', onTrackSubscribed);
-            room.off('trackUnsubscribed', onTrackUnsubscribed);
+            room.off("trackSubscribed", onTrackSubscribed);
+            room.off("trackUnsubscribed", onTrackUnsubscribed);
         };
     }, [room, isRecording]);
 
     // Keep track of current screen stream to clean up listeners
     const [currentScreenStream, setCurrentScreenStream] = useState(null);
     const handleStartRecording = async (transcribe = false) => {
-        console.log('🔴 handleStartRecording triggered. Role:', role, 'Transcribe:', transcribe);
-        if (!room || role !== 'teacher') return;
+        console.log(
+            "🔴 handleStartRecording triggered. Role:",
+            role,
+            "Transcribe:",
+            transcribe,
+        );
+        if (!room || role !== "teacher") return;
         setShowRecordMenu(false);
 
         try {
             // 1. Setup AudioContext for mixing
-            recordingAudioContext.current = new (window.AudioContext || window.webkitAudioContext)();
+            recordingAudioContext.current = new (
+                window.AudioContext || window.webkitAudioContext
+            )();
 
             // ✅ FIX: Resume AudioContext immediately — browsers suspend it by default
             // due to autoplay policy. If suspended, speakText() checks state === 'running'
             // and will skip recording injection entirely.
-            if (recordingAudioContext.current.state === 'suspended') {
+            if (recordingAudioContext.current.state === "suspended") {
                 await recordingAudioContext.current.resume();
-                console.log('▶ AudioContext resumed from suspended state');
+                console.log("▶ AudioContext resumed from suspended state");
             }
 
-            recordingDestNode.current = recordingAudioContext.current.createMediaStreamDestination();
+            recordingDestNode.current =
+                recordingAudioContext.current.createMediaStreamDestination();
             recordingRef.current.isRecording = true;
 
             // 2. Request Screen Share
             const screenStream = await navigator.mediaDevices.getDisplayMedia({
-                video: { width: 1920, height: 1080, frameRate: 30, displaySurface: "browser" },
+                video: {
+                    width: 1920,
+                    height: 1080,
+                    frameRate: 30,
+                    displaySurface: "browser",
+                },
                 audio: true,
                 preferCurrentTab: true,
-                selfBrowserSurface: "include"
+                selfBrowserSurface: "include",
             });
             setCurrentScreenStream(screenStream);
 
             // 3. Connect Tab/System Audio to mix
             if (screenStream.getAudioTracks().length > 0) {
-                const sysSource = recordingAudioContext.current.createMediaStreamSource(screenStream);
+                const sysSource =
+                    recordingAudioContext.current.createMediaStreamSource(screenStream);
                 sysSource.connect(recordingDestNode.current);
-                console.log('🔊 Added Screen/Tab Audio to mix');
+                console.log("🔊 Added Screen/Tab Audio to mix");
             }
 
             // 4. Connect Local Mic(teacher)
@@ -1124,20 +1481,22 @@ function RoomContent() {
             // ✅ FIX: Also listen for local mic track if it gets published AFTER recording starts
             // (e.g., teacher enables mic mid-session)
             const onLocalTrackPublished = (pub) => {
-                if (pub.track?.kind === 'audio') {
-                    console.log('🎙️ Local mic track published after recording start — adding to mix');
+                if (pub.track?.kind === "audio") {
+                    console.log(
+                        "🎙️ Local mic track published after recording start — adding to mix",
+                    );
                     addTrackToMix(pub.track);
                 }
             };
-            room.localParticipant.on('localTrackPublished', onLocalTrackPublished);
+            room.localParticipant.on("localTrackPublished", onLocalTrackPublished);
             // Store cleanup ref so we can remove it on stop
             recordingRef.current.localTrackCleanup = () => {
-                room.localParticipant.off('localTrackPublished', onLocalTrackPublished);
+                room.localParticipant.off("localTrackPublished", onLocalTrackPublished);
             };
 
             // 5. Connect all existing Remote Participants (students)
-            room.remoteParticipants.forEach(p => {
-                p.audioTrackPublications.forEach(pub => {
+            room.remoteParticipants.forEach((p) => {
+                p.audioTrackPublications.forEach((pub) => {
                     if (pub.track && pub.track.mediaStreamTrack) {
                         addTrackToMix(pub.track);
                     }
@@ -1145,9 +1504,12 @@ function RoomContent() {
             });
 
             // 6. Create Final Stream
-            const mixedAudioTrack = recordingDestNode.current.stream.getAudioTracks()[0];
+            const mixedAudioTrack =
+                recordingDestNode.current.stream.getAudioTracks()[0];
             const finalStream = new MediaStream();
-            screenStream.getVideoTracks().forEach(track => finalStream.addTrack(track));
+            screenStream
+                .getVideoTracks()
+                .forEach((track) => finalStream.addTrack(track));
             if (mixedAudioTrack) finalStream.addTrack(mixedAudioTrack);
 
             startClassRecording(finalStream, room.name, className, false, transcribe);
@@ -1158,11 +1520,12 @@ function RoomContent() {
             screenStream.getVideoTracks()[0].onended = () => {
                 handleStopRecording();
             };
-
         } catch (e) {
-            console.error('❌ Error starting recording:', e);
-            if (e.name === 'NotAllowedError') {
-                alert("Permission denied. You must select a screen and allow audio sharing.");
+            console.error("❌ Error starting recording:", e);
+            if (e.name === "NotAllowedError") {
+                alert(
+                    "Permission denied. You must select a screen and allow audio sharing.",
+                );
             } else {
                 alert(`Failed to start recording: ${e.message}`);
             }
@@ -1172,7 +1535,7 @@ function RoomContent() {
     };
 
     const handleStopRecording = () => {
-        console.log('⏹ handleStopRecording triggered');
+        console.log("⏹ handleStopRecording triggered");
         try {
             // Pass chat history for the final summary
             const chatHistory = JSON.stringify(doubtsWithAnswers);
@@ -1190,25 +1553,31 @@ function RoomContent() {
             }
 
             // Cleanup Audio mixing
-            audioSourceNodes.current.forEach(node => {
-                try { node.source.disconnect(); node.gainNode.disconnect(); } catch (e) { }
+            audioSourceNodes.current.forEach((node) => {
+                try {
+                    node.source.disconnect();
+                    node.gainNode.disconnect();
+                } catch (e) { }
             });
             audioSourceNodes.current.clear();
 
-            if (recordingAudioContext.current && recordingAudioContext.current.state !== 'closed') {
+            if (
+                recordingAudioContext.current &&
+                recordingAudioContext.current.state !== "closed"
+            ) {
                 recordingAudioContext.current.close().catch(() => { });
                 recordingAudioContext.current = null;
             }
 
             if (currentScreenStream) {
-                currentScreenStream.getTracks().forEach(track => {
+                currentScreenStream.getTracks().forEach((track) => {
                     track.onended = null;
                     track.stop();
                 });
                 setCurrentScreenStream(null);
             }
         } catch (e) {
-            console.error('❌ Error stopping recording:', e);
+            console.error("❌ Error stopping recording:", e);
         }
     };
 
@@ -1229,30 +1598,35 @@ function RoomContent() {
         }
     };
 
-
     // Memoize custom layout components to prevent unmount/remount on every render
     const NoComponent = useMemo(() => () => null, []);
-    const TeacherControlBar = useMemo(() => () => <ControlBar controls={{ leave: false }} />, []);
+    const TeacherControlBar = useMemo(
+        () => () => <ControlBar controls={{ leave: false }} />,
+        [],
+    );
 
-    const customComponents = useMemo(() => ({
-        Chat: NoComponent,
-        ParticipantGrid: role === 'teacher' ? undefined : NoComponent,
-        ControlBar: role === 'teacher' ? TeacherControlBar : undefined,
-        DisconnectButton: role === 'teacher' ? NoComponent : undefined
-    }), [role, TeacherControlBar, NoComponent]);
+    const customComponents = useMemo(
+        () => ({
+            Chat: NoComponent,
+            ParticipantGrid: role === "teacher" ? undefined : NoComponent,
+            ControlBar: role === "teacher" ? TeacherControlBar : undefined,
+            DisconnectButton: role === "teacher" ? NoComponent : undefined,
+        }),
+        [role, TeacherControlBar, NoComponent],
+    );
 
     // Attendance Tracker
     useEffect(() => {
-        if (!room || role !== 'teacher') return;
+        if (!room || role !== "teacher") return;
 
         const updateParticipantStatus = (participant, eventType) => {
             const identity = participant.identity;
-            let pRole = 'student';
+            let pRole = "student";
             try {
-                pRole = JSON.parse(participant.metadata || '{}').role || 'student';
+                pRole = JSON.parse(participant.metadata || "{}").role || "student";
             } catch { }
 
-            setAttendance(prev => {
+            setAttendance((prev) => {
                 const now = Date.now();
                 const existing = prev[identity] || {
                     identity,
@@ -1262,13 +1636,17 @@ function RoomContent() {
                     lastLeft: null,
                     totalStayTime: 0,
                     joinCount: 0,
-                    status: 'online',
-                    sessions: []
+                    status: "online",
+                    sessions: [],
                 };
 
-                if (eventType === 'connected') {
+                if (eventType === "connected") {
                     // Prevent adding redundant sessions if already online
-                    if (existing.status === 'online' && existing.sessions?.length > 0 && !existing.sessions[existing.sessions.length - 1].leftAt) {
+                    if (
+                        existing.status === "online" &&
+                        existing.sessions?.length > 0 &&
+                        !existing.sessions[existing.sessions.length - 1].leftAt
+                    ) {
                         return prev;
                     }
 
@@ -1278,16 +1656,20 @@ function RoomContent() {
                             ...existing,
                             lastJoined: now,
                             joinCount: (existing.joinCount || 0) + 1,
-                            status: 'online',
+                            status: "online",
                             role: pRole, // update role in case it changed
-                            sessions: [...(existing.sessions || []), { joinedAt: now, leftAt: null }]
-                        }
+                            sessions: [
+                                ...(existing.sessions || []),
+                                { joinedAt: now, leftAt: null },
+                            ],
+                        },
                     };
-                } else if (eventType === 'disconnected') {
+                } else if (eventType === "disconnected") {
                     // Prevent updating leave time if already offline
-                    if (existing.status === 'offline') return prev;
+                    if (existing.status === "offline") return prev;
 
-                    const stayDuration = now - (existing.lastJoined || existing.firstJoined || now);
+                    const stayDuration =
+                        now - (existing.lastJoined || existing.firstJoined || now);
                     const updatedSessions = [...(existing.sessions || [])];
                     if (updatedSessions.length > 0) {
                         updatedSessions[updatedSessions.length - 1].leftAt = now;
@@ -1299,9 +1681,9 @@ function RoomContent() {
                             ...existing,
                             lastLeft: now,
                             totalStayTime: (existing.totalStayTime || 0) + stayDuration,
-                            status: 'offline',
-                            sessions: updatedSessions
-                        }
+                            status: "offline",
+                            sessions: updatedSessions,
+                        },
                     };
                 }
                 return prev;
@@ -1309,122 +1691,166 @@ function RoomContent() {
         };
 
         // Track existing participants
-        room.remoteParticipants.forEach(p => {
-            updateParticipantStatus(p, 'connected');
+        room.remoteParticipants.forEach((p) => {
+            updateParticipantStatus(p, "connected");
         });
         if (room.localParticipant) {
-            updateParticipantStatus(room.localParticipant, 'connected');
+            updateParticipantStatus(room.localParticipant, "connected");
         }
 
-        const onConnected = (p) => updateParticipantStatus(p, 'connected');
-        const onDisconnected = (p) => updateParticipantStatus(p, 'disconnected');
+        const onConnected = (p) => updateParticipantStatus(p, "connected");
+        const onDisconnected = (p) => updateParticipantStatus(p, "disconnected");
 
-        room.on('participantConnected', onConnected);
-        room.on('participantDisconnected', onDisconnected);
+        room.on("participantConnected", onConnected);
+        room.on("participantDisconnected", onDisconnected);
 
         return () => {
-            room.off('participantConnected', onConnected);
-            room.off('participantDisconnected', onDisconnected);
+            room.off("participantConnected", onConnected);
+            room.off("participantDisconnected", onDisconnected);
         };
     }, [room, role]);
 
-    // Listen for AI results and new doubts
+    // 🎧 Main Data Handler (Unified)
     useEffect(() => {
         if (!room) return;
+
         const handleData = (payload) => {
             try {
                 const msg = JSON.parse(new TextDecoder().decode(payload));
 
-                // Teacher: Receive new doubts
-                if (msg.action === 'STUDENT_DOUBT' && role === 'teacher') {
+                // 📝 Live Captions (Teacher Only)
+                if (msg.action === "LIVE_TRANSCRIPT" && role === "teacher") {
+                    setLiveCaptions((prev) => ({
+                        ...prev,
+                        [msg.name]: {
+                            text: msg.text,
+                            expires: Date.now() + 3000,
+                        },
+                    }));
+                }
+
+                // 👋 Greeting (Teacher Only)
+                if (msg.action === "STUDENT_GREETING" && role === "teacher") {
+                    const studentName = msg.name || "Student";
+                    const text = (msg.text || "").toLowerCase();
+
+                    let reply = `Hi ${studentName}! Please tell me your doubt.`;
+                    if (text.includes("good morning"))
+                        reply = `Good morning ${studentName}! Please tell me your doubt.`;
+                    else if (text.includes("good afternoon"))
+                        reply = `Good afternoon ${studentName}! Please tell me your doubt.`;
+                    else if (text.includes("good evening"))
+                        reply = `Good evening ${studentName}! Please tell me your doubt.`;
+
+                    speakText(reply, {
+                        audioContext: recordingAudioContext.current,
+                        destinationNode: recordingDestNode.current,
+                    }).catch((err) => console.error("Greeting TTS error:", err));
+                    return;
+                }
+
+                // 📥 Receive New Doubt
+                if (msg.action === "STUDENT_DOUBT") {
+                    console.log("📥 Received STUDENT_DOUBT:", msg);
                     const doubtId = msg.id || Date.now();
                     const newDoubt = { ...msg, id: doubtId };
 
-                    setDoubts((prev) => [...prev, newDoubt]);
-                    setDoubtsWithAnswers((prevAnswers) => {
-                        if (prevAnswers.some((d) => d.id === doubtId)) return prevAnswers;
-                        return [...prevAnswers, { id: doubtId, name: msg.name, text: msg.text, answer: null }];
+                    // Add to list for everyone
+                    setDoubts((prev) => {
+                        if (prev.some((d) => d.id === doubtId)) return prev;
+                        return [...prev, newDoubt];
                     });
 
-                    // new doubt => not frozen
-                    editFreezeRef.current[doubtId] = false;
+                    setDoubtsWithAnswers((prevAnswers) => {
+                        if (prevAnswers.some((d) => d.id === doubtId)) return prevAnswers;
+                        return [
+                            ...prevAnswers,
+                            { id: doubtId, name: msg.name, text: msg.text, answer: null },
+                        ];
+                    });
 
-                    scheduleAutoAsk(newDoubt, 10000);
+                    setShowAI(true);
+
+                    // Teacher only: logic for auto-AI
+                    if (role === "teacher") {
+                        editFreezeRef.current[doubtId] = false;
+                        const delay = msg.voiceGenerated ? 3000 : 10000;
+                        scheduleAutoAsk(newDoubt, delay);
+                    }
                 }
-                // Teacher: Process Hand Raise Queue
-                if (msg.action === 'HAND_RAISE' && role === 'teacher') {
-                    setHandRaiseQueue(prev => {
+
+                // ✋ Hand Raise (Teacher Processing)
+                if (msg.action === "HAND_RAISE" && role === "teacher") {
+                    setHandRaiseQueue((prev) => {
                         let nextQueue = [...prev];
                         if (msg.raised) {
-                            if (!nextQueue.includes(msg.name)) {
-                                nextQueue.push(msg.name);
-                            }
+                            if (!nextQueue.includes(msg.name)) nextQueue.push(msg.name);
                         } else {
-                            nextQueue = nextQueue.filter(name => name !== msg.name);
+                            nextQueue = nextQueue.filter((name) => name !== msg.name);
                         }
-
-                        // Notify ONLY the first person if they just became the lead OR if they were already lead and someone new joined (noop)
-                        // But more importantly, if the lead CHANGES, notify the new lead.
                         return nextQueue;
                     });
                 }
 
-                // Student: React to remote hand lowering (e.g. when teacher resolves doubt)
-                if (msg.action === 'HAND_RAISE' && role === 'student' && msg.name === localParticipant?.identity) {
+                // ✋ Hand Raise (Student Side Reaction)
+                if (
+                    msg.action === "HAND_RAISE" &&
+                    role === "student" &&
+                    msg.name === localParticipant?.identity
+                ) {
                     setIsHandRaised(msg.raised);
                 }
 
-                // AI Result: Broadcast to everyone
-                if (msg.action === 'AI_ANSWER_BROADCAST') {
-                    // Everyone gets it in history
-                    setDoubtsWithAnswers(prev => {
-                        const exists = prev.find(d => d.id === msg.id);
-                        if (exists) {
-                            // Update the existing entry with the answer
-                            return prev.map(d => (d.id === msg.id) ? { ...d, answer: msg.answer } : d);
-                        }
+                // 🤖 AI Answer Broadcast (Student Side & Other Teachers)
+                if (msg.action === "AI_ANSWER_BROADCAST") {
+                    setDoubtsWithAnswers((prev) => {
+                        const exists = prev.find((d) => d.id === msg.id);
+                        if (exists)
+                            return prev.map((d) =>
+                                d.id === msg.id ? { ...d, answer: msg.answer } : d,
+                            );
                         return [...prev, msg];
                     });
 
-                    // Only Teacher opens sidebar for active management
-                    if (role === 'teacher') {
-                        setShowAI(true);
-                    }
+                    if (role === "teacher") setShowAI(true);
 
-                    // ✅ AI answer voice — already passing audioContext correctly
-                    // aiTTS.js fix ensures this is recordable every time (fresh Audio element)
-                    if (msg.answer) {
-                        // Clean "Beta, " or "Beta " from the start of the answer if it exists
-                        let cleanAnswer = msg.answer.trim();
-                        if (cleanAnswer.toLowerCase().startsWith('beta,')) {
-                            cleanAnswer = cleanAnswer.substring(5).trim();
-                        } else if (cleanAnswer.toLowerCase().startsWith('beta ')) {
-                            cleanAnswer = cleanAnswer.substring(4).trim();
-                        }
-
-                        // Speak only the answer without repeating the question
-                        speakText(cleanAnswer, {
+                    // 🔊 Only students speak the broadcast — teacher already plays audio in sendToStudent()
+                    // (Teacher's own publishData echoes back, causing double voice if we don't guard here)
+                    if (msg.answer && role === "student") {
+                        const audioString = `${msg.name} asked: ${msg.text}. The answer is: ${msg.answer}`;
+                        speakText(audioString, {
                             audioContext: recordingAudioContext.current,
-                            destinationNode: recordingDestNode.current
-                        });
+                            destinationNode: recordingDestNode.current,
+                        }).catch((err) => console.error("Broadcast TTS error:", err));
                     }
                 }
 
-                // STOP AI AUDIO
-                if (msg.action === 'STOP_AUDIO') {
+                // ⏹ Global Stop Audio
+                if (msg.action === "STOP_AUDIO") {
                     stopSpeaking();
                 }
 
+                // 🚫 Quiz Start (Student Side Only)
+                if (msg.action === "QUIZ_START" && role === "student") {
+                    setQuizStarting(true);
+                    setTimeout(() => {
+                        setQuizStarting(false);
+                        setActiveQuiz(msg.quiz);
+                    }, 3000);
+                }
 
-                // MEETING ENDED (Students)
-                if (msg.action === 'MEETING_ENDED' && role === 'student') {
+                // 🏁 Meeting Ended (Student Side Only)
+                if (msg.action === "MEETING_ENDED" && role === "student") {
                     setMeetingEnded(true);
                 }
-            } catch { }
+            } catch (err) {
+                console.error("Data packet error:", err);
+            }
         };
-        room.on('dataReceived', handleData);
-        return () => room.off('dataReceived', handleData);
-    }, [room, role]);
+
+        room.on("dataReceived", handleData);
+        return () => room.off("dataReceived", handleData);
+    }, [room, role, localParticipant?.identity, scheduleAutoAsk]);
 
     /* 👩‍🏫 Teacher Handlers (Centralized) */
     const askAI = async (doubt) => {
@@ -1435,33 +1861,39 @@ function RoomContent() {
 
         setLoadingAI(doubt.id);
         try {
-            const res = await fetch('http://localhost:3001/ask-ai', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+            const res = await fetch("http://localhost:3001/ask-ai", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     question: doubt.text,
                     studentName: doubt.name,
-                    topic: meetingTopic // Pass the class topic from metadata
+                    topic: meetingTopic, // Pass the class topic from metadata
                 }),
             });
             const data = await res.json();
-            const answer = data.answer || 'No answer received.';
+            const answer = data.answer || "No answer received.";
 
-            setDoubts((prev) => prev.map((d) => (d.id === doubt.id ? { ...d, answer } : d)));
+            setDoubts((prev) =>
+                prev.map((d) => (d.id === doubt.id ? { ...d, answer } : d)),
+            );
 
             const answeredDoubt = { ...doubt, answer };
             setTimeout(() => sendToStudent(answeredDoubt), 500);
         } catch (e) {
-            console.error('AI error', e);
+            console.error("AI error", e);
         } finally {
             setLoadingAI(null);
         }
     };
 
     const sendToStudent = (doubt) => {
-        console.log(`📤 sendToStudent: Broadcasting answer for doubtId=${doubt.id}`);
+        console.log(
+            `📤 sendToStudent: Broadcasting answer for doubtId=${doubt.id}`,
+        );
         if (!doubt?.answer || !room) {
-            console.warn('⚠️ sendToStudent: Missing answer or room skipping broadcast');
+            console.warn(
+                "⚠️ sendToStudent: Missing answer or room skipping broadcast",
+            );
             return;
         }
 
@@ -1470,25 +1902,37 @@ function RoomContent() {
         room.localParticipant.publishData(
             new TextEncoder().encode(
                 JSON.stringify({
-                    action: 'AI_ANSWER_BROADCAST',
+                    action: "AI_ANSWER_BROADCAST",
                     id: doubt.id,
                     text: doubt.text,
                     answer: doubt.answer,
                     name: doubt.name,
-                })
+                }),
             ),
-            { reliable: true }
+            { reliable: true },
         );
-        console.log('✅ sendToStudent: Published AI_ANSWER_BROADCAST');
+        console.log("✅ sendToStudent: Published AI_ANSWER_BROADCAST");
 
-        setDoubts((prev) => prev.map((d) => (d.id === doubt.id ? { ...d, isBroadcasting: true } : d)));
+        // 🔊 Teacher side: Play audio locally since publishData doesn't echo back
+        const audioString = `${doubt.name} asked: ${doubt.text}. The answer is: ${doubt.answer}`;
+        speakText(audioString, {
+            audioContext: recordingAudioContext.current,
+            destinationNode: recordingDestNode.current,
+        }).catch((err) => console.error("Teacher TTS error:", err));
+
+        setDoubts((prev) =>
+            prev.map((d) => (d.id === doubt.id ? { ...d, isBroadcasting: true } : d)),
+        );
     };
 
     const stopAIAudio = () => {
         if (!room) return;
-        room.localParticipant.publishData(new TextEncoder().encode(JSON.stringify({ action: 'STOP_AUDIO' })), {
-            reliable: true,
-        });
+        room.localParticipant.publishData(
+            new TextEncoder().encode(JSON.stringify({ action: "STOP_AUDIO" })),
+            {
+                reliable: true,
+            },
+        );
         stopSpeaking();
     };
 
@@ -1500,8 +1944,19 @@ function RoomContent() {
         if (doubt) {
             setDoubtsWithAnswers((prev) => {
                 const exists = prev.find((h) => h.id === doubt.id);
-                if (exists) return prev.map((h) => (h.id === doubt.id ? { ...h, answer: doubt.answer || h.answer } : h));
-                return [...prev, { id: doubt.id, name: doubt.name, text: doubt.text, answer: doubt.answer }];
+                if (exists)
+                    return prev.map((h) =>
+                        h.id === doubt.id ? { ...h, answer: doubt.answer || h.answer } : h,
+                    );
+                return [
+                    ...prev,
+                    {
+                        id: doubt.id,
+                        name: doubt.name,
+                        text: doubt.text,
+                        answer: doubt.answer,
+                    },
+                ];
             });
         }
         setDoubts((prev) => prev.filter((d) => d.id !== id));
@@ -1515,13 +1970,19 @@ function RoomContent() {
 
     // ✅ SAVE => unfreeze + start 5 sec timer
     const handleSaveDoubt = (id, newText) => {
-        setDoubts((prev) => prev.map((d) => (d.id === id ? { ...d, text: newText } : d)));
-        setDoubtsWithAnswers((prev) => prev.map((h) => (h.id === id ? { ...h, text: newText } : h)));
+        setDoubts((prev) =>
+            prev.map((d) => (d.id === id ? { ...d, text: newText } : d)),
+        );
+        setDoubtsWithAnswers((prev) =>
+            prev.map((h) => (h.id === id ? { ...h, text: newText } : h)),
+        );
 
         editFreezeRef.current[id] = false; // ✅ unfreeze
 
         const updated = doubts.find((d) => d.id === id);
-        const doubtObj = updated ? { ...updated, text: newText } : { id, text: newText };
+        const doubtObj = updated
+            ? { ...updated, text: newText }
+            : { id, text: newText };
 
         scheduleAutoAsk(doubtObj, 5000); // ✅ save אחרי 5 sec auto ask
     };
@@ -1534,19 +1995,25 @@ function RoomContent() {
         if (!room) return;
 
         const studentQuestions = doubtsWithAnswers.map((d) => d.text);
-        const finalTopic = meetingTopic || 'General Class';
+        const finalTopic = meetingTopic || "General Class";
 
         try {
-            const res = await fetch('http://localhost:3001/generate-quiz', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ topic: finalTopic, studentQuestions, roomName: room.name }),
+            const res = await fetch("http://localhost:3001/generate-quiz", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    topic: finalTopic,
+                    studentQuestions,
+                    roomName: room.name,
+                }),
             });
 
             if (!res.ok) {
                 const errorText = await res.text();
-                console.error('Backend error message:', errorText);
-                throw new Error(`Server returned ${res.status}: ${errorText.substring(0, 100)}`);
+                console.error("Backend error message:", errorText);
+                throw new Error(
+                    `Server returned ${res.status}: ${errorText.substring(0, 100)}`,
+                );
             }
 
             const data = await res.json();
@@ -1556,11 +2023,15 @@ function RoomContent() {
                 room.localParticipant.publishData(
                     new TextEncoder().encode(
                         JSON.stringify({
-                            action: 'QUIZ_START',
-                            quiz: { id: data.quizId, topic: finalTopic, questions: data.questions },
-                        })
+                            action: "QUIZ_START",
+                            quiz: {
+                                id: data.quizId,
+                                topic: finalTopic,
+                                questions: data.questions,
+                            },
+                        }),
                     ),
-                    { reliable: true }
+                    { reliable: true },
                 );
 
                 // Teacher: Open quiz results sidebar
@@ -1569,24 +2040,27 @@ function RoomContent() {
 
                 // ⭐ GENERATE CLASS SUMMARY
                 try {
-                    const summaryRes = await fetch('http://localhost:3001/generate-summary', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ topic: finalTopic, studentQuestions }),
-                    });
+                    const summaryRes = await fetch(
+                        "http://localhost:3001/generate-summary",
+                        {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ topic: finalTopic, studentQuestions }),
+                        },
+                    );
                     const summaryData = await summaryRes.json();
                     if (summaryData.summary) {
                         if (summaryData.summary) setClassSummary(summaryData.summary);
                     }
                 } catch (summaryErr) {
-                    console.error('Summary generation error', summaryErr);
+                    console.error("Summary generation error", summaryErr);
                 }
 
-                alert('✅ Quiz generated and broadcast to all students!');
+                alert("✅ Quiz generated and broadcast to all students!");
             }
         } catch (e) {
-            console.error('Quiz generation error', e);
-            alert('❌ Failed to generate quiz.');
+            console.error("Quiz generation error", e);
+            alert("❌ Failed to generate quiz.");
         }
     };
 
@@ -1594,19 +2068,19 @@ function RoomContent() {
         if (!activeQuiz || !localParticipant) return;
 
         try {
-            const res = await fetch('http://localhost:3001/submit-quiz', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+            const res = await fetch("http://localhost:3001/submit-quiz", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     quizId: activeQuiz.id,
                     studentName: localParticipant.identity,
                     answers,
-                    ...proctorData
+                    ...proctorData,
                 }),
             });
             return await res.json();
         } catch (e) {
-            console.error('Quiz submission error', e);
+            console.error("Quiz submission error", e);
             return null;
         }
     };
@@ -1616,32 +2090,30 @@ function RoomContent() {
         try {
             // 1️⃣ Broadcast MEETING_ENDED to all participants FIRST
             await room.localParticipant.publishData(
-                new TextEncoder().encode(
-                    JSON.stringify({ action: 'MEETING_ENDED' })
-                ),
-                { reliable: true }
+                new TextEncoder().encode(JSON.stringify({ action: "MEETING_ENDED" })),
+                { reliable: true },
             );
 
             // Small delay so data message is delivered before room is deleted
-            await new Promise(resolve => setTimeout(resolve, 800));
+            await new Promise((resolve) => setTimeout(resolve, 800));
 
             // 2️⃣ Tell backend to delete room & mark it as ended
-            await fetch('http://localhost:3001/end-room', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+            await fetch("http://localhost:3001/end-room", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ roomName: room.name }),
             });
 
             // 3️⃣ Disconnect teacher
-            if (room.state !== 'disconnected') {
+            if (room.state !== "disconnected") {
                 await room.disconnect();
             }
 
             // 4️⃣ Redirect teacher
-            window.location.href = '/';
+            window.location.href = "/";
         } catch (e) {
-            console.error('Failed to end meeting properly', e);
-            window.location.href = '/';
+            console.error("Failed to end meeting properly", e);
+            window.location.href = "/";
         }
     };
 
@@ -1649,13 +2121,13 @@ function RoomContent() {
         if (!room) return;
         try {
             // Just disconnect without ending for others
-            if (room.state !== 'disconnected') {
+            if (room.state !== "disconnected") {
                 await room.disconnect();
             }
-            window.location.href = '/';
+            window.location.href = "/";
         } catch (e) {
-            console.error('Failed to leave meeting', e);
-            window.location.href = '/';
+            console.error("Failed to leave meeting", e);
+            window.location.href = "/";
         }
     };
 
@@ -1663,7 +2135,7 @@ function RoomContent() {
 
     useEffect(() => {
         const timer = setInterval(() => {
-            setLiveCaptions(prev => {
+            setLiveCaptions((prev) => {
                 const now = Date.now();
                 let changed = false;
                 const next = { ...prev };
@@ -1679,6 +2151,8 @@ function RoomContent() {
         return () => clearInterval(timer);
     }, []);
 
+
+
     return (
         <>
             {/* 🚫 Meeting Ended Overlay (Students only) */}
@@ -1687,133 +2161,176 @@ function RoomContent() {
             <RoomAudioRenderer />
 
             {/* 👥 Teacher Participants Sidebar */}
-            {role === 'teacher' && showParticipants && (
+            {role === "teacher" && showParticipants && (
                 <ParticipantList onClose={() => setShowParticipants(false)} />
             )}
 
             {/* 🔴 Left Side Control Bar - Recording Controls (Teacher Only) */}
-            {role === 'teacher' && (
-                <div style={{
-                    position: 'absolute',
-                    left: 20,
-                    bottom: 80, // Positioned above the teacher video controller
-                    zIndex: 999,
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    gap: '12px'
-                }}>
+            {role === "teacher" && (
+                <div
+                    style={{
+                        position: "absolute",
+                        left: 20,
+                        bottom: 80, // Positioned above the teacher video controller
+                        zIndex: 999,
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
+                        gap: "12px",
+                    }}
+                >
                     {/* ⏱ Timer Display - Above controls */}
                     {isRecording && (
-                        <div style={{
-                            background: 'rgba(0, 0, 0, 0.6)',
-                            color: '#e53935',
-                            padding: '4px 10px',
-                            borderRadius: '12px',
-                            fontFamily: 'monospace',
-                            fontWeight: 'bold',
-                            border: '1px solid rgba(229, 57, 53, 0.3)',
-                            fontSize: '0.9rem',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '6px',
-                            marginBottom: '4px'
-                        }}>
-                            <div style={{
-                                width: 6, height: 6, borderRadius: '50%',
-                                background: isPaused ? '#ffca28' : '#e53935',
-                                animation: isPaused ? 'none' : 'pulseDot 1s infinite'
-                            }} />
+                        <div
+                            style={{
+                                background: "rgba(0, 0, 0, 0.6)",
+                                color: "#e53935",
+                                padding: "4px 10px",
+                                borderRadius: "12px",
+                                fontFamily: "monospace",
+                                fontWeight: "bold",
+                                border: "1px solid rgba(229, 57, 53, 0.3)",
+                                fontSize: "0.9rem",
+                                display: "flex",
+                                alignItems: "center",
+                                gap: "6px",
+                                marginBottom: "4px",
+                            }}
+                        >
+                            <div
+                                style={{
+                                    width: 6,
+                                    height: 6,
+                                    borderRadius: "50%",
+                                    background: isPaused ? "#ffca28" : "#e53935",
+                                    animation: isPaused ? "none" : "pulseDot 1s infinite",
+                                }}
+                            />
                             {formatTime(recordingDuration)}
                         </div>
                     )}
 
-                    <div style={{
-                        display: 'flex',
-                        flexDirection: 'column',
-                        gap: '6px',
-                        background: 'rgba(0,0,0,0.5)',
-                        padding: '6px',
-                        borderRadius: '10px',
-                        border: '1px solid rgba(255,255,255,0.1)',
-                        backdropFilter: 'blur(4px)'
-                    }}>
+                    <div
+                        style={{
+                            display: "flex",
+                            flexDirection: "column",
+                            gap: "6px",
+                            background: "rgba(0,0,0,0.5)",
+                            padding: "6px",
+                            borderRadius: "10px",
+                            border: "1px solid rgba(255,255,255,0.1)",
+                            backdropFilter: "blur(4px)",
+                        }}
+                    >
                         {/* 🎙 Recording Options Menu */}
                         {showRecordMenu && !isRecording && (
-                            <div style={{
-                                position: 'absolute',
-                                left: '44px',
-                                bottom: '0',
-                                background: '#1e1e1e',
-                                borderRadius: '8px',
-                                border: '1px solid rgba(255,255,255,0.1)',
-                                padding: '4px',
-                                display: 'flex',
-                                flexDirection: 'column',
-                                gap: '4px',
-                                width: '180px',
-                                boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
-                                zIndex: 1000
-                            }}>
+                            <div
+                                style={{
+                                    position: "absolute",
+                                    left: "44px",
+                                    bottom: "0",
+                                    background: "#1e1e1e",
+                                    borderRadius: "8px",
+                                    border: "1px solid rgba(255,255,255,0.1)",
+                                    padding: "4px",
+                                    display: "flex",
+                                    flexDirection: "column",
+                                    gap: "4px",
+                                    width: "180px",
+                                    boxShadow: "0 8px 24px rgba(0,0,0,0.5)",
+                                    zIndex: 1000,
+                                }}
+                            >
                                 <button
                                     onClick={() => handleStartRecording(false)}
                                     style={{
-                                        padding: '8px 12px',
-                                        borderRadius: '6px',
-                                        background: 'transparent',
-                                        color: '#fff',
-                                        border: 'none',
-                                        cursor: 'pointer',
-                                        textAlign: 'left',
-                                        fontSize: '0.85rem',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        gap: '8px',
-                                        transition: 'background 0.2s'
+                                        padding: "8px 12px",
+                                        borderRadius: "6px",
+                                        background: "transparent",
+                                        color: "#fff",
+                                        border: "none",
+                                        cursor: "pointer",
+                                        textAlign: "left",
+                                        fontSize: "0.85rem",
+                                        display: "flex",
+                                        alignItems: "center",
+                                        gap: "8px",
+                                        transition: "background 0.2s",
                                     }}
-                                    onMouseOver={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.1)'}
-                                    onMouseOut={(e) => e.currentTarget.style.background = 'transparent'}
+                                    onMouseOver={(e) =>
+                                        (e.currentTarget.style.background = "rgba(255,255,255,0.1)")
+                                    }
+                                    onMouseOut={(e) =>
+                                        (e.currentTarget.style.background = "transparent")
+                                    }
                                 >
                                     <BsRecordCircle size={14} color="#e53935" /> Record Only
                                 </button>
                                 <button
                                     onClick={() => handleStartRecording(true)}
                                     style={{
-                                        padding: '8px 12px',
-                                        borderRadius: '6px',
-                                        background: 'transparent',
-                                        color: '#fff',
-                                        border: 'none',
-                                        cursor: 'pointer',
-                                        textAlign: 'left',
-                                        fontSize: '0.85rem',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        gap: '8px',
-                                        transition: 'background 0.2s'
+                                        padding: "8px 12px",
+                                        borderRadius: "6px",
+                                        background: "transparent",
+                                        color: "#fff",
+                                        border: "none",
+                                        cursor: "pointer",
+                                        textAlign: "left",
+                                        fontSize: "0.85rem",
+                                        display: "flex",
+                                        alignItems: "center",
+                                        gap: "8px",
+                                        transition: "background 0.2s",
                                     }}
-                                    onMouseOver={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.1)'}
-                                    onMouseOut={(e) => e.currentTarget.style.background = 'transparent'}
+                                    onMouseOver={(e) =>
+                                        (e.currentTarget.style.background = "rgba(255,255,255,0.1)")
+                                    }
+                                    onMouseOut={(e) =>
+                                        (e.currentTarget.style.background = "transparent")
+                                    }
                                 >
-                                    <BsFileText size={14} color="#2196F3" /> Record with Transcription
+                                    <BsFileText size={14} color="#2196F3" /> Record with
+                                    Transcription
                                 </button>
                             </div>
                         )}
 
                         {/* 🔘 Start / Stop - Same Button */}
                         <button
-                            onClick={!isRecording ? () => setShowRecordMenu(!showRecordMenu) : handleStopRecording}
-                            title={!isRecording ? "Choose Recording Option" : "Stop Recording"}
+                            onClick={
+                                !isRecording
+                                    ? () => setShowRecordMenu(!showRecordMenu)
+                                    : handleStopRecording
+                            }
+                            title={
+                                !isRecording ? "Choose Recording Option" : "Stop Recording"
+                            }
                             style={{
-                                width: 38, height: 38, borderRadius: '6px',
-                                background: !isRecording ? 'transparent' : 'rgba(229, 57, 53, 0.2)',
-                                color: '#e53935', border: 'none', display: 'flex',
-                                alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
-                                transition: 'all 0.2s', fontSize: '1.2rem',
-                                animation: (isRecording && !isPaused) ? 'pulse 1.5s infinite' : 'none'
+                                width: 38,
+                                height: 38,
+                                borderRadius: "6px",
+                                background: !isRecording
+                                    ? "transparent"
+                                    : "rgba(229, 57, 53, 0.2)",
+                                color: "#e53935",
+                                border: "none",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                cursor: "pointer",
+                                transition: "all 0.2s",
+                                fontSize: "1.2rem",
+                                animation:
+                                    isRecording && !isPaused ? "pulse 1.5s infinite" : "none",
                             }}
-                            onMouseOver={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.1)'}
-                            onMouseOut={(e) => e.currentTarget.style.background = !isRecording ? 'transparent' : 'rgba(229, 57, 53, 0.2)'}
+                            onMouseOver={(e) =>
+                                (e.currentTarget.style.background = "rgba(255,255,255,0.1)")
+                            }
+                            onMouseOut={(e) =>
+                            (e.currentTarget.style.background = !isRecording
+                                ? "transparent"
+                                : "rgba(229, 57, 53, 0.2)")
+                            }
                         >
                             {!isRecording ? <BsRecordCircle /> : <BsStopCircle />}
                         </button>
@@ -1821,17 +2338,30 @@ function RoomContent() {
                         {/* ⏸ Pause / Resume - Same Icon */}
                         {isRecording && (
                             <button
-                                onClick={isPaused ? handleResumeRecording : handlePauseRecording}
+                                onClick={
+                                    isPaused ? handleResumeRecording : handlePauseRecording
+                                }
                                 title={isPaused ? "Resume Recording" : "Pause Recording"}
                                 style={{
-                                    width: 38, height: 38, borderRadius: '6px',
-                                    background: 'transparent',
-                                    color: isPaused ? '#ffca28' : '#fff', border: 'none', display: 'flex',
-                                    alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
-                                    transition: 'all 0.2s', fontSize: '1.1rem'
+                                    width: 38,
+                                    height: 38,
+                                    borderRadius: "6px",
+                                    background: "transparent",
+                                    color: isPaused ? "#ffca28" : "#fff",
+                                    border: "none",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    cursor: "pointer",
+                                    transition: "all 0.2s",
+                                    fontSize: "1.1rem",
                                 }}
-                                onMouseOver={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.1)'}
-                                onMouseOut={(e) => e.currentTarget.style.background = 'transparent'}
+                                onMouseOver={(e) =>
+                                    (e.currentTarget.style.background = "rgba(255,255,255,0.1)")
+                                }
+                                onMouseOut={(e) =>
+                                    (e.currentTarget.style.background = "transparent")
+                                }
                             >
                                 {isPaused ? <BsPlayCircle /> : <BsPauseCircle />}
                             </button>
@@ -1843,14 +2373,25 @@ function RoomContent() {
                                 onClick={handleSaveRecording}
                                 title="Save Recording"
                                 style={{
-                                    width: 38, height: 38, borderRadius: '6px',
-                                    background: 'transparent',
-                                    color: '#4CAF50', border: 'none', display: 'flex',
-                                    alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
-                                    transition: 'all 0.2s', fontSize: '1.1rem'
+                                    width: 38,
+                                    height: 38,
+                                    borderRadius: "6px",
+                                    background: "transparent",
+                                    color: "#4CAF50",
+                                    border: "none",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    cursor: "pointer",
+                                    transition: "all 0.2s",
+                                    fontSize: "1.1rem",
                                 }}
-                                onMouseOver={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.1)'}
-                                onMouseOut={(e) => e.currentTarget.style.background = 'transparent'}
+                                onMouseOver={(e) =>
+                                    (e.currentTarget.style.background = "rgba(255,255,255,0.1)")
+                                }
+                                onMouseOut={(e) =>
+                                    (e.currentTarget.style.background = "transparent")
+                                }
                             >
                                 <BsCloudUpload />
                             </button>
@@ -1871,7 +2412,6 @@ function RoomContent() {
                 }
             `}</style>
 
-
             {/* 🎥 Full screen Teacher Video renders here when active */}
             <StudentOnlyUI
                 participants={participants}
@@ -1880,22 +2420,25 @@ function RoomContent() {
                 doubtsWithAnswers={doubtsWithAnswers}
                 isHandRaised={isHandRaised}
                 onToggleHand={() => setIsHandRaised(!isHandRaised)}
-                activeQuiz={role === 'student' ? activeQuiz : null}
+                activeQuiz={role === "student" ? activeQuiz : null}
                 onQuizSubmit={handleQuizSubmit}
                 onCloseQuiz={() => {
                     setActiveQuiz(null);
                     const exitFS = () => {
-                        if (document.exitFullscreen) document.exitFullscreen().catch(() => { });
-                        else if (document.webkitExitFullscreen) document.webkitExitFullscreen().catch(() => { });
-                        else if (document.msExitFullscreen) document.msExitFullscreen().catch(() => { });
+                        if (document.exitFullscreen)
+                            document.exitFullscreen().catch(() => { });
+                        else if (document.webkitExitFullscreen)
+                            document.webkitExitFullscreen().catch(() => { });
+                        else if (document.msExitFullscreen)
+                            document.msExitFullscreen().catch(() => { });
                     };
                     exitFS();
                 }}
-                quizStarting={role === 'student' ? quizStarting : false}
+                quizStarting={role === "student" ? quizStarting : false}
             />
 
             {/* 📜 Dedicated History Sidebar (Teacher Only) - Now on FAR RIGHT */}
-            {role === 'teacher' && showHistory && (
+            {role === "teacher" && showHistory && (
                 <HistorySidebar
                     doubtsWithAnswers={doubtsWithAnswers}
                     right={0}
@@ -1904,7 +2447,7 @@ function RoomContent() {
             )}
 
             {/* 🤖 Centralized AI Sidebar (Teacher Only) - Shifting left if History is open */}
-            {role === 'teacher' && showAI && (
+            {role === "teacher" && showAI && (
                 <AISidebar
                     role={role}
                     doubts={doubts}
@@ -1912,9 +2455,9 @@ function RoomContent() {
                     onAskAI={askAI}
                     onSendToStudent={sendToStudent}
                     onStopAudio={stopAIAudio}
-                    onEditStart={handleEditStart}     // ✅ EDIT -> freeze
-                    onSaveDoubt={handleSaveDoubt}     // ✅ SAVE -> 5 sec auto
-                    onUpdateDoubt={updateDoubtText}   // backup
+                    onEditStart={handleEditStart} // ✅ EDIT -> freeze
+                    onSaveDoubt={handleSaveDoubt} // ✅ SAVE -> 5 sec auto
+                    onUpdateDoubt={updateDoubtText} // backup
                     onResolve={resolveDoubt}
                     onClose={() => setShowAI(false)}
                     right={showHistory ? 380 : 0}
@@ -1922,67 +2465,93 @@ function RoomContent() {
             )}
 
             {/* 📋 Attendance Sidebar (Teacher Only) */}
-            {role === 'teacher' && showAttendance && (
+            {role === "teacher" && showAttendance && (
                 <AttendanceSidebar
                     attendance={attendance}
                     doubtsWithAnswers={doubtsWithAnswers}
                     classSummary={classSummary}
                     topic={meetingTopic}
                     onClose={() => setShowAttendance(false)}
-                    right={(showHistory || showAI) ? 380 : 0}
+                    right={showHistory || showAI ? 380 : 0}
                 />
             )}
 
             {/* 📊 Quiz Results Sidebar (Teacher Only) */}
-            {role === 'teacher' && showQuizResults && activeQuiz && (
+            {role === "teacher" && showQuizResults && activeQuiz && (
                 <QuizSidebar
                     quizId={activeQuiz.id || activeQuiz.quizId}
                     topic={activeQuiz.topic}
                     onClose={() => setShowQuizResults(false)}
-                    right={(showHistory || showAI || showAttendance) ? 380 : 0}
+                    right={showHistory || showAI || showAttendance ? 380 : 0}
                 />
             )}
 
-            {role === 'teacher' && teacherClassStarted ? (
+            {role === "teacher" && teacherClassStarted ? (
                 <>
-                    <div style={{
-                        display: 'flex',
-                        width: '100%',
-                        height: '90vh', // 90% height to leave room for bottom controls
-                        position: 'relative'
-                    }}>
-                        {/* 🔹 Left Panel (80%) - Video container is handled by TeacherVideoController, 
-                         but we ensure the space is allocated here. 
+                    <div
+                        style={{
+                            display: "flex",
+                            width: "100%",
+                            height: "90vh", // 90% height to leave room for bottom controls
+                            position: "relative",
+                        }}
+                    >
+                        {/* 🔹 Left Panel (80%) - Video container is handled by TeacherVideoController,
+                         but we ensure the space is allocated here.
                          Actually, TeacherVideoController renders its own fixed/absolute video.
                          We'll make it 80% in its own file. Here we just render the sidebar. */}
-                        <div style={{ width: '80%', height: '100%' }} />
+                        <div style={{ width: "80%", height: "100%" }} />
 
                         {/* 🔹 Right Panel (20%) - Student videos */}
-                        <div style={{
-                            width: '20%',
-                            height: '100%',
-                            background: 'rgba(0,0,0,0.4)',
-                            borderLeft: '1px solid rgba(255,255,255,0.1)',
-                            overflowY: 'auto',
-                            padding: '10px',
-                            display: 'flex',
-                            flexDirection: 'column',
-                            gap: '10px',
-                            padding: '20px'
-                        }}>
+                        <div
+                            style={{
+                                width: "20%",
+                                height: "100%",
+                                background: "rgba(0,0,0,0.4)",
+                                borderLeft: "1px solid rgba(255,255,255,0.1)",
+                                overflowY: "auto",
+                                padding: "10px",
+                                display: "flex",
+                                flexDirection: "column",
+                                gap: "10px",
+                                padding: "20px",
+                            }}
+                        >
                             {/* 🔹 Explicit Track Mapping for Students to avoid TrackRef context errors */}
                             <StudentVideoThumbs
-                                participants={participants.filter(p => {
+                                participants={participants.filter((p) => {
                                     try {
-                                        return JSON.parse(p.metadata || '{}').role !== 'teacher';
-                                    } catch { return true; }
+                                        return JSON.parse(p.metadata || "{}").role !== "teacher";
+                                    } catch {
+                                        return true;
+                                    }
                                 })}
                             />
                         </div>
                     </div>
                     {/* 🎛 Restoring bottom control bar for teacher layout */}
-                    <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, height: '10vh', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
-                        <ControlBar controls={{ microphone: true, camera: true, screenShare: true, chat: false, leave: false }} />
+                    <div
+                        style={{
+                            position: "fixed",
+                            bottom: 0,
+                            left: 0,
+                            right: 0,
+                            height: "10vh",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            zIndex: 1000,
+                        }}
+                    >
+                        <ControlBar
+                            controls={{
+                                microphone: true,
+                                camera: true,
+                                screenShare: true,
+                                chat: false,
+                                leave: false,
+                            }}
+                        />
                     </div>
                 </>
             ) : (
@@ -2000,13 +2569,12 @@ function RoomContent() {
                 onShowDoubts={() => setShowAI(!showAI)}
                 onShowHistory={() => setShowHistory(!showHistory)}
                 onShowAttendance={() => setShowAttendance(!showAttendance)}
-                onShowQuiz={() => setShowQuizResults(prev => !prev)}
+                onShowQuiz={() => setShowQuizResults((prev) => !prev)}
                 onGenerateQuiz={handleGenerateQuiz}
                 onShowParticipants={() => setShowParticipants(!showParticipants)}
                 showParticipants={showParticipants}
                 recordingAudioContext={recordingAudioContext}
                 recordingDestNode={recordingDestNode}
-
                 onEndMeeting={handleEndMeeting}
                 onLeaveMeeting={handleLeaveMeeting}
                 waitingStudents={waitingStudents}
@@ -2032,15 +2600,23 @@ function StudentVideoThumbs({ participants }) {
     );
 
     // Filter tracks to only include those from the provided student participants
-    const studentIdentities = new Set(participants.map(p => p.identity));
-    const studentTracks = tracks.filter(tr => studentIdentities.has(tr.participant.identity));
+    const studentIdentities = new Set(participants.map((p) => p.identity));
+    const studentTracks = tracks.filter((tr) =>
+        studentIdentities.has(tr.participant.identity),
+    );
 
     return (
         <>
             {studentTracks.map((trackRef) => (
                 <div
                     key={`${trackRef.participant.identity}_${trackRef.source}`}
-                    style={{ height: '150px', minHeight: '150px', position: 'relative', borderRadius: '8px', overflow: 'hidden' }}
+                    style={{
+                        height: "150px",
+                        minHeight: "150px",
+                        position: "relative",
+                        borderRadius: "8px",
+                        overflow: "hidden",
+                    }}
                 >
                     <TrackRefContext.Provider value={trackRef}>
                         <ParticipantTile />
@@ -2051,7 +2627,6 @@ function StudentVideoThumbs({ participants }) {
     );
 }
 
-
 /* 🔊 COMPONENT: Handles sequential audio so it doesn't re-trigger on every render of RoomContent */
 function HandRaiseAudioNotifier({ queue, role }) {
     const notifiedIdentities = useRef(new Set());
@@ -2059,7 +2634,7 @@ function HandRaiseAudioNotifier({ queue, role }) {
     const hasSpokenBatchMsg = useRef(false);
 
     useEffect(() => {
-        if (role !== 'teacher') return;
+        if (role !== "teacher") return;
 
         // If queue is empty, we don't clear the 'notified' set immediately
         // to prevent repeats if someone spam clicks. We only clear it if the queue stays empty
@@ -2081,7 +2656,9 @@ function HandRaiseAudioNotifier({ queue, role }) {
         // ⭐ Special Case: 5+ Students (Batch Announcement)
         if (queue.length >= 5 && !hasSpokenBatchMsg.current) {
             hasSpokenBatchMsg.current = true;
-            speakText("As several students have raised doubts, I will now conclude the session and proceed to clarify each of your questions.").catch(err => console.error('TTS Error:', err));
+            speakText(
+                "As several students have raised doubts, I will now conclude the session and proceed to clarify each of your questions.",
+            ).catch((err) => console.error("TTS Error:", err));
             return;
         }
 
@@ -2095,7 +2672,9 @@ function HandRaiseAudioNotifier({ queue, role }) {
 
                 // Small delay to ensure previous audio (like a greeting) finished
                 setTimeout(() => {
-                    speakText(`${currentLead}, you raised your hand. Do you have any doubts? If so, please click the ‘Ask a Doubt’ button to submit your question.`).catch(err => console.error('TTS Error:', err));
+                    speakText(
+                        `${currentLead}, you raised your hand. Do you have any doubts? If so, please click the ‘Ask a Doubt’ button to submit your question.`,
+                    ).catch((err) => console.error("TTS Error:", err));
                 }, 2000);
             }
         }
@@ -2104,6 +2683,75 @@ function HandRaiseAudioNotifier({ queue, role }) {
     return null;
 }
 
+/* ---------------- KRISP NOISE FILTER ACTIVATOR ---------------- */
+function NoiseFilterActivator() {
+    const { localParticipant } = useLocalParticipant();
+    const filterRef = useRef(null);
+
+    useEffect(() => {
+        let cancelled = false;
+
+        async function applyFilter() {
+            // Dynamic import to avoid SSR "Worker is not defined" error
+            const { KrispNoiseFilter, isKrispNoiseFilterSupported } = await import(
+                "@livekit/krisp-noise-filter"
+            );
+
+            if (!isKrispNoiseFilterSupported()) {
+                console.warn("[KrispNoiseFilter] Not supported in this browser.");
+                return;
+            }
+
+            if (cancelled) return;
+
+            // Wait for the microphone track to become available
+            const getMicTrack = () => {
+                const pub = localParticipant?.getTrackPublication(
+                    Track.Source.Microphone
+                );
+                return pub?.track ?? null;
+            };
+
+            let micTrack = getMicTrack();
+            if (!micTrack) {
+                // Retry up to 5s until track is published
+                for (let i = 0; i < 50; i++) {
+                    await new Promise((r) => setTimeout(r, 100));
+                    if (cancelled) return;
+                    micTrack = getMicTrack();
+                    if (micTrack) break;
+                }
+            }
+
+            if (!micTrack || cancelled) return;
+
+            try {
+                const filter = KrispNoiseFilter();
+                filterRef.current = filter;
+                await micTrack.setProcessor(filter);
+                console.log("✅ [KrispNoiseFilter] Noise cancellation active.");
+            } catch (err) {
+                console.error("[KrispNoiseFilter] Failed to apply:", err);
+            }
+        }
+
+        applyFilter();
+
+        return () => {
+            cancelled = true;
+            const mic = localParticipant?.getTrackPublication(
+                Track.Source.Microphone
+            )?.track;
+            if (mic && filterRef.current) {
+                mic.stopProcessor().catch(() => { });
+                filterRef.current = null;
+                console.log("🔇 [KrispNoiseFilter] Noise cancellation removed.");
+            }
+        };
+    }, [localParticipant]);
+
+    return null;
+}
 
 /* ---------------- PAGE CLIENT ---------------- */
 export function PageClientImpl({ token, url }) {
@@ -2111,7 +2759,8 @@ export function PageClientImpl({ token, url }) {
 
     useEffect(() => setMounted(true), []);
 
-    if (!mounted) return <p style={{ color: 'white', padding: 20 }}>Joining room…</p>;
+    if (!mounted)
+        return <p style={{ color: "white", padding: 20 }}>Joining room…</p>;
 
     return (
         <LiveKitRoom
@@ -2126,12 +2775,13 @@ export function PageClientImpl({ token, url }) {
                 autoGainControl: true,
             }}
             data-lk-theme="default"
-            style={{ height: '100vh', position: 'relative', background: '#000' }}
+            style={{ height: "100vh", position: "relative", background: "#000" }}
             onError={(error) => {
-                console.error('LiveKit Room Error:', error);
+                console.error("LiveKit Room Error:", error);
                 alert(`Connection Error: ${error.message}`);
             }}
         >
+            <NoiseFilterActivator />
             <RoomAudioRenderer />
             <RoomContent />
         </LiveKitRoom>
