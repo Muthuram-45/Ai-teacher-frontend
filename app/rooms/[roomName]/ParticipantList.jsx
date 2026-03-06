@@ -80,7 +80,7 @@ export default function ParticipantList({ onClose }) {
                                 </div>
                                 <div style={{ fontSize: '0.75rem', color: '#888', marginTop: '2px' }}>{role}</div>
                             </div>
-			    <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                            <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
                                 <div title={isMicOn ? "Microphone On" : "Microphone Off"} style={{ color: isMicOn ? '#4CAF50' : '#f44336', display: 'flex' }}>
                                     {isMicOn ? <FaMicrophone size={16} /> : <FaMicrophoneSlash size={16} />}
                                 </div>

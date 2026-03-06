@@ -191,17 +191,20 @@ export default function Home() {
           {/* Right card */}
           <section className="rightCard">
             <div className="cardInner">
-              {/* Only one tab now */}
               <div className="tabs tabsSingle">
-                <h1 style={{ textAlign: 'center', color: '#2563eb' }}>
+                <h1 style={{ textAlign: 'center', color: 'var(--blue)', marginBottom: '10px' }}>
                   Generate Meeting
                 </h1>
+                <p style={{ textAlign: 'center', color: 'var(--muted)', fontSize: '14px', marginBottom: '24px' }}>
+                  Teacher Portal<br />
+                  <span style={{ fontSize: '12px' }}>Enter your credentials to manage sessions</span>
+                </p>
               </div>
 
               <form onSubmit={handleLogin} className="authForm authFormTight">
                 <input
                   type="text"
-                  placeholder="Teacher Name "
+                  placeholder="Display Name (e.g. Dr. Smith)"
                   value={teacherName}
                   onChange={(e) => setTeacherName(e.target.value)}
                   className="input inputBig"
@@ -224,10 +227,8 @@ export default function Home() {
                 />
 
                 <button type="submit" className="ctaBtn">
-                  Create Meeting <span className="arrow"></span>
+                  Get Started <span className="arrow"></span>
                 </button>
-
-                {/* <p className="hintLine">Use your teacher credentials to proceed</p> */}
               </form>
             </div>
           </section>
@@ -241,7 +242,10 @@ export default function Home() {
     <div className="dashPage">
       <div className="dashWrap">
         <header className="dashHeader">
-          <h1 className="dashTitle">Teacher Dashboard</h1>
+          <div className="brand" style={{ cursor: 'pointer' }} onClick={() => router.push('/')}>
+            <div className="brandIcon" aria-hidden />
+            <span className="brandName">Teacher Dashboard</span>
+          </div>
           <button onClick={logout} className="ghostBtn" type="button">
             Logout
           </button>
@@ -250,14 +254,16 @@ export default function Home() {
         <div className="panel">
           {!createdRoom ? (
             <>
-              <h2 className="panelTitle">Create a New Meeting</h2>
+              <h2 className="panelTitle" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ color: 'var(--blue)', fontSize: '24px' }}>+</span> Create a New Session
+              </h2>
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', marginTop: '20px' }}>
                 <div className="inputGroup">
                   <label className="inputLabel">Class Name</label>
                   <div className="inputWrapper">
                     <input
-                      placeholder="Eg: Python "
+                      placeholder="Eg: Python"
                       value={className}
                       onChange={(e) => setClassName(e.target.value)}
                       className="inputTight"
@@ -269,7 +275,7 @@ export default function Home() {
                   <label className="inputLabel">Topic Name</label>
                   <div className="inputWrapper">
                     <input
-                      placeholder="Introduction to python "
+                      placeholder="Introduction to python"
                       value={topic}
                       onChange={(e) => setTopic(e.target.value)}
                       className="inputTight"
@@ -284,7 +290,7 @@ export default function Home() {
                       value={selectedVoice}
                       onChange={handleVoiceChange}
                       className="inputTight"
-                      style={{ outline: 'none', cursor: 'pointer' }}
+          
                     >
                       {availableVoices.length > 0 ? (
                         availableVoices.map(v => (
@@ -296,39 +302,53 @@ export default function Home() {
                         <option value="reference_voice.wav">Default Voice</option>
                       )}
                     </select>
+                   
                   </div>
                 </div>
 
-                <button onClick={createMeeting} className="successBtn" type="button">
-                  Create
+                <button onClick={createMeeting} className="successBtn" type="button" style={{ height: '52px', marginTop: '10px' }}>
+                  Create Session
                 </button>
               </div>
             </>
           ) : (
             <div className="stack">
-              <div className="shareBox">
-                <div className="shareHint">Share this link with students:</div>
+              <div className="shareBox" style={{ background: 'rgba(30, 41, 59, 0.3)', border: '1px solid var(--border)' }}>
+                <div className="shareHint" style={{ color: 'var(--muted)', fontWeight: '500' }}>Student Invite Link</div>
 
-                <div className="shareRow">
-                  <code className="shareCode">{`${window.location.origin}/join/${createdRoom}`}</code>
+                <div className="shareRow" style={{ background: '#050814', border: '1px solid var(--border)', padding: '16px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1, overflow: 'hidden' }}>
+                    <span style={{ color: 'var(--blue)', fontSize: '18px' }}>🌐</span>
+                    <code className="shareCode" style={{ color: 'var(--blue-light)', fontSize: '14px' }}>{`${window.location.origin}/join/${createdRoom}`}</code>
+                  </div>
 
-                  <button onClick={onCopyLink} className="linkBtn" type="button">
-                    Copy Link
+                  <button onClick={onCopyLink} className="linkBtn" type="button" style={{
+                    background: 'var(--blue)',
+                    color: 'white',
+                    border: 'none',
+                    padding: '8px 20px',
+                    borderRadius: '8px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px'
+                  }}>
+                    <span>📋</span> Copy
                   </button>
                 </div>
               </div>
 
-              <div className="row">
+              <div className="row" style={{ gap: '16px' }}>
                 <button
                   onClick={startMeeting}
                   className="primaryBtn primaryBtnXL"
                   type="button"
                   disabled={loading}
+                  style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}
                 >
-                  {loading ? 'Starting...' : 'Start Meeting Now'}
+                  {loading ? 'Starting...' : <><span>📹</span> Launch Meeting</>}
                 </button>
 
-                <button onClick={() => setCreatedRoom(null)} className="outlineBtn" type="button">
+                <button onClick={() => setCreatedRoom(null)} className="outlineBtn" type="button" style={{ background: 'transparent', color: 'var(--muted)', fontWeight: '600' }}>
                   Cancel
                 </button>
               </div>
@@ -336,7 +356,7 @@ export default function Home() {
           )}
         </div>
       </div>
-    </div >
+    </div>
   );
 }
 

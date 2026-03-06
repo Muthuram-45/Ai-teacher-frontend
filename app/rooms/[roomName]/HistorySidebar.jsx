@@ -1,5 +1,5 @@
 'use client';
-import { FaEnvelopeOpenText } from "react-icons/fa"; 
+import { FaEnvelopeOpenText } from "react-icons/fa";
 
 export default function HistorySidebar({ doubtsWithAnswers = [], right = 0, onClose }) {
     if (doubtsWithAnswers.length === 0) return null;
