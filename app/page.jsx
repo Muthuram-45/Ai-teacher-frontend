@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import '../styles/page.css';
+import { TbBrandZoom } from "react-icons/tb";
+import { MdContentCopy } from "react-icons/md";
 
 export default function Home() {
   const router = useRouter();
@@ -169,7 +171,7 @@ export default function Home() {
         {/* Top bar */}
         <header className="topbar">
           <div className="brand">
-            <div className="brandIcon" aria-hidden />
+            <TbBrandZoom className="brandIcon" aria-hidden />
             <span className="brandName">SkyMeet</span>
           </div>
         </header>
@@ -195,16 +197,16 @@ export default function Home() {
                 <h1 style={{ textAlign: 'center', color: 'var(--blue)', marginBottom: '10px' }}>
                   Generate Meeting
                 </h1>
-                <p style={{ textAlign: 'center', color: 'var(--muted)', fontSize: '14px', marginBottom: '24px' }}>
+                {/* <p style={{ textAlign: 'center', color: 'var(--muted)', fontSize: '14px', marginBottom: '24px' }}>
                   Teacher Portal<br />
                   <span style={{ fontSize: '12px' }}>Enter your credentials to manage sessions</span>
-                </p>
+                </p> */}
               </div>
 
               <form onSubmit={handleLogin} className="authForm authFormTight">
                 <input
                   type="text"
-                  placeholder="Display Name (e.g. Dr. Smith)"
+                  placeholder="Name"
                   value={teacherName}
                   onChange={(e) => setTeacherName(e.target.value)}
                   className="input inputBig"
@@ -227,7 +229,7 @@ export default function Home() {
                 />
 
                 <button type="submit" className="ctaBtn">
-                  Get Started <span className="arrow"></span>
+                  Login <span className="arrow"></span>
                 </button>
               </form>
             </div>
@@ -243,7 +245,7 @@ export default function Home() {
       <div className="dashWrap">
         <header className="dashHeader">
           <div className="brand" style={{ cursor: 'pointer' }} onClick={() => router.push('/')}>
-            <div className="brandIcon" aria-hidden />
+            <TbBrandZoom className="brandIcon" aria-hidden />
             <span className="brandName">Teacher Dashboard</span>
           </div>
           <button onClick={logout} className="ghostBtn" type="button">
@@ -254,7 +256,7 @@ export default function Home() {
         <div className="panel">
           {!createdRoom ? (
             <>
-              <h2 className="panelTitle" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <h2 className="panelTitle" style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#fff' }}>
                 <span style={{ color: 'var(--blue)', fontSize: '24px' }}>+</span> Create a New Session
               </h2>
 
@@ -290,7 +292,7 @@ export default function Home() {
                       value={selectedVoice}
                       onChange={handleVoiceChange}
                       className="inputTight"
-          
+
                     >
                       {availableVoices.length > 0 ? (
                         availableVoices.map(v => (
@@ -302,11 +304,11 @@ export default function Home() {
                         <option value="reference_voice.wav">Default Voice</option>
                       )}
                     </select>
-                   
+
                   </div>
                 </div>
 
-                <button onClick={createMeeting} className="successBtn" type="button" style={{ height: '52px', marginTop: '10px' }}>
+                <button onClick={createMeeting} className="successBtn" type="button" style={{ height: '52px', marginTop: '10px', background: '#4f46e5' }}>
                   Create Session
                 </button>
               </div>
@@ -332,7 +334,7 @@ export default function Home() {
                     alignItems: 'center',
                     gap: '8px'
                   }}>
-                    <span>📋</span> Copy
+                    <MdContentCopy />
                   </button>
                 </div>
               </div>
@@ -343,9 +345,9 @@ export default function Home() {
                   className="primaryBtn primaryBtnXL"
                   type="button"
                   disabled={loading}
-                  style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}
+                  style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px',background: '#4f46e5' }}
                 >
-                  {loading ? 'Starting...' : <><span>📹</span> Launch Meeting</>}
+                  {loading ? 'Starting...' : <> Launch Meeting</>}
                 </button>
 
                 <button onClick={() => setCreatedRoom(null)} className="outlineBtn" type="button" style={{ background: 'transparent', color: 'var(--muted)', fontWeight: '600' }}>

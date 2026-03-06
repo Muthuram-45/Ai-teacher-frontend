@@ -176,109 +176,102 @@ function WaitingRoom({ waitingStudents, onAdmit, onReject }) {
         <div
             style={{
                 position: "absolute",
-                top: 20,
-                right: 20,
-                width: 300,
-                background: "rgba(15, 23, 42, 0.95)",
-                backdropFilter: "blur(10px)",
-                border: "1px solid rgba(33, 150, 243, 0.4)",
-                borderRadius: "16px",
-                padding: "20px",
-                color: "#fff",
+                top: 24,
+                right: 24,
                 zIndex: 10000,
-                boxShadow: "0 20px 50px rgba(0,0,0,0.5)",
-                animation: "slideInRight 0.4s ease",
+                display: "flex",
+                flexDirection: "column",
+                gap: "12px",
+                pointerEvents: "none",
             }}
         >
-            <h4
-                style={{
-                    margin: "0 0 15px",
-                    color: "#2196F3",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "8px",
-                }}
-            >
-                <span
+            {waitingStudents.map((s) => (
+                <div
+                    key={s.id}
                     style={{
-                        display: "inline-block",
-                        width: "8px",
-                        height: "8px",
-                        background: "#2196F3",
-                        borderRadius: "50%",
+                        background: "rgba(15, 23, 42, 0.92)",
+                        backdropFilter: "blur(12px)",
+                        border: "1px solid rgba(255, 255, 255, 0.15)",
+                        borderRadius: "14px",
+                        padding: "14px 20px",
+                        color: "#fff",
+                        boxShadow: "0 12px 40px rgba(0,0,0,0.5)",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "24px",
+                        animation: "slideInVertical 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275)",
+                        pointerEvents: "auto",
+                        minWidth: "340px",
                     }}
-                ></span>
-                Waiting Room ({waitingStudents.length})
-            </h4>
-            <div
-                style={{
-                    maxHeight: "250px",
-                    overflowY: "auto",
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: "10px",
-                }}
-            >
-                {waitingStudents.map((s) => (
+                >
                     <div
-                        key={s.id}
                         style={{
-                            background: "rgba(255,255,255,0.05)",
-                            padding: "12px",
-                            borderRadius: "10px",
-                            border: "1px solid rgba(255,255,255,0.1)",
+                            flex: 1,
+                            fontWeight: "600",
+                            fontSize: "15px",
+                            fontFamily: "Inter, sans-serif",
+                            letterSpacing: "-0.2px",
                         }}
                     >
-                        <div
+                        {s.name}
+                    </div>
+                    <div style={{ display: "flex", gap: "10px" }}>
+                        <button
+                            onClick={() => onAdmit(s.id)}
                             style={{
-                                fontWeight: "600",
-                                marginBottom: "10px",
+                                padding: "8px 18px",
+                                background: "#2196F3",
+                                border: "none",
+                                color: "#fff",
+                                borderRadius: "10px",
+                                cursor: "pointer",
                                 fontSize: "14px",
+                                fontWeight: "700",
+                                transition: "all 0.2s ease",
+                                boxShadow: "0 4px 12px rgba(33, 150, 243, 0.3)",
+                            }}
+                            onMouseOver={(e) => {
+                                e.currentTarget.style.background = "#1E88E5";
+                                e.currentTarget.style.transform = "translateY(-1px)";
+                            }}
+                            onMouseOut={(e) => {
+                                e.currentTarget.style.background = "#2196F3";
+                                e.currentTarget.style.transform = "translateY(0)";
                             }}
                         >
-                            {s.name}
-                        </div>
-                        <div style={{ display: "flex", gap: "8px" }}>
-                            <button
-                                onClick={() => onAdmit(s.id)}
-                                style={{
-                                    flex: 1,
-                                    padding: "6px",
-                                    background: "#2196F3",
-                                    border: "none",
-                                    color: "#fff",
-                                    borderRadius: "6px",
-                                    cursor: "pointer",
-                                    fontSize: "12px",
-                                    fontWeight: "600",
-                                }}
-                            >
-                                Admit
-                            </button>
-                            <button
-                                onClick={() => onReject(s.id)}
-                                style={{
-                                    flex: 1,
-                                    padding: "6px",
-                                    background: "rgba(244, 67, 54, 0.1)",
-                                    border: "1px solid rgba(244, 67, 54, 0.3)",
-                                    color: "#f44336",
-                                    borderRadius: "6px",
-                                    cursor: "pointer",
-                                    fontSize: "12px",
-                                    fontWeight: "600",
-                                }}
-                            >
-                                Decline
-                            </button>
-                        </div>
+                            Admit
+                        </button>
+                        <button
+                            onClick={() => onReject(s.id)}
+                            style={{
+                                padding: "8px 18px",
+                                background: "rgba(255, 255, 255, 0.08)",
+                                border: "1px solid rgba(255, 255, 255, 0.1)",
+                                color: "#fff",
+                                borderRadius: "10px",
+                                cursor: "pointer",
+                                fontSize: "14px",
+                                fontWeight: "600",
+                                transition: "all 0.2s ease",
+                            }}
+                            onMouseOver={(e) => {
+                                e.currentTarget.style.background = "rgba(255, 255, 255, 0.12)";
+                                e.currentTarget.style.transform = "translateY(-1px)";
+                            }}
+                            onMouseOut={(e) => {
+                                e.currentTarget.style.background = "rgba(255, 255, 255, 0.08)";
+                                e.currentTarget.style.transform = "translateY(0)";
+                            }}
+                        >
+                            Decline
+                        </button>
                     </div>
-                ))}
-            </div>
+                </div>
+            ))}
             <style>{`
-                @keyframes slideInRight {
-                    from { opacity: 0; transform: translateX(30px); }
-                    to { opacity: 1; transform: translateX(0); }
+                @keyframes slideInVertical {
+                    from { opacity: 0; transform: translateY(-20px) scale(0.95); }
+                    to { opacity: 1; transform: translateY(0) scale(1); }
                 }
             `}</style>
         </div>
