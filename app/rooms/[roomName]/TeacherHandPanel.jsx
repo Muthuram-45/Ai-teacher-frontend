@@ -7,12 +7,12 @@ import { HiOutlineHandRaised, HiOutlineMicrophone } from "react-icons/hi2";
 export default function TeacherHandPanel() {
     const room = useRoomContext();
     const [hands, setHands] = useState([]);
-    const [visible, setVisible] = useState(false); // ✅ NEW
+    const [visible, setVisible] = useState(false);
 
     useEffect(() => {
         if (!room) return;
 
-        let hideTimer; // ✅ NEW
+        let hideTimer;
 
         const handleData = (payload) => {
             try {
@@ -47,7 +47,6 @@ export default function TeacherHandPanel() {
                     });
                     setVisible(true);
 
-                    // Enforce 15sec limit for mic popup as well
                     clearTimeout(hideTimer);
                     hideTimer = setTimeout(() => {
                         setVisible(false);
@@ -57,8 +56,7 @@ export default function TeacherHandPanel() {
 
                 if (msg.action === 'VOICE_DOUBT_END') {
                     setHands(prev => prev.filter(h => !(h.name === msg.name && h.type === 'mic')));
-                    // If no hands or mics left, hide after a short delay
-                    if (hands.length <= 1) { // Current hands state might be stale in closure, but filter will handle it
+                    if (hands.length <= 1) {
                         setTimeout(() => {
                             setHands(current => {
                                 if (current.length === 0) setVisible(false);
@@ -76,58 +74,76 @@ export default function TeacherHandPanel() {
             room.off('dataReceived', handleData);
             clearTimeout(hideTimer);
         };
-    }, [room]);
+    }, [room, hands.length]);
 
-    // ✅ hide completely when not needed
     if (!visible || hands.length === 0) return null;
 
     return (
         <div style={{
-            position: 'absolute',
+            position: 'fixed',
             top: 24,
-            right: 24,
-            zIndex: 2000,
+            left: '50%',
+            transform: 'translateX(-50%)',
+            zIndex: 10001,
             display: 'flex',
             flexDirection: 'column',
-            gap: '10px',
+            alignItems: 'center',
+            gap: '12px',
             pointerEvents: 'none'
         }}>
             {hands.map((h, i) => (
                 <div
                     key={i}
                     style={{
-                        background: h.type === 'mic' ? '#1a73e8' : '#1e8e3e',
-                        color: 'white',
-                        padding: '8px 16px',
-                        borderRadius: '24px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '12px',
-                        boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
-                        animation: 'handRaiseSlideInRight 0.4s cubic-bezier(0, 0, 0.2, 1)',
-                        fontSize: '14px',
-                        fontWeight: '500',
-                        fontFamily: 'Inter, sans-serif'
+                        background: "rgba(15, 23, 42, 0.92)",
+                        backdropFilter: "blur(12px)",
+                        border: "1px solid rgba(255, 255, 255, 0.15)",
+                        borderRadius: "14px",
+                        padding: "8px 24px",
+                        color: "#fff",
+                        boxShadow: "0 12px 40px rgba(0,0,0,0.5)",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "16px",
+                        animation: "toastSlideInVertical 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275)",
+                        pointerEvents: "auto",
+                        minWidth: "fit-content",
                     }}
                 >
-                    {h.type === 'mic' ? (
-                        <HiOutlineMicrophone size={18} style={{ color: 'white' }} />
-                    ) : (
-                        <HiOutlineHandRaised size={18} style={{ color: 'black' }} />
-                    )}
+                    <div style={{
+                        width: '36px',
+                        height: '36px',
+                        borderRadius: '10px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        background: h.type === 'mic' ? 'rgba(33, 150, 243, 0.2)' : 'rgba(76, 175, 80, 0.2)',
+                        color: h.type === 'mic' ? '#2196F3' : '#4CAF50'
+                    }}>
+                        {h.type === 'mic' ? (
+                            <HiOutlineMicrophone size={20} />
+                        ) : (
+                            <HiOutlineHandRaised size={20} />
+                        )}
+                    </div>
 
-                    <span style={{ color: h.type === 'mic' ? 'white' : 'black' }}>
-                        <b>{h.name}</b> &nbsp;{h.type === 'mic' ? 'is on the mic' : 'raised'}
-                    </span>
-
-                    <style>{`
-                        @keyframes handRaiseSlideInRight {
-                            from { transform: translateX(100%); opacity: 0; }
-                            to { transform: translateX(0); opacity: 1; }
-                        }
-                    `}</style>
+                    <div style={{
+                        fontSize: "15px",
+                        fontFamily: "Inter, sans-serif",
+                        fontWeight: "500",
+                        letterSpacing: "-0.2px",
+                    }}>
+                        <span style={{ fontWeight: "700" }}>{h.name}</span>
+                        {h.type === 'mic' ? "'s microphone is ON" : " raised hand"}
+                    </div>
                 </div>
             ))}
+            <style>{`
+                @keyframes toastSlideInVertical {
+                    from { opacity: 0; transform: translateY(-30px) scale(0.9); }
+                    to { opacity: 1; transform: translateY(0) scale(1); }
+                }
+            `}</style>
         </div>
     );
 }

@@ -5,8 +5,31 @@ import { DataPacket_Kind } from 'livekit-client';
 import { useRoomContext } from '@livekit/components-react';
 import { TeacherVideoPublisher } from './TeacherVideoPublisher';
 import { speakText } from '@/app/lib/aiTTS';
-import { MdUploadFile } from "react-icons/md";
-export default function TeacherVideoController({ recordingAudioContext, recordingDestNode, onGenerateQuiz, onClassStatusChange }) {
+import { MdUploadFile, MdOutlineCancel } from "react-icons/md";
+import { BsRecordCircle, BsStopCircle, BsFileText, BsPauseCircle, BsPlayCircle, BsCloudUpload } from "react-icons/bs";
+
+const formatTime = (totalSeconds) => {
+  const m = Math.floor(totalSeconds / 60);
+  const s = totalSeconds % 60;
+  return `${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
+};
+
+export default function TeacherVideoController({
+  recordingAudioContext,
+  recordingDestNode,
+  onGenerateQuiz,
+  onClassStatusChange,
+  isRecording,
+  isPaused,
+  showRecordMenu,
+  setShowRecordMenu,
+  handleStartRecording,
+  handleStopRecording,
+  handlePauseRecording,
+  handleResumeRecording,
+  handleSaveRecording,
+  recordingDuration
+}) {
   const room = useRoomContext();
 
   const videoRef = useRef(null);
@@ -422,98 +445,258 @@ export default function TeacherVideoController({ recordingAudioContext, recordin
       />
 
       {/* 🎥 Buttons Container */}
-      <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-        {videoURL && (
+      <div style={{ display: 'flex', gap: '8px', alignItems: 'center', justifyContent: 'flex-end', width: 'max-content' }}>
+
+        <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+          {/* 🎙 Recording Options Menu (Aligned with Record button) */}
+          {showRecordMenu && !isRecording && (
+            <div
+              style={{
+                position: "absolute",
+                left: "0px",
+                bottom: "60px",
+                background: "#1e1e1e",
+                borderRadius: "8px",
+                border: "1px solid rgba(255,255,255,0.1)",
+                padding: "4px",
+                display: "flex",
+                flexDirection: "column",
+                gap: "4px",
+                width: "180px",
+                boxShadow: "0 8px 24px rgba(0,0,0,0.5)",
+                zIndex: 1000,
+              }}
+            >
+              <button
+                onClick={() => handleStartRecording(false)}
+                style={{
+                  padding: "8px 12px",
+                  borderRadius: "6px",
+                  background: "transparent",
+                  color: "#fff",
+                  border: "none",
+                  cursor: "pointer",
+                  textAlign: "left",
+                  fontSize: "0.85rem",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "8px",
+                  transition: "background 0.2s",
+                }}
+                onMouseOver={(e) => (e.currentTarget.style.background = "rgba(255,255,255,0.1)")}
+                onMouseOut={(e) => (e.currentTarget.style.background = "transparent")}
+              >
+                <BsRecordCircle size={14} color="#e53935" /> Record Only
+              </button>
+              <button
+                onClick={() => handleStartRecording(true)}
+                style={{
+                  padding: "8px 12px",
+                  borderRadius: "6px",
+                  background: "transparent",
+                  color: "#fff",
+                  border: "none",
+                  cursor: "pointer",
+                  textAlign: "left",
+                  fontSize: "0.85rem",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "8px",
+                  transition: "background 0.2s",
+                }}
+                onMouseOver={(e) => (e.currentTarget.style.background = "rgba(255,255,255,0.1)")}
+                onMouseOut={(e) => (e.currentTarget.style.background = "transparent")}
+              >
+                <BsFileText size={14} color="#2196F3" /> Record with Transcription
+              </button>
+            </div>
+          )}
+
+          {/* 1. RECORDING SECTION (Record Toggle or Recording Controls) */}
+          {!isRecording ? (
+            <button
+              onClick={() => setShowRecordMenu(!showRecordMenu)}
+              title="Choose Recording Option"
+              style={{
+                width: 44,
+                height: 44,
+                borderRadius: "50%",
+                background: "#222",
+                color: "#e53935",
+                border: "1px solid #444",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                cursor: "pointer",
+                transition: "all 0.2s",
+                fontSize: "1.2rem",
+              }}
+              onMouseOver={(e) => (e.currentTarget.style.background = "rgba(255,255,255,0.1)")}
+              onMouseOut={(e) => (e.currentTarget.style.background = "#222")}
+            >
+              <BsRecordCircle />
+            </button>
+          ) : (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              {/* ⏱ Duration Timer */}
+              <div
+                style={{
+                  background: "rgba(0, 0, 0, 0.6)",
+                  color: "#e53935",
+                  padding: "6px 14px",
+                  borderRadius: "20px",
+                  fontFamily: "monospace",
+                  fontWeight: "bold",
+                  border: "1px solid rgba(229, 57, 53, 0.3)",
+                  fontSize: "0.9rem",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "8px",
+                  marginRight: "4px"
+                }}
+              >
+                <div
+                  style={{
+                    width: 8,
+                    height: 8,
+                    borderRadius: "50%",
+                    background: isPaused ? "#ffca28" : "#e53935",
+                    animation: isPaused ? "none" : "pulseDot 1s infinite",
+                  }}
+                />
+                {formatTime(recordingDuration)}
+              </div>
+
+              {/* ⏸ Pause / Resume */}
+              <button
+                onClick={isPaused ? handleResumeRecording : handlePauseRecording}
+                title={isPaused ? "Resume Recording" : "Pause Recording"}
+                style={{
+                  width: 44,
+                  height: 44,
+                  borderRadius: "50%",
+                  background: isPaused ? "#ffca28" : "rgba(255, 255, 255, 0.1)",
+                  color: isPaused ? "#000" : "#fff",
+                  border: "1px solid rgba(255,255,255,0.2)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  cursor: "pointer",
+                  transition: "all 0.2s",
+                  fontSize: "1.2rem",
+                }}
+              >
+                {isPaused ? <BsPlayCircle /> : <BsPauseCircle />}
+              </button>
+
+              {/* Stop & Save (Merged) */}
+              <button
+                onClick={handleSaveRecording}
+                title="Stop and Save Recording"
+                style={{
+                  width: 44,
+                  height: 44,
+                  borderRadius: "50%",
+                  background: "rgba(229, 57, 53, 0.2)",
+                  color: "#e53935",
+                  border: "1px solid rgba(229, 57, 53, 0.4)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  cursor: "pointer",
+                  transition: "all 0.2s",
+                  fontSize: "1.2rem",
+                  animation: !isPaused ? "pulse 1.5s infinite" : "none",
+                }}
+              >
+                <BsStopCircle />
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* 2. UPLOAD SECTION (Upload or Cancel) */}
+        {videoURL ? (
           <button
             onClick={async () => {
-              // 📡 Notify students that video has stopped
-              if (room && publishedRef.current) {
-                try {
-                  room.localParticipant.publishData(
-                    new TextEncoder().encode(
-                      JSON.stringify({ action: 'VIDEO_STOP' })
-                    ),
-                    { reliable: true }
-                  );
-                } catch (e) {
-                  console.error('Failed to send VIDEO_STOP', e);
+              if (window.confirm("Are you sure you want to close the uploaded class video?")) {
+                if (room && publishedRef.current) {
+                  try {
+                    room.localParticipant.publishData(
+                      new TextEncoder().encode(JSON.stringify({ action: 'VIDEO_STOP' })),
+                      { reliable: true }
+                    );
+                  } catch (e) { console.error('Failed to send VIDEO_STOP', e); }
+                  try { await publisherRef.current.stopPublishing(); } catch (e) { console.error('Failed to stop publishing', e); }
                 }
-
-                // Unpublish the video/audio tracks from LiveKit
-                try {
-                  await publisherRef.current.stopPublishing();
-                } catch (e) {
-                  console.error('Failed to stop publishing', e);
-                }
+                stopTimeSync();
+                if (videoRef.current) videoRef.current.pause();
+                setVideoURL(null);
+                setVideoFile(null);
+                setClassStarted(false);
+                if (onClassStatusChange) onClassStatusChange(false);
+                publishedRef.current = false;
+                doubtCountRef.current = 0;
+                announcedFinishRef.current = false;
+                endedAnnouncedRef.current = false;
               }
-
-              // ✅ Stop broadcasting time updates
-              stopTimeSync();
-
-              // Pause the local video element
-              if (videoRef.current) {
-                videoRef.current.pause();
-              }
-
-              setVideoURL(null);
-              setVideoFile(null);
-              setClassStarted(false);
-              if (onClassStatusChange) onClassStatusChange(false);
-              publishedRef.current = false;
-
-              // ✅ reset finish logic
-              doubtCountRef.current = 0;
-              announcedFinishRef.current = false;
-
-              // ✅ reset end announcement
-              endedAnnouncedRef.current = false;
             }}
             title="Cancel Class"
             style={{
-              padding: '8px 16px',
-              borderRadius: '20px',
-              background: '#f44336',
-              border: 'none',
+              width: 44,
+              height: 44,
+              borderRadius: '50%',
+              background: '#222',
+              border: '1px solid #444',
               color: '#fff',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
               cursor: 'pointer',
-              fontWeight: 'bold',
-              fontSize: '12px',
-              boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
-              whiteSpace: 'nowrap',
-              marginLeft: '-117px'
+              fontSize: '1.2rem',
+              transition: 'background 0.2s',
+            }}
+            onMouseOver={(e) => (e.currentTarget.style.background = "#333")}
+            onMouseOut={(e) => (e.currentTarget.style.background = "#222")}
+          >
+            <MdOutlineCancel size={28} />
+          </button>
+        ) : (
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            title="Upload Video Class"
+            style={{
+              width: 44,
+              height: 44,
+              borderRadius: '50%',
+              background: '#222',
+              border: '1px solid #444',
+              color: '#fff',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              fontSize: '1.2rem',
+              transition: 'background 0.2s',
             }}
           >
-            Cancel Class
+            <MdUploadFile />
           </button>
         )}
-
-        <button
-          onClick={() => fileInputRef.current?.click()}
-          title="Upload Video Class"
-          style={{
-            width: 44,
-            height: 44,
-            borderRadius: '50%',
-            background: videoURL ? '#2196F3' : '#222',
-            border: videoURL ? '1px solid #2196F3' : '1px solid #444',
-            color: '#fff',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            cursor: 'pointer',
-            fontSize: '1.2rem',
-            transition: 'background 0.2s',
-          }}
-          onMouseOver={(e) => {
-            if (!videoURL) e.currentTarget.style.background = '#333';
-          }}
-          onMouseOut={(e) => {
-            if (!videoURL) e.currentTarget.style.background = '#222';
-          }}
-        >
-          <MdUploadFile />
-        </button>
       </div>
+
+      <style>{`
+        @keyframes pulseDot {
+            0% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.4; transform: scale(1.1); }
+            100% { opacity: 1; transform: scale(1); }
+        }
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(229, 57, 53, 0.4); }
+            70% { box-shadow: 0 0 0 10px rgba(229, 57, 53, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(229, 57, 53, 0); }
+        }
+      `}</style>
 
       {/* 📺 Class Management Panel */}
       {(videoURL || classStarted) && (

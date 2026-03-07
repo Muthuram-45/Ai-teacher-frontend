@@ -193,7 +193,7 @@ function WaitingRoom({ waitingStudents, onAdmit, onReject }) {
                         backdropFilter: "blur(12px)",
                         border: "1px solid rgba(255, 255, 255, 0.15)",
                         borderRadius: "14px",
-                        padding: "14px 20px",
+                        padding: "8px 20px",
                         color: "#fff",
                         boxShadow: "0 12px 40px rgba(0,0,0,0.5)",
                         display: "flex",
@@ -290,6 +290,16 @@ function TeacherOnlyUI({
     onAdmit,
     onReject,
     onClassStatusChange,
+    isRecording,
+    isPaused,
+    showRecordMenu,
+    setShowRecordMenu,
+    handleStartRecording,
+    handleStopRecording,
+    handlePauseRecording,
+    handleResumeRecording,
+    handleSaveRecording,
+    recordingDuration
 }) {
     const { localParticipant } = useLocalParticipant();
     const room = useRoomContext();
@@ -370,13 +380,23 @@ function TeacherOnlyUI({
                 style={{
                     position: "absolute",
                     bottom: 14,
-                    left: "calc(50% - 365px)",
+                    right: "calc(50% + 365px)",
                     zIndex: 1000,
                 }}
             >
                 <TeacherVideoController
                     onGenerateQuiz={onGenerateQuiz}
                     onClassStatusChange={onClassStatusChange}
+                    isRecording={isRecording}
+                    isPaused={isPaused}
+                    showRecordMenu={showRecordMenu}
+                    setShowRecordMenu={setShowRecordMenu}
+                    handleStartRecording={handleStartRecording}
+                    handleStopRecording={handleStopRecording}
+                    handlePauseRecording={handlePauseRecording}
+                    handleResumeRecording={handleResumeRecording}
+                    handleSaveRecording={handleSaveRecording}
+                    recordingDuration={recordingDuration}
                 />
             </div>
 
@@ -1450,10 +1470,10 @@ function RoomContent() {
                     width: 1920,
                     height: 1080,
                     frameRate: 30,
-                    displaySurface: "browser",
+                    displaySurface: "window",
                 },
                 audio: true,
-                preferCurrentTab: true,
+                preferCurrentTab: false,
                 selfBrowserSurface: "include",
             });
             setCurrentScreenStream(screenStream);
@@ -2150,240 +2170,6 @@ function RoomContent() {
                 <ParticipantList onClose={() => setShowParticipants(false)} />
             )}
 
-            {/* 🔴 Left Side Control Bar - Recording Controls (Teacher Only) */}
-            {role === "teacher" && (
-                <div
-                    style={{
-                        position: "absolute",
-                        left: 20,
-                        bottom: 80, // Positioned above the teacher video controller
-                        zIndex: 999,
-                        display: "flex",
-                        flexDirection: "column",
-                        alignItems: "center",
-                        gap: "12px",
-                    }}
-                >
-                    {/* ⏱ Timer Display - Above controls */}
-                    {isRecording && (
-                        <div
-                            style={{
-                                background: "rgba(0, 0, 0, 0.6)",
-                                color: "#e53935",
-                                padding: "4px 10px",
-                                borderRadius: "12px",
-                                fontFamily: "monospace",
-                                fontWeight: "bold",
-                                border: "1px solid rgba(229, 57, 53, 0.3)",
-                                fontSize: "0.9rem",
-                                display: "flex",
-                                alignItems: "center",
-                                gap: "6px",
-                                marginBottom: "4px",
-                            }}
-                        >
-                            <div
-                                style={{
-                                    width: 6,
-                                    height: 6,
-                                    borderRadius: "50%",
-                                    background: isPaused ? "#ffca28" : "#e53935",
-                                    animation: isPaused ? "none" : "pulseDot 1s infinite",
-                                }}
-                            />
-                            {formatTime(recordingDuration)}
-                        </div>
-                    )}
-
-                    <div
-                        style={{
-                            display: "flex",
-                            flexDirection: "column",
-                            gap: "6px",
-                            background: "rgba(0,0,0,0.5)",
-                            padding: "6px",
-                            borderRadius: "10px",
-                            border: "1px solid rgba(255,255,255,0.1)",
-                            backdropFilter: "blur(4px)",
-                        }}
-                    >
-                        {/* 🎙 Recording Options Menu */}
-                        {showRecordMenu && !isRecording && (
-                            <div
-                                style={{
-                                    position: "absolute",
-                                    left: "44px",
-                                    bottom: "0",
-                                    background: "#1e1e1e",
-                                    borderRadius: "8px",
-                                    border: "1px solid rgba(255,255,255,0.1)",
-                                    padding: "4px",
-                                    display: "flex",
-                                    flexDirection: "column",
-                                    gap: "4px",
-                                    width: "180px",
-                                    boxShadow: "0 8px 24px rgba(0,0,0,0.5)",
-                                    zIndex: 1000,
-                                }}
-                            >
-                                <button
-                                    onClick={() => handleStartRecording(false)}
-                                    style={{
-                                        padding: "8px 12px",
-                                        borderRadius: "6px",
-                                        background: "transparent",
-                                        color: "#fff",
-                                        border: "none",
-                                        cursor: "pointer",
-                                        textAlign: "left",
-                                        fontSize: "0.85rem",
-                                        display: "flex",
-                                        alignItems: "center",
-                                        gap: "8px",
-                                        transition: "background 0.2s",
-                                    }}
-                                    onMouseOver={(e) =>
-                                        (e.currentTarget.style.background = "rgba(255,255,255,0.1)")
-                                    }
-                                    onMouseOut={(e) =>
-                                        (e.currentTarget.style.background = "transparent")
-                                    }
-                                >
-                                    <BsRecordCircle size={14} color="#e53935" /> Record Only
-                                </button>
-                                <button
-                                    onClick={() => handleStartRecording(true)}
-                                    style={{
-                                        padding: "8px 12px",
-                                        borderRadius: "6px",
-                                        background: "transparent",
-                                        color: "#fff",
-                                        border: "none",
-                                        cursor: "pointer",
-                                        textAlign: "left",
-                                        fontSize: "0.85rem",
-                                        display: "flex",
-                                        alignItems: "center",
-                                        gap: "8px",
-                                        transition: "background 0.2s",
-                                    }}
-                                    onMouseOver={(e) =>
-                                        (e.currentTarget.style.background = "rgba(255,255,255,0.1)")
-                                    }
-                                    onMouseOut={(e) =>
-                                        (e.currentTarget.style.background = "transparent")
-                                    }
-                                >
-                                    <BsFileText size={14} color="#2196F3" /> Record with
-                                    Transcription
-                                </button>
-                            </div>
-                        )}
-
-                        {/* 🔘 Start / Stop - Same Button */}
-                        <button
-                            onClick={
-                                !isRecording
-                                    ? () => setShowRecordMenu(!showRecordMenu)
-                                    : handleStopRecording
-                            }
-                            title={
-                                !isRecording ? "Choose Recording Option" : "Stop Recording"
-                            }
-                            style={{
-                                width: 38,
-                                height: 38,
-                                borderRadius: "6px",
-                                background: !isRecording
-                                    ? "transparent"
-                                    : "rgba(229, 57, 53, 0.2)",
-                                color: "#e53935",
-                                border: "none",
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "center",
-                                cursor: "pointer",
-                                transition: "all 0.2s",
-                                fontSize: "1.2rem",
-                                animation:
-                                    isRecording && !isPaused ? "pulse 1.5s infinite" : "none",
-                            }}
-                            onMouseOver={(e) =>
-                                (e.currentTarget.style.background = "rgba(255,255,255,0.1)")
-                            }
-                            onMouseOut={(e) =>
-                            (e.currentTarget.style.background = !isRecording
-                                ? "transparent"
-                                : "rgba(229, 57, 53, 0.2)")
-                            }
-                        >
-                            {!isRecording ? <BsRecordCircle /> : <BsStopCircle />}
-                        </button>
-
-                        {/* ⏸ Pause / Resume - Same Icon */}
-                        {isRecording && (
-                            <button
-                                onClick={
-                                    isPaused ? handleResumeRecording : handlePauseRecording
-                                }
-                                title={isPaused ? "Resume Recording" : "Pause Recording"}
-                                style={{
-                                    width: 38,
-                                    height: 38,
-                                    borderRadius: "6px",
-                                    background: "transparent",
-                                    color: isPaused ? "#ffca28" : "#fff",
-                                    border: "none",
-                                    display: "flex",
-                                    alignItems: "center",
-                                    justifyContent: "center",
-                                    cursor: "pointer",
-                                    transition: "all 0.2s",
-                                    fontSize: "1.1rem",
-                                }}
-                                onMouseOver={(e) =>
-                                    (e.currentTarget.style.background = "rgba(255,255,255,0.1)")
-                                }
-                                onMouseOut={(e) =>
-                                    (e.currentTarget.style.background = "transparent")
-                                }
-                            >
-                                {isPaused ? <BsPlayCircle /> : <BsPauseCircle />}
-                            </button>
-                        )}
-
-                        {/* 💾 Save Icon */}
-                        {isRecording && (
-                            <button
-                                onClick={handleSaveRecording}
-                                title="Save Recording"
-                                style={{
-                                    width: 38,
-                                    height: 38,
-                                    borderRadius: "6px",
-                                    background: "transparent",
-                                    color: "#4CAF50",
-                                    border: "none",
-                                    display: "flex",
-                                    alignItems: "center",
-                                    justifyContent: "center",
-                                    cursor: "pointer",
-                                    transition: "all 0.2s",
-                                    fontSize: "1.1rem",
-                                }}
-                                onMouseOver={(e) =>
-                                    (e.currentTarget.style.background = "rgba(255,255,255,0.1)")
-                                }
-                                onMouseOut={(e) =>
-                                    (e.currentTarget.style.background = "transparent")
-                                }
-                            >
-                                <BsCloudUpload />
-                            </button>
-                        )}
-                    </div>
-                </div>
-            )}
             <style>{`
                 @keyframes pulseDot {
                     0% { opacity: 1; }
@@ -2566,6 +2352,16 @@ function RoomContent() {
                 onAdmit={handleAdmit}
                 onReject={handleReject}
                 onClassStatusChange={setTeacherClassStarted}
+                isRecording={isRecording}
+                isPaused={isPaused}
+                showRecordMenu={showRecordMenu}
+                setShowRecordMenu={setShowRecordMenu}
+                handleStartRecording={handleStartRecording}
+                handleStopRecording={handleStopRecording}
+                handlePauseRecording={handlePauseRecording}
+                handleResumeRecording={handleResumeRecording}
+                handleSaveRecording={handleSaveRecording}
+                recordingDuration={recordingDuration}
             />
 
             {/* Sequential Hand Raise Audio Notification Trigger */}
