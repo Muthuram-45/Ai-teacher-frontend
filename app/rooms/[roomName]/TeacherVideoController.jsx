@@ -639,6 +639,10 @@ export default function TeacherVideoController({
                 doubtCountRef.current = 0;
                 announcedFinishRef.current = false;
                 endedAnnouncedRef.current = false;
+                // ✅ clear file input so same file can be selected again
+                if (fileInputRef.current) {
+                  fileInputRef.current.value = "";
+                }
               }
             }}
             title="Cancel Class"
@@ -766,6 +770,10 @@ export default function TeacherVideoController({
 
                 // ✅ reset end announcement
                 endedAnnouncedRef.current = false;
+                // ✅ clear file input so same file can be selected again
+                if (fileInputRef.current) {
+                  fileInputRef.current.value = "";
+                }
               }}
               style={{ background: 'none', border: 'none', color: '#666', cursor: 'pointer' }}
             >

@@ -175,12 +175,12 @@ export default function StudentVideoPanel() {
         }
     };
 
-    const formatTime = s => {
-        if (!isFinite(s)) return '0:00';
-        const m = Math.floor(s / 60);
-        const sec = Math.floor(s % 60);
-        return `${m}:${sec.toString().padStart(2, '0')}`;
-    };
+    // const formatTime = s => {
+    //     if (!isFinite(s)) return '0:00';
+    //     const m = Math.floor(s / 60);
+    //     const sec = Math.floor(s % 60);
+    //     return `${m}:${sec.toString().padStart(2, '0')}`;
+    // };
 
     if (!showTeacherVideo) {
         return null; // Don't show anything (PageClientImpl handles empty state)
@@ -223,7 +223,7 @@ export default function StudentVideoPanel() {
             />
 
             {/* ⏱ Time overlay (Bottom Left, above control bar) */}
-            <div style={{
+            {/* <div style={{
                 position: 'absolute',
                 bottom: 4,
                 left: 20,
@@ -235,7 +235,7 @@ export default function StudentVideoPanel() {
                 zIndex: 10,
             }}>
                 {formatTime(currentTime)} / {formatTime(duration)}
-            </div>
+            </div> */}
         </div>
     );
 }

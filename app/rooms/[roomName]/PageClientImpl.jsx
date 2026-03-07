@@ -93,6 +93,7 @@ import {
     MdDeleteForever,
     MdEmail,
     MdOutlineQuiz,
+    MdClose,
 } from "react-icons/md";
 import { FiExternalLink } from "react-icons/fi";
 import {
@@ -103,6 +104,10 @@ import {
     BsPlayCircle,
     BsCloudUpload,
     BsFileText,
+    BsCameraVideoFill,
+    BsCameraVideoOffFill,
+    BsMicFill,
+    BsMicMuteFill,
 } from "react-icons/bs";
 
 /* ---------------- MEETING ENDED OVERLAY ---------------- */
@@ -1219,7 +1224,7 @@ function RoomContent() {
     const [teacherClassStarted, setTeacherClassStarted] = useState(false);
     const [notifications, setNotifications] = useState([]); // Google Meet-style join/leave toasts
     const [quizStarting, setQuizStarting] = useState(false); // ✅ student pop-in countdown
-
+    const [showFullStudentGrid, setShowFullStudentGrid] = useState(false); // 🧑‍🎓 Full screen grid
     // 🎙️ Dynamic Audio Recording Refs
     const recordingAudioContext = useRef(null);
     const recordingDestNode = useRef(null);
@@ -2275,17 +2280,20 @@ function RoomContent() {
 
                         {/* 🔹 Right Panel (20%) - Student videos */}
                         <div
+                            className="custom-scrollbar-hide"
                             style={{
                                 width: "20%",
                                 height: "100%",
-                                background: "rgba(0,0,0,0.4)",
-                                borderLeft: "1px solid rgba(255,255,255,0.1)",
+                                background: "rgba(10, 15, 30, 0.65)",
+                                backdropFilter: "blur(16px)",
+                                borderLeft: "1px solid rgba(255, 255, 255, 0.08)",
                                 overflowY: "auto",
-                                padding: "10px",
+                                padding: "8px 9px",
                                 display: "flex",
                                 flexDirection: "column",
-                                gap: "10px",
-                                padding: "20px",
+                                gap: "16px",
+                                boxShadow: "-10px 0 40px rgba(0, 0, 0, 0.4)",
+                                zIndex: 10,
                             }}
                         >
                             {/* 🔹 Explicit Track Mapping for Students to avoid TrackRef context errors */}
@@ -2297,6 +2305,7 @@ function RoomContent() {
                                         return true;
                                     }
                                 })}
+                                onShowFullGrid={() => setShowFullStudentGrid(true)}
                             />
                         </div>
                     </div>
@@ -2329,6 +2338,20 @@ function RoomContent() {
                 <GridErrorBoundary>
                     <VideoConference components={customComponents} />
                 </GridErrorBoundary>
+            )}
+
+            {/* 🧑‍🎓 Full Screen Student Grid (Teacher Only) */}
+            {role === "teacher" && showFullStudentGrid && (
+                <FullStudentGridOverlay
+                    participants={participants.filter((p) => {
+                        try {
+                            return JSON.parse(p.metadata || "{}").role !== "teacher";
+                        } catch {
+                            return true;
+                        }
+                    })}
+                    onClose={() => setShowFullStudentGrid(false)}
+                />
             )}
 
             {/* 👩‍🏫 Teacher hand raise list */}
@@ -2371,7 +2394,7 @@ function RoomContent() {
 }
 
 /* 🎥 COMPONENT: Renders student thumbnails with explicit track refs to avoid context errors */
-function StudentVideoThumbs({ participants }) {
+function StudentVideoThumbs({ participants, onShowFullGrid }) {
     const tracks = useTracks(
         [
             { source: Track.Source.Camera, withPlaceholder: true },
@@ -2381,29 +2404,156 @@ function StudentVideoThumbs({ participants }) {
     );
 
     // Filter tracks to only include those from the provided student participants
-    const studentIdentities = new Set(participants.map((p) => p.identity));
+    // Filter tracks to only include those from the provided student participants
+    // 1. Sort participants
+    const sortedParticipants = [...participants].sort((a, b) => {
+        // Camera on gets highest priority
+        if (a.isCameraEnabled && !b.isCameraEnabled) return -1;
+        if (!a.isCameraEnabled && b.isCameraEnabled) return 1;
+
+        // Mic on gets second priority
+        if (a.isMicrophoneEnabled && !b.isMicrophoneEnabled) return -1;
+        if (!a.isMicrophoneEnabled && b.isMicrophoneEnabled) return 1;
+
+        // Otherwise sort alphabetically
+        return a.identity.localeCompare(b.identity);
+    });
+
+    // 2. Limit to top 3
+    const top3Participants = sortedParticipants.slice(0, 3);
+    const extraCount = Math.max(0, participants.length - 3);
+
+    const studentIdentities = new Set(top3Participants.map((p) => p.identity));
     const studentTracks = tracks.filter((tr) =>
         studentIdentities.has(tr.participant.identity),
     );
 
     return (
         <>
-            {studentTracks.map((trackRef) => (
+            <style>{`
+                .custom-student-grid .lk-participant-metadata,
+                .custom-student-grid .lk-participant-name,
+                .custom-student-grid .lk-track-muted-indicator-camera,
+                .custom-student-grid .lk-track-muted-indicator-microphone,
+                .custom-student-grid .lk-connection-quality {
+                    display: none !important;
+                }
+                /* Hide scrollbar for Chrome, Safari and Opera */
+                .custom-scrollbar-hide::-webkit-scrollbar {
+                    display: none;
+                }
+                /* Hide scrollbar for IE, Edge and Firefox */
+                .custom-scrollbar-hide {
+                    -ms-overflow-style: none;  /* IE and Edge */
+                    scrollbar-width: none;  /* Firefox */
+                }
+            `}</style>
+            {studentTracks.map((trackRef) => {
+                const isSpeaking = trackRef.participant.isSpeaking;
+                return (
+                    <div
+                        className="custom-student-grid"
+                        key={`${trackRef.participant.identity}_${trackRef.source}`}
+                        style={{
+                            height: "180px",
+                            minHeight: "180px",
+                            position: "relative",
+                            borderRadius: "16px",
+                            overflow: "hidden",
+                            border: isSpeaking ? "2px solid #2196F3" : "1px solid rgba(255, 255, 255, 0.12)",
+                            boxShadow: isSpeaking ? "0 0 20px rgba(33, 150, 243, 0.4), inset 0 0 0 1px rgba(33,150,243,0.2)" : "0 8px 24px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255,255,255,0.05)",
+                            transform: isSpeaking ? "scale(1.02) translateY(-2px)" : "scale(1) translateY(0)",
+                            transition: "all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1)",
+                            background: "linear-gradient(180deg, rgba(20,25,35,0.6) 0%, rgba(10,15,25,0.9) 100%)",
+                        }}
+                    >
+                        {/* Custom Name Badge */}
+                        <div
+                            style={{
+                                position: "absolute",
+                                bottom: "9px",
+                                left: "12px",
+                                background: "rgba(0, 0, 0, 0.6)",
+                                backdropFilter: "blur(8px)",
+                                padding: "6px 12px",
+                                borderRadius: "8px",
+                                color: "#fff",
+                                fontSize: "13px",
+                                fontWeight: "600",
+                                fontFamily: "Inter, sans-serif",
+                                zIndex: 10,
+                                border: "1px solid rgba(255, 255, 255, 0.05)",
+                                display: "flex",
+                                alignItems: "center",
+                                gap: "6px",
+                            }}
+                        >
+                            <span
+                                style={{
+                                    width: "8px",
+                                    height: "8px",
+                                    borderRadius: "50%",
+                                    background: (trackRef.participant.isMicrophoneEnabled || trackRef.participant.isCameraEnabled) ? "#2196F3" : "#f44336",
+                                    boxShadow: (trackRef.participant.isMicrophoneEnabled || trackRef.participant.isCameraEnabled) ? "0 0 8px rgba(33, 150, 243, 0.8)" : "none",
+                                }}
+                            />
+                            {trackRef.participant.identity}
+                            <div style={{ display: "flex", alignItems: "center", gap: "4px", marginLeft: "4px", color: "rgba(255,255,255,0.8)" }}>
+                                {trackRef.participant.isMicrophoneEnabled ? (
+                                    <BsMicFill size={12} color="#2196F3" />
+                                ) : (
+                                    <BsMicMuteFill size={12} color="#f44336" />
+                                )}
+                                {trackRef.participant.isCameraEnabled ? (
+                                    <BsCameraVideoFill size={12} color="#2196F3" />
+                                ) : (
+                                    <BsCameraVideoOffFill size={12} color="#f44336" />
+                                )}
+                            </div>
+                        </div>
+                        <TrackRefContext.Provider value={trackRef}>
+                            <ParticipantTile />
+                        </TrackRefContext.Provider>
+                    </div>
+                );
+            })}
+            {extraCount > 0 && (
                 <div
-                    key={`${trackRef.participant.identity}_${trackRef.source}`}
+                    onClick={onShowFullGrid}
                     style={{
-                        height: "150px",
-                        minHeight: "150px",
-                        position: "relative",
-                        borderRadius: "8px",
-                        overflow: "hidden",
+                        height: "160px",
+                        minHeight: "160px",
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        background: "linear-gradient(145deg, rgba(30, 41, 59, 0.6), rgba(15, 23, 42, 0.8))",
+                        backdropFilter: "blur(16px)",
+                        border: "1px solid rgba(255, 255, 255, 0.08)",
+                        borderRadius: "16px",
+                        color: "#fff",
+                        fontFamily: "Inter, sans-serif",
+                        boxShadow: "0 8px 25px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255,255,255,0.05)",
+                        transition: "all 0.3s ease",
+                        cursor: "pointer",
+                    }}
+                    onMouseOver={(e) => {
+                        e.currentTarget.style.background = "linear-gradient(145deg, rgba(40, 51, 70, 0.7), rgba(20, 30, 50, 0.9))";
+                        e.currentTarget.style.transform = "translateY(-2px)";
+                        e.currentTarget.style.boxShadow = "0 12px 30px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255,255,255,0.1)";
+                    }}
+                    onMouseOut={(e) => {
+                        e.currentTarget.style.background = "linear-gradient(145deg, rgba(30, 41, 59, 0.6), rgba(15, 23, 42, 0.8))";
+                        e.currentTarget.style.transform = "translateY(0)";
+                        e.currentTarget.style.boxShadow = "0 8px 25px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255,255,255,0.05)";
                     }}
                 >
-                    <TrackRefContext.Provider value={trackRef}>
-                        <ParticipantTile />
-                    </TrackRefContext.Provider>
+                    <div style={{ fontSize: "2.5rem", fontWeight: "800", background: "linear-gradient(135deg, #ffffff, #94a3b8)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", textShadow: "0 2px 10px rgba(255,255,255,0.1)" }}>
+                        +{extraCount}
+                    </div>
+                    <div style={{ fontSize: "0.85rem", color: "rgba(255,255,255,0.5)", marginTop: "6px", fontWeight: "600", letterSpacing: "0.5px", textTransform: "uppercase" }}>More Students</div>
                 </div>
-            ))}
+            )}
         </>
     );
 }
@@ -2533,7 +2683,111 @@ function NoiseFilterActivator() {
 
     return null;
 }
+/* ---------------- FULL SCREEN STUDENT GRID (TEACHER) ---------------- */
+function FullStudentGridOverlay({ participants, onClose }) {
+    const tracks = useTracks(
+        [
+            { source: Track.Source.Camera, withPlaceholder: true },
+            { source: Track.Source.ScreenShare, withPlaceholder: false },
+        ],
+        { onlySubscribed: false },
+    );
 
+    const studentIdentities = new Set(participants.map((p) => p.identity));
+    const studentTracks = tracks.filter((tr) =>
+        studentIdentities.has(tr.participant.identity),
+    );
+
+    return (
+        <div style={{
+            position: "fixed", inset: 0, zIndex: 99998,
+            background: "rgba(10, 15, 30, 0.95)", backdropFilter: "blur(20px)",
+            display: "flex", flexDirection: "column", padding: "24px"
+        }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
+                <h2 style={{ color: "#fff", margin: 0, fontFamily: "Inter, sans-serif", fontWeight: 700, fontSize: "1.5rem" }}>
+                    Participants ({participants.length})
+                </h2>
+                <button
+                    onClick={onClose}
+                    style={{
+                        background: "rgba(255,255,255,0.1)", border: "none", color: "#fff",
+                        width: "44px", height: "44px", borderRadius: "12px",
+                        display: "flex", alignItems: "center", justifyContent: "center",
+                        cursor: "pointer", transition: "all 0.2s"
+                    }}
+                    onMouseOver={(e) => e.currentTarget.style.background = "rgba(244, 67, 54, 0.8)"}
+                    onMouseOut={(e) => e.currentTarget.style.background = "rgba(255,255,255,0.1)"}
+                >
+                    <MdClose size={24} />
+                </button>
+            </div>
+
+            <div className="custom-scrollbar-hide" style={{
+                flex: 1, overflowY: "auto", display: "grid", gap: "20px",
+                gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))",
+                alignContent: "start"
+            }}>
+                <style>{`
+                    .custom-student-grid .lk-participant-metadata,
+                    .custom-student-grid .lk-participant-name,
+                    .custom-student-grid .lk-track-muted-indicator-camera,
+                    .custom-student-grid .lk-track-muted-indicator-microphone,
+                    .custom-student-grid .lk-connection-quality {
+                        display: none !important;
+                    }
+                    /* Hide scrollbar for Chrome, Safari and Opera */
+                    .custom-scrollbar-hide::-webkit-scrollbar {
+                        display: none;
+                    }
+                    /* Hide scrollbar for IE, Edge and Firefox */
+                    .custom-scrollbar-hide {
+                        -ms-overflow-style: none;  /* IE and Edge */
+                        scrollbar-width: none;  /* Firefox */
+                    }
+                `}</style>
+                {studentTracks.map((trackRef) => {
+                    const isSpeaking = trackRef.participant.isSpeaking;
+                    return (
+                        <div
+                            className="custom-student-grid"
+                            key={`${trackRef.participant.identity}_${trackRef.source}`}
+                            style={{
+                                height: "240px", borderRadius: "16px", overflow: "hidden", position: "relative",
+                                border: isSpeaking ? "2px solid #2196F3" : "1px solid rgba(255, 255, 255, 0.1)",
+                                boxShadow: isSpeaking ? "0 0 24px rgba(33, 150, 243, 0.3)" : "0 10px 30px rgba(0, 0, 0, 0.4)",
+                                background: "linear-gradient(180deg, rgba(20,25,35,0.6) 0%, rgba(10,15,25,0.9) 100%)",
+                            }}
+                        >
+                            <div style={{
+                                position: "absolute", bottom: "12px", left: "12px",
+                                background: "rgba(0, 0, 0, 0.6)", backdropFilter: "blur(8px)",
+                                padding: "6px 12px", borderRadius: "8px", color: "#fff",
+                                fontSize: "14px", fontWeight: "600", fontFamily: "Inter, sans-serif",
+                                zIndex: 10, border: "1px solid rgba(255, 255, 255, 0.05)",
+                                display: "flex", alignItems: "center", gap: "8px"
+                            }}>
+                                <span style={{
+                                    width: "8px", height: "8px", borderRadius: "50%",
+                                    background: (trackRef.participant.isMicrophoneEnabled || trackRef.participant.isCameraEnabled) ? "#2196F3" : "#f44336",
+                                    boxShadow: (trackRef.participant.isMicrophoneEnabled || trackRef.participant.isCameraEnabled) ? "0 0 8px rgba(33, 150, 243, 0.8)" : "none",
+                                }} />
+                                {trackRef.participant.identity}
+                                <div style={{ display: "flex", alignItems: "center", gap: "6px", marginLeft: "6px", color: "rgba(255,255,255,0.8)" }}>
+                                    {trackRef.participant.isMicrophoneEnabled ? <BsMicFill size={14} color="#2196F3" /> : <BsMicMuteFill size={14} color="#f44336" />}
+                                    {trackRef.participant.isCameraEnabled ? <BsCameraVideoFill size={14} color="#2196F3" /> : <BsCameraVideoOffFill size={14} color="#f44336" />}
+                                </div>
+                            </div>
+                            <TrackRefContext.Provider value={trackRef}>
+                                <ParticipantTile />
+                            </TrackRefContext.Provider>
+                        </div>
+                    );
+                })}
+            </div>
+        </div>
+    );
+}
 /* ---------------- PAGE CLIENT ---------------- */
 export function PageClientImpl({ token, url }) {
     const [mounted, setMounted] = useState(false);
