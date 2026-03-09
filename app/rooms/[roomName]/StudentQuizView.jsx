@@ -13,7 +13,9 @@ export default function StudentQuizView({
   const [answers, setAnswers] = useState({});
   const [submitted, setSubmitted] = useState(false);
   const [results, setResults] = useState(null);
+  const [autoCloseSeconds, setAutoCloseSeconds] = useState(10);
   const timerRef = useRef(null);
+  const exitTimerRef = useRef(null);
   const [flaggedQuestions, setFlaggedQuestions] = useState([]);
 
   // Proctoring states
@@ -564,24 +566,37 @@ export default function StudentQuizView({
     };
 
     const result = await onSubmit(answersArray, proctorData);
-    setResults(result);
+    setResults({ ...result, studentAnswers: answersArray });
 
-    // ✅ Only Disable Fullscreen AFTER submission is fully processed
-    onClose();
-    exitFS();
-
-    //  Restore normal environment after quiz
+    // Restore normal environment after quiz
     if (streamRef.current) {
       streamRef.current.getTracks().forEach((t) => t.stop());
       streamRef.current = null;
     }
 
-    exitFS();
     if (navigator.keyboard && navigator.keyboard.unlock)
       navigator.keyboard.unlock();
   };
 
-  const [autoCloseSeconds, setAutoCloseSeconds] = useState(5);
+  useEffect(() => {
+    if (results) {
+      exitTimerRef.current = setInterval(() => {
+        setAutoCloseSeconds((prev) => {
+          if (prev <= 1) {
+            clearInterval(exitTimerRef.current);
+            onClose();
+            // Force leave meeting to a clean finished page
+            window.location.href = "/autoleavemeet";
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    }
+    return () => {
+      if (exitTimerRef.current) clearInterval(exitTimerRef.current);
+    };
+  }, [results, onClose]);
 
   const currentQuestion = questions[currentIndex];
 
@@ -1371,6 +1386,115 @@ export default function StudentQuizView({
                 Submit Anyway
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* 🏆 Quiz Results View Overlay */}
+      {results && (
+        <div style={{
+          position: "fixed",
+          inset: 0,
+          background: "rgba(10, 10, 18, 0.98)",
+          zIndex: 30000,
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          padding: "40px 24px",
+          overflowY: "auto"
+        }}>
+          <div style={{
+            maxWidth: "800px",
+            width: "100%",
+            textAlign: "center",
+            display: "flex",
+            flexDirection: "column",
+            gap: "24px"
+          }}>
+            <div className="glass-card" style={{ padding: "40px", borderRadius: "32px", border: "1px solid rgba(16, 185, 129, 0.4)" }}>
+              <div style={{ fontSize: "60px", marginBottom: "16px" }}>🎉</div>
+              <h1 style={{ fontSize: "36px", fontWeight: "800", marginBottom: "8px", background: "linear-gradient(to right, #10b981, #3b82f6)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
+                Assessment Completed!
+              </h1>
+              <div style={{ fontSize: "24px", fontWeight: "700", color: "#f8fafc", marginBottom: "16px" }}>
+                Your Score: <span style={{ color: "#10b981" }}>{results.score}%</span>
+              </div>
+              <p style={{ color: "rgba(255, 255, 255, 0.6)", fontSize: "16px" }}>
+                Auto-leaving meeting in <b style={{ color: "#ef4444", fontSize: "20px" }}>{autoCloseSeconds}s</b>
+              </p>
+            </div>
+
+            <div style={{ textAlign: "left", display: "flex", flexDirection: "column", gap: "20px" }}>
+              <h2 style={{ fontSize: "22px", fontWeight: "700", borderBottom: "1px solid rgba(255,255,255,0.1)", paddingBottom: "12px" }}>
+                Review Questions
+              </h2>
+              {questions.map((q, idx) => {
+                const studentAnsIdx = results.studentAnswers[idx];
+                const isCorrect = studentAnsIdx === q.correctAnswer;
+                return (
+                  <div key={idx} className="glass-card" style={{
+                    padding: "24px",
+                    borderRadius: "20px",
+                    borderLeft: `6px solid ${isCorrect ? "#10b981" : "#ef4444"}`
+                  }}>
+                    <div style={{ fontSize: "16px", fontWeight: "600", marginBottom: "16px", color: "#f8fafc" }}>
+                      {idx + 1}. {q.question}
+                    </div>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                      {q.options.map((opt, optIdx) => {
+                        let borderColor = "rgba(255,255,255,0.05)";
+                        let bgColor = "transparent";
+                        let icon = null;
+
+                        if (optIdx === q.correctAnswer) {
+                          borderColor = "#10b981";
+                          bgColor = "rgba(16, 185, 129, 0.1)";
+                          icon = "✅";
+                        } else if (optIdx === studentAnsIdx && !isCorrect) {
+                          borderColor = "#ef4444";
+                          bgColor = "rgba(239, 68, 68, 0.1)";
+                          icon = "❌";
+                        }
+
+                        return (
+                          <div key={optIdx} style={{
+                            padding: "12px 16px",
+                            borderRadius: "12px",
+                            border: `1px solid ${borderColor}`,
+                            background: bgColor,
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "center",
+                            fontSize: "14px"
+                          }}>
+                            <span>{getOptionLetter(optIdx)}. {opt}</span>
+                            <span>{icon}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            <button
+              onClick={() => { window.location.href = "/autoleavemeet"; }}
+              className="nav-button"
+              style={{
+                marginTop: "20px",
+                padding: "16px 40px",
+                background: "rgba(255,255,255,0.05)",
+                color: "white",
+                border: "1px solid rgba(255, 255, 255, 0.1)",
+                borderRadius: "16px",
+                fontWeight: "600",
+                cursor: "pointer",
+                alignSelf: "center"
+              }}
+            >
+              Leave Meeting Now
+            </button>
           </div>
         </div>
       )}
