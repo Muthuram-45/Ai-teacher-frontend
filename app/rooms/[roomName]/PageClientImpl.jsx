@@ -109,6 +109,7 @@ import {
     BsMicFill,
     BsMicMuteFill,
 } from "react-icons/bs";
+import { FaAngleDown } from "react-icons/fa";
 
 /* ---------------- MEETING ENDED OVERLAY ---------------- */
 function MeetingEndedOverlay() {
@@ -175,7 +176,19 @@ function MeetingEndedOverlay() {
 
 /* ---------------- WAITING ROOM UI (TEACHER) ---------------- */
 function WaitingRoom({ waitingStudents, onAdmit, onReject }) {
+    const [isExpanded, setIsExpanded] = useState(false);
+
     if (waitingStudents.length === 0) return null;
+
+    const showSummaryHeader = waitingStudents.length > 2 || (isExpanded && waitingStudents.length > 0);
+
+    const handleAdmitAll = () => {
+        waitingStudents.forEach((s) => onAdmit(s.id));
+    };
+
+    const handleRejectAll = () => {
+        waitingStudents.forEach((s) => onReject(s.id));
+    };
 
     return (
         <div
@@ -188,41 +201,42 @@ function WaitingRoom({ waitingStudents, onAdmit, onReject }) {
                 flexDirection: "column",
                 gap: "12px",
                 pointerEvents: "none",
+                alignItems: "flex-end",
             }}
         >
-            {waitingStudents.map((s) => (
+            {/* 📋 Summary View (Admit All / Decline All) */}
+            {showSummaryHeader && (
                 <div
-                    key={s.id}
                     style={{
-                        background: "rgba(15, 23, 42, 0.92)",
-                        backdropFilter: "blur(12px)",
-                        border: "1px solid rgba(255, 255, 255, 0.15)",
-                        borderRadius: "14px",
-                        padding: "8px 20px",
+                        background: "rgba(15, 23, 42, 0.95)",
+                        backdropFilter: "blur(16px)",
+                        border: "1px solid rgba(255, 255, 255, 0.2)",
+                        borderRadius: "16px",
+                        padding: "10px 24px",
                         color: "#fff",
-                        boxShadow: "0 12px 40px rgba(0,0,0,0.5)",
+                        boxShadow: "0 15px 45px rgba(0,0,0,0.6)",
                         display: "flex",
                         alignItems: "center",
                         gap: "24px",
                         animation: "slideInVertical 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275)",
                         pointerEvents: "auto",
-                        minWidth: "340px",
+                        minWidth: "420px",
                     }}
                 >
                     <div
                         style={{
                             flex: 1,
-                            fontWeight: "600",
+                            fontWeight: "700",
                             fontSize: "15px",
                             fontFamily: "Inter, sans-serif",
                             letterSpacing: "-0.2px",
                         }}
                     >
-                        {s.name}
+                        {waitingStudents.length} {waitingStudents.length === 1 ? "Student is" : "Students are"} waiting to join
                     </div>
-                    <div style={{ display: "flex", gap: "10px" }}>
+                    <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
                         <button
-                            onClick={() => onAdmit(s.id)}
+                            onClick={handleAdmitAll}
                             style={{
                                 padding: "8px 18px",
                                 background: "#2196F3",
@@ -244,10 +258,10 @@ function WaitingRoom({ waitingStudents, onAdmit, onReject }) {
                                 e.currentTarget.style.transform = "translateY(0)";
                             }}
                         >
-                            Admit
+                            Admit All
                         </button>
                         <button
-                            onClick={() => onReject(s.id)}
+                            onClick={handleRejectAll}
                             style={{
                                 padding: "8px 18px",
                                 background: "rgba(255, 255, 255, 0.08)",
@@ -270,9 +284,117 @@ function WaitingRoom({ waitingStudents, onAdmit, onReject }) {
                         >
                             Decline
                         </button>
+                        <button
+                            onClick={() => setIsExpanded(!isExpanded)}
+                            title="more"
+                            style={{
+                                background: "none",
+                                border: "none",
+                                color: "#fff",
+                                cursor: "pointer",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                padding: "4px",
+                                fontSize: "18px",
+                                transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+                                transform: isExpanded ? "rotate(180deg)" : "rotate(0deg)",
+                                opacity: 0.8,
+                            }}
+                            onMouseOver={(e) => (e.currentTarget.style.opacity = "1")}
+                            onMouseOut={(e) => (e.currentTarget.style.opacity = "0.8")}
+                        >
+                            <FaAngleDown />
+                        </button>
                     </div>
                 </div>
-            ))}
+            )}
+
+            {/* Individual Student Controls */}
+            {(!showSummaryHeader || isExpanded) &&
+                waitingStudents.map((s) => (
+                    <div
+                        key={s.id}
+                        style={{
+                            background: "rgba(15, 23, 42, 0.92)",
+                            backdropFilter: "blur(12px)",
+                            border: "1px solid rgba(255, 255, 255, 0.15)",
+                            borderRadius: "14px",
+                            padding: "8px 20px",
+                            color: "#fff",
+                            boxShadow: "0 12px 40px rgba(0,0,0,0.5)",
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "24px",
+                            animation: "slideInVertical 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275)",
+                            pointerEvents: "auto",
+                            minWidth: "340px",
+                        }}
+                    >
+                        <div
+                            style={{
+                                flex: 1,
+                                fontWeight: "600",
+                                fontSize: "15px",
+                                fontFamily: "Inter, sans-serif",
+                                letterSpacing: "-0.2px",
+                            }}
+                        >
+                            {s.name}
+                        </div>
+                        <div style={{ display: "flex", gap: "10px" }}>
+                            <button
+                                onClick={() => onAdmit(s.id)}
+                                style={{
+                                    padding: "8px 18px",
+                                    background: "#2196F3",
+                                    border: "none",
+                                    color: "#fff",
+                                    borderRadius: "10px",
+                                    cursor: "pointer",
+                                    fontSize: "14px",
+                                    fontWeight: "700",
+                                    transition: "all 0.2s ease",
+                                    boxShadow: "0 4px 12px rgba(33, 150, 243, 0.3)",
+                                }}
+                                onMouseOver={(e) => {
+                                    e.currentTarget.style.background = "#1E88E5";
+                                    e.currentTarget.style.transform = "translateY(-1px)";
+                                }}
+                                onMouseOut={(e) => {
+                                    e.currentTarget.style.background = "#2196F3";
+                                    e.currentTarget.style.transform = "translateY(0)";
+                                }}
+                            >
+                                Admit
+                            </button>
+                            <button
+                                onClick={() => onReject(s.id)}
+                                style={{
+                                    padding: "8px 18px",
+                                    background: "rgba(255, 255, 255, 0.08)",
+                                    border: "1px solid rgba(255, 255, 255, 0.1)",
+                                    color: "#fff",
+                                    borderRadius: "10px",
+                                    cursor: "pointer",
+                                    fontSize: "14px",
+                                    fontWeight: "600",
+                                    transition: "all 0.2s ease",
+                                }}
+                                onMouseOver={(e) => {
+                                    e.currentTarget.style.background = "rgba(255, 255, 255, 0.12)";
+                                    e.currentTarget.style.transform = "translateY(-1px)";
+                                }}
+                                onMouseOut={(e) => {
+                                    e.currentTarget.style.background = "rgba(255, 255, 255, 0.08)";
+                                    e.currentTarget.style.transform = "translateY(0)";
+                                }}
+                            >
+                                Decline
+                            </button>
+                        </div>
+                    </div>
+                ))}
             <style>{`
                 @keyframes slideInVertical {
                     from { opacity: 0; transform: translateY(-20px) scale(0.95); }
