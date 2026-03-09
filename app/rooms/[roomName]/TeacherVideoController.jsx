@@ -652,7 +652,7 @@ export default function TeacherVideoController({
               borderRadius: '50%',
               background: '#222',
               border: '1px solid #444',
-              color: '#fff',
+              color: '#ee1d1dff',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
