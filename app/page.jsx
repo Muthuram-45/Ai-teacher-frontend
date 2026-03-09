@@ -15,6 +15,11 @@ export default function Home() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
 
+  // Password Reset State
+  const [authMode, setAuthMode] = useState('login'); // 'login', 'otp', 'reset'
+  const [otp, setOtp] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+
   // Dashboard meeting create
   const [meetingName, setMeetingName] = useState('');
   const [createdRoom, setCreatedRoom] = useState(null);
@@ -64,18 +69,120 @@ export default function Home() {
   // Landing UI tab (only create)
   const [activeTab, setActiveTab] = useState('create');
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
 
-    if (!username || !password || !teacherName.trim()) {
-      alert('Please fill in all fields');
+    if (!username || !password) {
+      alert('Please fill in Email and Password');
       return;
     }
 
-    if (username === 'teacher' && password === 'password123') {
-      setIsLoggedIn(true);
-    } else {
-      alert('Invalid credentials');
+    try {
+      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001';
+      const response = await fetch(`${backendUrl}/api/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: username, password })
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        setIsLoggedIn(true);
+        if (!teacherName.trim() && data.teacherName) {
+          setTeacherName(data.teacherName);
+        }
+      } else {
+        alert(data.error || 'Invalid credentials');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Login failed. Ensure backend is running.');
+    }
+  };
+
+  const initForgotPassword = async () => {
+    if (!username) {
+      alert('Please enter your Gmail / Email Address first to reset your password.');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001';
+      const response = await fetch(`${backendUrl}/api/auth/forgot-password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: username })
+      });
+      const data = await response.json();
+      if (data.success) {
+        alert('OTP sent to your email. Please check your inbox.');
+        setAuthMode('otp');
+      } else {
+        alert(data.error || 'Failed to send OTP');
+      }
+    } catch (err) {
+      alert('Network error. Ensure backend is running.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleVerifyOTP = async (e) => {
+    e.preventDefault();
+    if (!otp) {
+      alert('Please enter the OTP');
+      return;
+    }
+    setLoading(true);
+    try {
+      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001';
+      const response = await fetch(`${backendUrl}/api/auth/verify-otp`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: username, otp })
+      });
+      const data = await response.json();
+      if (data.success) {
+        setAuthMode('reset');
+      } else {
+        alert(data.error || 'Invalid OTP');
+      }
+    } catch (err) {
+      alert('Network error. Ensure backend is running.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResetPassword = async (e) => {
+    e.preventDefault();
+    if (!newPassword) {
+      alert('Please enter a new password');
+      return;
+    }
+    setLoading(true);
+    try {
+      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001';
+      const response = await fetch(`${backendUrl}/api/auth/reset-password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: username, otp, newPassword })
+      });
+      const data = await response.json();
+      if (data.success) {
+        alert('Password has been reset successfully! You can now login.');
+        setAuthMode('login');
+        setPassword('');
+        setOtp('');
+        setNewPassword('');
+      } else {
+        alert(data.error || 'Failed to reset password');
+      }
+    } catch (err) {
+      alert('Network error. Ensure backend is running.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -150,6 +257,9 @@ export default function Home() {
     setTopic('');
     setLoading(false);
     setActiveTab('create');
+    setAuthMode('login');
+    setOtp('');
+    setNewPassword('');
   };
 
   const onCopyLink = async () => {
@@ -195,43 +305,109 @@ export default function Home() {
             <div className="cardInner">
               <div className="tabs tabsSingle">
                 <h1 style={{ textAlign: 'center', color: 'var(--blue)', marginBottom: '10px' }}>
-                  Generate Meeting
+                  {authMode === 'login' ? 'Teacher Login' : 'Reset Password'}
                 </h1>
-                {/* <p style={{ textAlign: 'center', color: 'var(--muted)', fontSize: '14px', marginBottom: '24px' }}>
-                  Teacher Portal<br />
-                  <span style={{ fontSize: '12px' }}>Enter your credentials to manage sessions</span>
-                </p> */}
               </div>
 
-              <form onSubmit={handleLogin} className="authForm authFormTight">
-                <input
-                  type="text"
-                  placeholder="Name"
-                  value={teacherName}
-                  onChange={(e) => setTeacherName(e.target.value)}
-                  className="input inputBig"
-                />
+              {authMode === 'login' && (
+                <form onSubmit={handleLogin} className="authForm authFormTight">
+                  <input
+                    type="text"
+                    placeholder="Tutor Name "
+                    value={teacherName}
+                    onChange={(e) => setTeacherName(e.target.value)}
+                    className="input inputBig"
+                  />
 
-                <input
-                  type="text"
-                  placeholder="Username"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  className="input inputBig"
-                />
+                  <input
+                    type="email"
+                    placeholder="Gmail / Email Address"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    className="input inputBig"
+                  />
 
-                <input
-                  type="password"
-                  placeholder="Password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="input inputBig"
-                />
+                  <input
+                    type="password"
+                    placeholder="Password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="input inputBig"
+                  />
 
-                <button type="submit" className="ctaBtn">
-                  Login <span className="arrow"></span>
-                </button>
-              </form>
+                  <button type="submit" className="ctaBtn">
+                    Login <span className="arrow"></span>
+                  </button>
+
+                  <div style={{ textAlign: 'right', marginTop: '8px', width: '100%' }}>
+                    <button
+                      type="button"
+                      onClick={initForgotPassword}
+                      disabled={loading}
+                      style={{ background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', fontSize: '13px', textDecoration: 'underline' }}
+                    >
+                      {loading ? 'Sending OTP...' : 'Forgot Password?'}
+                    </button>
+                  </div>
+
+                  <div style={{ textAlign: 'center', marginTop: '16px' }}>
+                    <span style={{ color: 'var(--muted)', fontSize: '14px' }}>Don't have an account? </span>
+                    <button
+                      type="button"
+                      onClick={() => router.push('/register')}
+                      style={{ background: 'none', border: 'none', color: 'var(--blue)', cursor: 'pointer', fontSize: '14px', textDecoration: 'underline' }}
+                    >
+                      Register
+                    </button>
+                  </div>
+                </form>
+              )}
+
+              {authMode === 'otp' && (
+                <form onSubmit={handleVerifyOTP} className="authForm authFormTight">
+                  <p style={{ color: 'var(--muted)', fontSize: '14px', marginBottom: '16px', textAlign: 'center' }}>
+                    We sent a 6-digit OTP to <b>{username}</b>.
+                  </p>
+                  <input
+                    type="text"
+                    placeholder="Enter 6-digit OTP"
+                    value={otp}
+                    onChange={(e) => setOtp(e.target.value)}
+                    className="input inputBig"
+                  />
+                  <button type="submit" className="ctaBtn" disabled={loading}>
+                    {loading ? 'Verifying...' : 'Verify OTP'} <span className="arrow"></span>
+                  </button>
+
+                  <div style={{ textAlign: 'center', marginTop: '16px' }}>
+                    <button
+                      type="button"
+                      onClick={() => setAuthMode('login')}
+                      style={{ background: 'none', border: 'none', color: 'var(--blue)', cursor: 'pointer', fontSize: '14px', textDecoration: 'underline' }}
+                    >
+                      Back to Login
+                    </button>
+                  </div>
+                </form>
+              )}
+
+              {authMode === 'reset' && (
+                <form onSubmit={handleResetPassword} className="authForm authFormTight">
+                  <p style={{ color: 'var(--muted)', fontSize: '14px', marginBottom: '16px', textAlign: 'center' }}>
+                    OTP verified. Please set your new password.
+                  </p>
+                  <input
+                    type="password"
+                    placeholder="New Password"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    className="input inputBig"
+                  />
+                  <button type="submit" className="ctaBtn" disabled={loading}>
+                    {loading ? 'Resetting...' : 'Reset Password'} <span className="arrow"></span>
+                  </button>
+                </form>
+              )}
             </div>
           </section>
         </main>
@@ -345,7 +521,7 @@ export default function Home() {
                   className="primaryBtn primaryBtnXL"
                   type="button"
                   disabled={loading}
-                  style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px',background: '#4f46e5' }}
+                  style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', background: '#4f46e5' }}
                 >
                   {loading ? 'Starting...' : <> Launch Meeting</>}
                 </button>
