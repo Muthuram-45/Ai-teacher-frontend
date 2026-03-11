@@ -615,12 +615,13 @@ export default function StudentQuizView({
         background: "radial-gradient(circle at center, #1a1a2e 0%, #0a0a12 100%)",
         zIndex: 99999,
         display: "flex",
-        fontFamily: "'Inter', system-ui, -apple-system, sans-serif",
+        fontFamily: "'Source Sans Pro', 'Noto Sans Tamil', 'Segoe UI', Roboto, Arial, sans-serif",
         color: "#f8fafc",
       }}
     >
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=fallback');
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Tamil:wght@100..900&family=Roboto:wght@300;400;500;700&display=swap');
         
         .glass-card {
           background: rgba(30, 41, 59, 0.4);

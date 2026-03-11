@@ -69,7 +69,7 @@ export default function StudentVoiceDoubt() {
         border: 'none', // LiveKit buttons have no visible border
         borderRadius: '8px',
         fontWeight: 500,
-        fontFamily: 'Inter, sans-serif', // Match LiveKit font
+        fontFamily: "'Source Sans Pro', 'Noto Sans Tamil', 'Segoe UI', Roboto, Arial, sans-serif",
         fontSize: '16px',
         display: 'flex',
         alignItems: 'center',

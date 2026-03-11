@@ -151,7 +151,7 @@ export default function AISidebar({
             flexDirection: 'column',
             boxShadow: '-8px 0 24px rgba(0,0,0,0.5)',
             color: '#fff',
-            fontFamily: 'Inter, sans-serif',
+            fontFamily: "'Source Sans Pro', 'Noto Sans Tamil', 'Segoe UI', Roboto, Arial, sans-serif",
             transition: 'right 0.3s ease'
         }}>
             <div style={{ padding: '20px', borderBottom: '1px solid #333', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>

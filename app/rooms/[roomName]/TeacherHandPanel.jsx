@@ -129,7 +129,7 @@ export default function TeacherHandPanel() {
 
                     <div style={{
                         fontSize: "15px",
-                        fontFamily: "Inter, sans-serif",
+                        fontFamily: "'Source Sans Pro', 'Noto Sans Tamil', 'Segoe UI', Roboto, Arial, sans-serif",
                         fontWeight: "500",
                         letterSpacing: "-0.2px",
                     }}>
