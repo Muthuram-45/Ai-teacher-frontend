@@ -82,13 +82,13 @@ export default function Home() {
       const response = await fetch(`${backendUrl}/api/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: username, password })
+        body: JSON.stringify({ email: username, password, name: teacherName })
       });
 
       const data = await response.json();
       if (data.success) {
         setIsLoggedIn(true);
-        if (!teacherName.trim() && data.teacherName) {
+        if (data.teacherName) {
           setTeacherName(data.teacherName);
         }
       } else {
@@ -305,109 +305,39 @@ export default function Home() {
             <div className="cardInner">
               <div className="tabs tabsSingle">
                 <h1 style={{ textAlign: 'center', color: 'var(--blue)', marginBottom: '10px' }}>
-                  {authMode === 'login' ? 'Teacher Login' : 'Reset Password'}
+                  Teacher Login
                 </h1>
               </div>
 
-              {authMode === 'login' && (
-                <form onSubmit={handleLogin} className="authForm authFormTight">
-                  <input
-                    type="text"
-                    placeholder="Tutor Name "
-                    value={teacherName}
-                    onChange={(e) => setTeacherName(e.target.value)}
-                    className="input inputBig"
-                  />
+              <form onSubmit={handleLogin} className="authForm authFormTight">
+                <input
+                  type="text"
+                  placeholder="Tutor Name "
+                  value={teacherName}
+                  onChange={(e) => setTeacherName(e.target.value)}
+                  className="input inputBig"
+                />
 
-                  <input
-                    type="email"
-                    placeholder="Gmail / Email Address"
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
-                    className="input inputBig"
-                  />
+                <input
+                  type="email"
+                  placeholder="Gmail / Email Address"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  className="input inputBig"
+                />
 
-                  <input
-                    type="password"
-                    placeholder="Password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="input inputBig"
-                  />
+                <input
+                  type="password"
+                  placeholder="Password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="input inputBig"
+                />
 
-                  <button type="submit" className="ctaBtn">
-                    Login <span className="arrow"></span>
-                  </button>
-
-                  <div style={{ textAlign: 'right', marginTop: '8px', width: '100%' }}>
-                    <button
-                      type="button"
-                      onClick={initForgotPassword}
-                      disabled={loading}
-                      style={{ background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', fontSize: '13px', textDecoration: 'underline' }}
-                    >
-                      {loading ? 'Sending OTP...' : 'Forgot Password?'}
-                    </button>
-                  </div>
-
-                  <div style={{ textAlign: 'center', marginTop: '16px' }}>
-                    <span style={{ color: 'var(--muted)', fontSize: '14px' }}>Don't have an account? </span>
-                    <button
-                      type="button"
-                      onClick={() => router.push('/register')}
-                      style={{ background: 'none', border: 'none', color: 'var(--blue)', cursor: 'pointer', fontSize: '14px', textDecoration: 'underline' }}
-                    >
-                      Register
-                    </button>
-                  </div>
-                </form>
-              )}
-
-              {authMode === 'otp' && (
-                <form onSubmit={handleVerifyOTP} className="authForm authFormTight">
-                  <p style={{ color: 'var(--muted)', fontSize: '14px', marginBottom: '16px', textAlign: 'center' }}>
-                    We sent a 6-digit OTP to <b>{username}</b>.
-                  </p>
-                  <input
-                    type="text"
-                    placeholder="Enter 6-digit OTP"
-                    value={otp}
-                    onChange={(e) => setOtp(e.target.value)}
-                    className="input inputBig"
-                  />
-                  <button type="submit" className="ctaBtn" disabled={loading}>
-                    {loading ? 'Verifying...' : 'Verify OTP'} <span className="arrow"></span>
-                  </button>
-
-                  <div style={{ textAlign: 'center', marginTop: '16px' }}>
-                    <button
-                      type="button"
-                      onClick={() => setAuthMode('login')}
-                      style={{ background: 'none', border: 'none', color: 'var(--blue)', cursor: 'pointer', fontSize: '14px', textDecoration: 'underline' }}
-                    >
-                      Back to Login
-                    </button>
-                  </div>
-                </form>
-              )}
-
-              {authMode === 'reset' && (
-                <form onSubmit={handleResetPassword} className="authForm authFormTight">
-                  <p style={{ color: 'var(--muted)', fontSize: '14px', marginBottom: '16px', textAlign: 'center' }}>
-                    OTP verified. Please set your new password.
-                  </p>
-                  <input
-                    type="password"
-                    placeholder="New Password"
-                    value={newPassword}
-                    onChange={(e) => setNewPassword(e.target.value)}
-                    className="input inputBig"
-                  />
-                  <button type="submit" className="ctaBtn" disabled={loading}>
-                    {loading ? 'Resetting...' : 'Reset Password'} <span className="arrow"></span>
-                  </button>
-                </form>
-              )}
+                <button type="submit" className="ctaBtn">
+                  Login <span className="arrow"></span>
+                </button>
+              </form>
             </div>
           </section>
         </main>
