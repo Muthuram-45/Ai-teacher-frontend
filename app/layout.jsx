@@ -2,7 +2,6 @@ import '../styles/globals.css';
 import '@livekit/components-styles';
 import '@livekit/components-styles/prefabs';
 import { Toaster } from 'react-hot-toast';
-import './globals.css';
 
 export const metadata = {
     title: {
