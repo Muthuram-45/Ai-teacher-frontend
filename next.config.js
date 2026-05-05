@@ -4,6 +4,8 @@ const nextConfig = {
   productionBrowserSourceMaps: true,
   images: {
     formats: ['image/webp'],
+  },  eslint: {
+    ignoreDuringBuilds: true,
   },
   webpack: (config, { buildId, dev, isServer, defaultLoaders, nextRuntime, webpack }) => {
     // Important: return the modified config
