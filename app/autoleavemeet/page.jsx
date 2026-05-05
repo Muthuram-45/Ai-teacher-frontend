@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { TbBrandZoom } from "react-icons/tb";
-import '../styles/page.css'
+import '../../styles/page.css'; // ✅ FIXED (go 2 levels up)
 
 export default function AutoLeaveMeetPage() {
     const [mounted, setMounted] = useState(false);
