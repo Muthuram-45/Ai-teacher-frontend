@@ -881,7 +881,7 @@ export default function StudentQuizView({
       )}
 
       {/* MAIN LAYOUT */}
-      <div style={{ display: "flex", height: "100vh", width: "100%" }}>
+      <div style={{ display: "flex", height: "100dvh", width: "100%" }}>
 
         {/* LEFT SIDE - Questions & Workspace */}
         <div style={{ flex: 1, display: "flex", flexDirection: "column", height: "100%", padding: "32px" }}>

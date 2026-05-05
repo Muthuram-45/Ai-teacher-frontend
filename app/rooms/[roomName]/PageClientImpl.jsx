@@ -2938,7 +2938,7 @@ export function PageClientImpl({ token, url }) {
                 autoGainControl: true,
             }}
             data-lk-theme="default"
-            style={{ height: "100vh", position: "relative", background: "#000" }}
+            style={{ height: "100dvh", position: "relative", background: "#000" }}
             onError={(error) => {
                 console.error("LiveKit Room Error:", error);
                 alert(`Connection Error: ${error.message}`);
