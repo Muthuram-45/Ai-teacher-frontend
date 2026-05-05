@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { TbBrandZoom } from "react-icons/tb";
 import { MdContentCopy } from "react-icons/md";
 import { BACKEND_URL } from './lib/config';
+import '../styles/page.css'
 
 export default function Home() {
   const router = useRouter();
