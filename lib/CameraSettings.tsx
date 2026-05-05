@@ -13,8 +13,8 @@ import { isLocalTrack, LocalTrackPublication, Track } from 'livekit-client';
 
 // Background image paths
 const BACKGROUND_IMAGES = [
-  { name: 'Desk', path: Desk },
-  { name: 'Nature', path: Nature },
+  { name: 'Desk', path: { src: '/background-images/samantha-gades-BlIhVfXbi9s-unsplash.jpg' } },
+  { name: 'Nature', path: { src: '/background-images/ali-kazal-tbw_KQE3Cbg-unsplash.jpg' } },
 ];
 
 // Background options
