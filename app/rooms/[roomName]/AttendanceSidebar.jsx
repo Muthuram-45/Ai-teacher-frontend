@@ -1,6 +1,8 @@
 'use client';
 import { useEffect, useState } from 'react';
 import * as XLSX from 'xlsx-js-style';
+import { FaMobileAlt, FaTabletAlt } from "react-icons/fa";
+import { IoDesktopOutline } from "react-icons/io5";
 
 export default function AttendanceSidebar({ attendance, doubtsWithAnswers = [], classSummary, topic, onClose, right = 0 }) {
     const studentAttendance = Object.values(attendance).filter(a => a.role === 'student');
@@ -44,9 +46,10 @@ export default function AttendanceSidebar({ attendance, doubtsWithAnswers = [], 
             [{ v: 'Topic:', s: headerStyle }, { v: topic || 'Python', s: headerStyle }],
             [{ v: 'CLASS SUMMARY:', s: headerStyle }, { v: classSummary || 'No summary available.' }],
             [], // SPACE AFTER SUMMARY
-            [{ v: 'STUDENT DETAILS', s: studentDetailsStyle }, '', '', '', '', '', ''], // Will be merged
+            [{ v: 'STUDENT DETAILS', s: studentDetailsStyle }, '', '', '', '', '', '', ''], // Will be merged
             [
                 { v: 'Name', s: headerStyle },
+                { v: 'Device', s: headerStyle },
                 { v: 'First Join', s: headerStyle },
                 { v: 'Last Leave', s: headerStyle },
                 { v: 'Total Stay', s: headerStyle },
@@ -76,7 +79,7 @@ export default function AttendanceSidebar({ attendance, doubtsWithAnswers = [], 
                 questionText = studentQuestions.map((q, i) => `${i + 1}. ${q.text}`).join(' ');
             }
 
-            rows.push([s.identity, firstJoin, lastLeave, stayTime, s.joinCount, { v: historyText, s: historyStyle }, questionText]);
+            rows.push([s.identity, s.device || 'Laptop', firstJoin, lastLeave, stayTime, s.joinCount, { v: historyText, s: historyStyle }, questionText]);
         });
 
         // 3. Create Workbook and Worksheet
@@ -85,19 +88,20 @@ export default function AttendanceSidebar({ attendance, doubtsWithAnswers = [], 
 
         // 4. Set Merges
         ws['!merges'] = [
-            { s: { r: 0, c: 0 }, e: { r: 0, c: 6 } }, // Merge "CLASS DETAILS" (Row 1)
-            { s: { r: 5, c: 0 }, e: { r: 5, c: 6 } } // Merge "STUDENT DETAILS" (Row 6)
+            { s: { r: 0, c: 0 }, e: { r: 0, c: 7 } }, // Merge "CLASS DETAILS" (Row 1)
+            { s: { r: 5, c: 0 }, e: { r: 5, c: 7 } } // Merge "STUDENT DETAILS" (Row 6)
         ];
 
         // 5. Set Column Widths
         ws['!cols'] = [
-            { wch: 20 }, // A
-            { wch: 15 }, // B
-            { wch: 15 }, // C (Last Leave)
-            { wch: 15 }, // D
-            { wch: 12 }, // E
-            { wch: 50 }, // F (History)
-            { wch: 100 } // G (Questions)
+            { wch: 20 }, // A Name
+            { wch: 15 }, // B Device
+            { wch: 15 }, // C First Join
+            { wch: 15 }, // D (Last Leave)
+            { wch: 15 }, // E Total Stay
+            { wch: 12 }, // F Join Count
+            { wch: 50 }, // G (History)
+            { wch: 100 } // H (Questions)
         ];
 
         XLSX.utils.book_append_sheet(wb, ws, 'Class Report');
@@ -164,6 +168,7 @@ export default function AttendanceSidebar({ attendance, doubtsWithAnswers = [], 
                         <thead>
                             <tr style={{ textAlign: 'left', borderBottom: '1px solid #333', color: '#aaa' }}>
                                 <th style={{ padding: '10px 5px' }}>Name</th>
+                                <th style={{ padding: '10px 5px', textAlign: 'center' }}>Device</th>
                                 <th style={{ padding: '10px 5px' }}>Joined</th>
                                 <th style={{ padding: '10px 5px' }}>Left</th>
                                 <th style={{ padding: '10px 5px' }}>Stay Time</th>
@@ -178,6 +183,9 @@ export default function AttendanceSidebar({ attendance, doubtsWithAnswers = [], 
                                         <div style={{ fontSize: '0.7rem', color: a.status === 'online' ? '#4CAF50' : '#f44336' }}>
                                             ● {a.status === 'online' ? 'Online' : 'Left'}
                                         </div>
+                                    </td>
+                                    <td style={{ padding: '12px 5px', color: '#ccc', textAlign: 'center', fontSize: '1.2rem' }} title={a.device || 'Laptop'}>
+                                        {(a.device === 'Mobile') ? <FaMobileAlt /> : (a.device === 'Tablet') ? <FaTabletAlt /> : <IoDesktopOutline />}
                                     </td>
                                     <td style={{ padding: '12px 5px', color: '#ccc' }}>
                                         {formatTimestamp(a.firstJoined)}
