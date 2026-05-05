@@ -1763,8 +1763,11 @@ function RoomContent() {
         const updateParticipantStatus = (participant, eventType) => {
             const identity = participant.identity;
             let pRole = "student";
+            let pDevice = "Laptop";
             try {
-                pRole = JSON.parse(participant.metadata || "{}").role || "student";
+                const meta = JSON.parse(participant.metadata || "{}");
+                pRole = meta.role || "student";
+                pDevice = meta.device || "Laptop";
             } catch { }
 
             setAttendance((prev) => {
@@ -1772,6 +1775,7 @@ function RoomContent() {
                 const existing = prev[identity] || {
                     identity,
                     role: pRole,
+                    device: pDevice,
                     firstJoined: now,
                     lastJoined: now,
                     lastLeft: null,
@@ -1799,6 +1803,7 @@ function RoomContent() {
                             joinCount: (existing.joinCount || 0) + 1,
                             status: "online",
                             role: pRole, // update role in case it changed
+                            device: pDevice, // update device if sent
                             sessions: [
                                 ...(existing.sessions || []),
                                 { joinedAt: now, leftAt: null },

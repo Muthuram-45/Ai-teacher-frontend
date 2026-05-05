@@ -67,7 +67,7 @@ export default function StudentTextDoubt() {
                     fontSize: '16px',
                     fontWeight: 500,
                     transition: 'background 0.2s',
-                    fontFamily: 'Inter, sans-serif'
+                    fontFamily: "'Source Sans Pro', 'Noto Sans Tamil', 'Segoe UI', Roboto, Arial, sans-serif"
                 }}
                 onMouseOver={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'}
                 onMouseOut={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)'}

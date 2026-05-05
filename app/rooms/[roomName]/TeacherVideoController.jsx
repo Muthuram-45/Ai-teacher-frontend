@@ -351,14 +351,13 @@ export default function TeacherVideoController({
             </div>
 
             <h2 style={{
-              margin: '0 0 10px 0', color: '#fff', fontSize: '24px',
-              fontWeight: '800', fontFamily: 'Inter, Google Sans, sans-serif', letterSpacing: '-0.4px',
+              margin: '0 0 10px 0', color: '#fff', fontSize: '24px', fontWeight: '800', fontFamily: "'Source Sans Pro', 'Noto Sans Tamil', 'Segoe UI', Roboto, Arial, sans-serif", letterSpacing: '-0.4px',
             }}>
               Class Completed! 🎉
             </h2>
             <p style={{
               margin: '0 0 28px 0', color: 'rgba(255,255,255,0.65)',
-              fontSize: '14px', lineHeight: '1.7', fontFamily: 'Inter, sans-serif',
+              fontSize: '14px', lineHeight: '1.7', fontFamily: "'Source Sans Pro', 'Noto Sans Tamil', 'Segoe UI', Roboto, Arial, sans-serif",
             }}>
               Great session! You can now generate an AI-powered quiz<br />
               based on the class topic and student doubts.<br />
@@ -376,7 +375,8 @@ export default function TeacherVideoController({
                   border: '1px solid rgba(255,255,255,0.1)',
                   borderRadius: '12px', padding: '10px 8px',
                   color: 'rgba(255,255,255,0.7)', fontSize: '12px',
-                  fontFamily: 'Inter, sans-serif', textAlign: 'center',
+                  fontFamily: "'Source Sans Pro', 'Noto Sans Tamil', 'Segoe UI', Roboto, Arial, sans-serif",
+                  textAlign: 'center',
                 }}>
                   <div style={{ fontSize: '22px', marginBottom: '4px' }}>{icon}</div>
                   {label}
@@ -396,7 +396,7 @@ export default function TeacherVideoController({
                 border: 'none', borderRadius: '12px',
                 color: '#fff', fontSize: '16px', fontWeight: '700',
                 cursor: quizLoading ? 'not-allowed' : 'pointer',
-                fontFamily: 'Inter, sans-serif',
+                fontFamily: "'Source Sans Pro', 'Noto Sans Tamil', 'Segoe UI', Roboto, Arial, sans-serif",
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 gap: '10px', boxShadow: '0 6px 20px rgba(33,150,243,0.35)',
                 transition: 'transform 0.15s, opacity 0.15s',
@@ -420,7 +420,7 @@ export default function TeacherVideoController({
                 background: 'none',
                 border: '1px solid rgba(255,255,255,0.18)',
                 borderRadius: '10px', color: 'rgba(255,255,255,0.45)',
-                fontSize: '13px', cursor: 'pointer', fontFamily: 'Inter, sans-serif',
+                fontSize: '13px', cursor: 'pointer', fontFamily: "'Source Sans Pro', 'Noto Sans Tamil', 'Segoe UI', Roboto, Arial, sans-serif",
               }}
             >
               Skip for now
