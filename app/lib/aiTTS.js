@@ -1,3 +1,5 @@
+import { BACKEND_URL, PYTHON_BACKEND_URL } from './config';
+
 // 🔌 Global trackers for stopping audio
 let localContext = null;
 let activeSource = null;    // Tracks current playing AudioBufferSourceNode
@@ -79,7 +81,7 @@ async function playRecordableChunk(text, audioContext, destinationNode) {
 
     try {
         console.log("🚀 Starting Streamed Synthesis...");
-        const response = await fetch('http://localhost:5000/synthesize', {
+        const response = await fetch(`${PYTHON_BACKEND_URL}/synthesize`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ text })
@@ -152,7 +154,7 @@ async function playRecordableChunk(text, audioContext, destinationNode) {
         for (const chunk of chunks) {
             if (stopRequested) break;
             try {
-                const url = `http://localhost:3001/api/tts?text=${encodeURIComponent(chunk)}`;
+                const url = `${BACKEND_URL}/api/tts?text=${encodeURIComponent(chunk)}`;
                 const response = await fetch(url);
                 if (!response.ok) continue;
                 const arrayBuffer = await response.arrayBuffer();

@@ -1,6 +1,7 @@
 'use client';
 import { useParticipants, useLocalParticipant } from '@livekit/components-react';
 import { FaMicrophone, FaMicrophoneSlash, FaVideo, FaVideoSlash } from 'react-icons/fa';
+import { BACKEND_URL } from "../../lib/config";
 
 export default function ParticipantList({ onClose }) {
     const participants = useParticipants();
@@ -95,7 +96,7 @@ export default function ParticipantList({ onClose }) {
                                     onClick={async () => {
                                         if (window.confirm(`Are you sure you want to remove and block ${p.identity}?`)) {
                                             try {
-                                                const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001'}/remove-participant`, {
+                                                const res = await fetch(`${BACKEND_URL}/remove-participant`, {
                                                     method: 'POST',
                                                     headers: { 'Content-Type': 'application/json' },
                                                     body: JSON.stringify({

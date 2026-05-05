@@ -1,6 +1,7 @@
 'use client';
 import { useRoomContext } from '@livekit/components-react';
 import { speakText } from '@/app/lib/aiTTS';
+import { BACKEND_URL } from "../../lib/config";
 
 export default function StudentVoiceDoubt() {
   const room = useRoomContext();
@@ -35,8 +36,7 @@ export default function StudentVoiceDoubt() {
       // 🌟 Encourage Student
       (async () => {
         try {
-          const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001';
-          const res = await fetch(`${backendUrl}/encourage-student`, {
+          const res = await fetch(`${BACKEND_URL}/encourage-student`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({

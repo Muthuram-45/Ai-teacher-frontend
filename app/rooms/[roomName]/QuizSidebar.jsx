@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import * as XLSX from 'xlsx-js-style';
+import { BACKEND_URL } from "../../lib/config";
 
 export default function QuizSidebar({ quizId, topic, onClose, right = 0 }) {
     const [results, setResults] = useState(null);
@@ -12,7 +13,7 @@ export default function QuizSidebar({ quizId, topic, onClose, right = 0 }) {
 
         const fetchResults = async () => {
             try {
-                const res = await fetch(`http://localhost:3001/quiz-results/${quizId}`);
+                const res = await fetch(`${BACKEND_URL}/quiz-results/${quizId}`);
                 const data = await res.json();
                 setResults(data);
             } catch (err) {

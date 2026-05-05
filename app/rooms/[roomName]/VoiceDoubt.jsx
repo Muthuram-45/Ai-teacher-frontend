@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState, useRef } from "react";
 import { useRoomContext, useLocalParticipant } from "@livekit/components-react";
+import { BACKEND_URL } from "../../lib/config";
 
 export default function VoiceDoubt() {
   const room = useRoomContext();
@@ -223,10 +224,7 @@ export default function VoiceDoubt() {
     }
 
     try {
-      const backendUrl =
-        process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:3001";
-
-      const res = await fetch(`${backendUrl}/extract-question`, {
+      const res = await fetch(`${BACKEND_URL}/extract-question`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

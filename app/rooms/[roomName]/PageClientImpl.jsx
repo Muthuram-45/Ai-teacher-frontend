@@ -8,6 +8,7 @@ import {
     useCallback,
 } from "react";
 import { useSearchParams } from "next/navigation";
+import { BACKEND_URL } from "../../lib/config";
 import {
     startClassRecording,
     stopClassRecording,
@@ -1374,7 +1375,7 @@ function RoomContent() {
 
         const interval = setInterval(() => {
             fetch(
-                `${process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:3001"}/waiting-students/${room.name}`,
+                `${BACKEND_URL}/waiting-students/${room.name}`,
             )
                 .then((r) => r.json())
                 .then((data) => {
@@ -1389,7 +1390,7 @@ function RoomContent() {
     const handleAdmit = async (requestId) => {
         try {
             const res = await fetch(
-                `${process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:3001"}/admit-student`,
+                `${BACKEND_URL}/admit-student`,
                 {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
@@ -1407,7 +1408,7 @@ function RoomContent() {
     const handleReject = async (requestId) => {
         try {
             const res = await fetch(
-                `${process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:3001"}/reject-student`,
+                `${BACKEND_URL}/reject-student`,
                 {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
@@ -2000,7 +2001,7 @@ function RoomContent() {
 
         setLoadingAI(doubt.id);
         try {
-            const res = await fetch("http://localhost:3001/ask-ai", {
+            const res = await fetch(`${BACKEND_URL}/ask-ai`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
@@ -2130,7 +2131,7 @@ function RoomContent() {
         const finalTopic = meetingTopic || "General Class";
 
         try {
-            const res = await fetch("http://localhost:3001/generate-quiz", {
+            const res = await fetch(`${BACKEND_URL}/generate-quiz`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
@@ -2173,7 +2174,7 @@ function RoomContent() {
                 // ⭐ GENERATE CLASS SUMMARY
                 try {
                     const summaryRes = await fetch(
-                        "http://localhost:3001/generate-summary",
+                        `${BACKEND_URL}/generate-summary`,
                         {
                             method: "POST",
                             headers: { "Content-Type": "application/json" },
@@ -2200,7 +2201,7 @@ function RoomContent() {
         if (!activeQuiz || !localParticipant) return;
 
         try {
-            const res = await fetch("http://localhost:3001/submit-quiz", {
+            const res = await fetch(`${BACKEND_URL}/submit-quiz`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
@@ -2230,7 +2231,7 @@ function RoomContent() {
             await new Promise((resolve) => setTimeout(resolve, 800));
 
             // 2️⃣ Tell backend to delete room & mark it as ended
-            await fetch("http://localhost:3001/end-room", {
+            await fetch(`${BACKEND_URL}/end-room`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ roomName: room.name }),

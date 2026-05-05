@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import '../styles/page.css';
 import { TbBrandZoom } from "react-icons/tb";
 import { MdContentCopy } from "react-icons/md";
+import { BACKEND_URL } from './lib/config';
 
 export default function Home() {
   const router = useRouter();
@@ -36,12 +37,11 @@ export default function Home() {
     // Fetch voices
     const fetchVoices = async () => {
       try {
-        const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001';
-        const resp = await fetch(`${backendUrl}/list-voices`);
+        const resp = await fetch(`${BACKEND_URL}/list-voices`);
         const data = await resp.json();
         if (data.voices) setAvailableVoices(data.voices);
 
-        const activeResp = await fetch(`${backendUrl}/active-voice`);
+        const activeResp = await fetch(`${BACKEND_URL}/active-voice`);
         const activeData = await activeResp.json();
         if (activeData.activeVoice) setSelectedVoice(activeData.activeVoice);
       } catch (e) {
@@ -55,8 +55,7 @@ export default function Home() {
     const voice = e.target.value;
     setSelectedVoice(voice);
     try {
-      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001';
-      await fetch(`${backendUrl}/select-voice`, {
+      await fetch(`${BACKEND_URL}/select-voice`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ voice })
@@ -78,8 +77,7 @@ export default function Home() {
     }
 
     try {
-      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001';
-      const response = await fetch(`${backendUrl}/api/auth/login`, {
+      const response = await fetch(`${BACKEND_URL}/api/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: username, password, name: teacherName })
@@ -108,8 +106,7 @@ export default function Home() {
 
     setLoading(true);
     try {
-      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001';
-      const response = await fetch(`${backendUrl}/api/auth/forgot-password`, {
+      const response = await fetch(`${BACKEND_URL}/api/auth/forgot-password`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: username })
@@ -136,8 +133,7 @@ export default function Home() {
     }
     setLoading(true);
     try {
-      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001';
-      const response = await fetch(`${backendUrl}/api/auth/verify-otp`, {
+      const response = await fetch(`${BACKEND_URL}/api/auth/verify-otp`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: username, otp })
@@ -163,8 +159,7 @@ export default function Home() {
     }
     setLoading(true);
     try {
-      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001';
-      const response = await fetch(`${backendUrl}/api/auth/reset-password`, {
+      const response = await fetch(`${BACKEND_URL}/api/auth/reset-password`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: username, otp, newPassword })
@@ -215,8 +210,7 @@ export default function Home() {
     setLoading(true);
 
     try {
-      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001';
-      const res = await fetch(`${backendUrl}/token`, {
+      const res = await fetch(`${BACKEND_URL}/token`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
