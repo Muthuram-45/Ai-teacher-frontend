@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import '../styles/page.css';
+
 import { TbBrandZoom } from "react-icons/tb";
 import { MdContentCopy } from "react-icons/md";
 import { BACKEND_URL } from './lib/config';
