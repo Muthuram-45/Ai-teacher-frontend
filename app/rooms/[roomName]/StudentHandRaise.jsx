@@ -2,11 +2,13 @@
 import { useState } from 'react';
 import { useRoomContext } from '@livekit/components-react';
 import { HiOutlineHandRaised } from 'react-icons/hi2';
+import { initAudioContext } from '@/app/lib/aiTTS';
 
 export default function StudentHandRaise({ isHandRaised, onToggle }) {
     const room = useRoomContext();
 
     const toggleHandRaise = async () => {
+        initAudioContext();
         if (!room?.localParticipant) return;
 
         await room.localParticipant.publishData(

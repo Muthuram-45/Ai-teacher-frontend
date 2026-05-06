@@ -74,7 +74,7 @@ import StudentVideoViewer from "./StudentVideoViewer";
 import AISidebar from "./AISidebar";
 import { GiNotebook } from "react-icons/gi";
 import ParticipantList from "./ParticipantList";
-import { speakText, stopSpeaking } from "@/app/lib/aiTTS";
+import { speakText, stopSpeaking, initAudioContext } from "@/app/lib/aiTTS";
 import HistorySidebar from "./HistorySidebar";
 import AttendanceSidebar from "./AttendanceSidebar";
 import VoiceDoubt from "./VoiceDoubt";
@@ -1327,6 +1327,21 @@ export function useAutoAskAI({ role, askAI, setDoubts }) {
 function RoomContent() {
     const { localParticipant } = useLocalParticipant();
     const participants = useParticipants();
+
+    // 🔊 Global audio context initialization
+    useEffect(() => {
+        const unlockAudio = () => {
+            initAudioContext();
+            document.removeEventListener('click', unlockAudio);
+            document.removeEventListener('touchstart', unlockAudio);
+        };
+        document.addEventListener('click', unlockAudio);
+        document.addEventListener('touchstart', unlockAudio);
+        return () => {
+            document.removeEventListener('click', unlockAudio);
+            document.removeEventListener('touchstart', unlockAudio);
+        };
+    }, []);
 
     const [doubts, setDoubts] = useState([]);
     const [doubtsWithAnswers, setDoubtsWithAnswers] = useState([]);

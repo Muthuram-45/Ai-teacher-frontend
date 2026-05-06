@@ -43,6 +43,12 @@ export default function StudentTextDoubt() {
                 const data = await res.json();
                 if (data.encouragement) {
                     speakText(data.encouragement).catch(err => console.error('Encourage TTS error:', err));
+                    if (room) {
+                        room.localParticipant.publishData(
+                            new TextEncoder().encode(JSON.stringify({ action: "AI_SPEAK_BROADCAST", text: data.encouragement })),
+                            { reliable: true }
+                        );
+                    }
                 }
             } catch (err) {
                 console.error('Failed to get encouragement', err);
