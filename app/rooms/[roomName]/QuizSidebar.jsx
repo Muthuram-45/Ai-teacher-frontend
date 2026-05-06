@@ -176,7 +176,7 @@ export default function QuizSidebar({ quizId, topic, onClose, right = 0 }) {
     };
 
     return (
-        <div className="sidebar-panel" style={{
+        <div style={{
             position: 'fixed',
             top: 0,
             right: right,

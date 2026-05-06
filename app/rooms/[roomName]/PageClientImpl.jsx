@@ -193,7 +193,6 @@ function WaitingRoom({ waitingStudents, onAdmit, onReject }) {
 
     return (
         <div
-            className="waiting-room-overlay"
             style={{
                 position: "absolute",
                 top: 24,
@@ -531,7 +530,6 @@ function TeacherOnlyUI({
 
             {/* 🔔 Notifications & History (Near Leave button) */}
             <div
-                className="teacher-actions-overlay"
                 style={{
                     position: "absolute",
                     bottom: 14,
@@ -2415,7 +2413,6 @@ function RoomContent() {
             {role === "teacher" && teacherClassStarted ? (
                 <>
                     <div
-                        className="teacher-layout-container"
                         style={{
                             display: "flex",
                             width: "100%",
@@ -2427,11 +2424,11 @@ function RoomContent() {
                          but we ensure the space is allocated here.
                          Actually, TeacherVideoController renders its own fixed/absolute video.
                          We'll make it 80% in its own file. Here we just render the sidebar. */}
-                        <div className="main-video-panel" style={{ width: "80%", height: "100%" }} />
+                        <div style={{ width: "80%", height: "100%" }} />
 
                         {/* 🔹 Right Panel (20%) - Student videos */}
                         <div
-                            className="custom-scrollbar-hide student-thumbs-panel"
+                            className="custom-scrollbar-hide"
                             style={{
                                 width: "20%",
                                 height: "100%",
@@ -2509,36 +2506,34 @@ function RoomContent() {
             <TeacherHandPanel />
 
             {/* 👩‍🏫 Teacher-only controls & notifications */}
-            <div className="teacher-controls-overlay" style={{ position: "absolute", bottom: 14, right: "calc(50% + 365px)", zIndex: 1000 }}>
-                <TeacherOnlyUI
-                    doubts={doubts}
-                    onShowDoubts={() => setShowAI(!showAI)}
-                    onShowHistory={() => setShowHistory(!showHistory)}
-                    onShowAttendance={() => setShowAttendance(!showAttendance)}
-                    onShowQuiz={() => setShowQuizResults((prev) => !prev)}
-                    onGenerateQuiz={handleGenerateQuiz}
-                    onShowParticipants={() => setShowParticipants(!showParticipants)}
-                    showParticipants={showParticipants}
-                    recordingAudioContext={recordingAudioContext}
-                    recordingDestNode={recordingDestNode}
-                    onEndMeeting={handleEndMeeting}
-                    onLeaveMeeting={handleLeaveMeeting}
-                    waitingStudents={waitingStudents}
-                    onAdmit={handleAdmit}
-                    onReject={handleReject}
-                    onClassStatusChange={setTeacherClassStarted}
-                    isRecording={isRecording}
-                    isPaused={isPaused}
-                    showRecordMenu={showRecordMenu}
-                    setShowRecordMenu={setShowRecordMenu}
-                    handleStartRecording={handleStartRecording}
-                    handleStopRecording={handleStopRecording}
-                    handlePauseRecording={handlePauseRecording}
-                    handleResumeRecording={handleResumeRecording}
-                    handleSaveRecording={handleSaveRecording}
-                    recordingDuration={recordingDuration}
-                />
-            </div>
+            <TeacherOnlyUI
+                doubts={doubts}
+                onShowDoubts={() => setShowAI(!showAI)}
+                onShowHistory={() => setShowHistory(!showHistory)}
+                onShowAttendance={() => setShowAttendance(!showAttendance)}
+                onShowQuiz={() => setShowQuizResults((prev) => !prev)}
+                onGenerateQuiz={handleGenerateQuiz}
+                onShowParticipants={() => setShowParticipants(!showParticipants)}
+                showParticipants={showParticipants}
+                recordingAudioContext={recordingAudioContext}
+                recordingDestNode={recordingDestNode}
+                onEndMeeting={handleEndMeeting}
+                onLeaveMeeting={handleLeaveMeeting}
+                waitingStudents={waitingStudents}
+                onAdmit={handleAdmit}
+                onReject={handleReject}
+                onClassStatusChange={setTeacherClassStarted}
+                isRecording={isRecording}
+                isPaused={isPaused}
+                showRecordMenu={showRecordMenu}
+                setShowRecordMenu={setShowRecordMenu}
+                handleStartRecording={handleStartRecording}
+                handleStopRecording={handleStopRecording}
+                handlePauseRecording={handlePauseRecording}
+                handleResumeRecording={handleResumeRecording}
+                handleSaveRecording={handleSaveRecording}
+                recordingDuration={recordingDuration}
+            />
 
             {/* Sequential Hand Raise Audio Notification Trigger */}
             <HandRaiseAudioNotifier queue={handRaiseQueue} role={role} />
