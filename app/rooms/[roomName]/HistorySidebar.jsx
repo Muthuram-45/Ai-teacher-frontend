@@ -5,7 +5,7 @@ export default function HistorySidebar({ doubtsWithAnswers = [], right = 0, onCl
     if (doubtsWithAnswers.length === 0) return null;
 
     return (
-        <div style={{
+        <div className="sidebar-panel" style={{
             position: 'fixed',
             top: 0,
             right: `${right}px`,

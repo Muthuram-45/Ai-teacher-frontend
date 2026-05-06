@@ -109,7 +109,7 @@ export default function AttendanceSidebar({ attendance, doubtsWithAnswers = [], 
     };
 
     return (
-        <div style={{
+        <div className="sidebar-panel" style={{
             position: 'absolute',
             top: 0,
             bottom: 0,

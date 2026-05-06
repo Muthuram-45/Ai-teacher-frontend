@@ -797,6 +797,7 @@ export default function TeacherVideoController({
               src={videoURL}
               controls={true}
               onPlay={() => { }}
+              className={classStarted ? "teacher-video-active" : ""}
               style={classStarted ? {
                 position: 'fixed',
                 top: 0,

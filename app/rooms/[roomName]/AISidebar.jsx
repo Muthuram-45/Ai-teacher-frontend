@@ -138,7 +138,7 @@ export default function AISidebar({
     // if (!hasContent) return null; // We want to show it even if empty to access Stop button
 
     return (
-        <div style={{
+        <div className="sidebar-panel" style={{
             position: 'fixed',
             top: 0,
             right: `${right}px`,
