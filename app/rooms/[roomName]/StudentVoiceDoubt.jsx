@@ -1,12 +1,13 @@
 'use client';
 import { useRoomContext } from '@livekit/components-react';
-import { speakText } from '@/app/lib/aiTTS';
+import { speakText, initAudioContext } from '@/app/lib/aiTTS';
 import { BACKEND_URL } from "../../lib/config";
 
 export default function StudentVoiceDoubt() {
   const room = useRoomContext();
 
   const startListening = () => {
+    initAudioContext();
     const SpeechRecognition =
       window.SpeechRecognition || window.webkitSpeechRecognition;
 

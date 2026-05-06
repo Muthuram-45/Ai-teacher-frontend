@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { useRoomContext } from '@livekit/components-react';
 import { FiEdit } from "react-icons/fi";
-import { speakText } from '@/app/lib/aiTTS';
+import { speakText, initAudioContext } from '@/app/lib/aiTTS';
 import { BACKEND_URL } from "../../lib/config";
 
 export default function StudentTextDoubt() {
@@ -11,6 +11,7 @@ export default function StudentTextDoubt() {
     const [text, setText] = useState('');
 
     const sendDoubt = () => {
+        initAudioContext();
         if (!text.trim()) return;
 
         room.localParticipant.publishData(
@@ -52,7 +53,10 @@ export default function StudentTextDoubt() {
     return (
         <div style={{ position: 'relative' }}>
             <button
-                onClick={() => setShowInput(!showInput)}
+                onClick={() => {
+                    initAudioContext();
+                    setShowInput(!showInput);
+                }}
                 style={{
                     padding: '0 12px',
                     height: '44px',

@@ -70,6 +70,13 @@ function getLocalContext() {
     return localContext;
 }
 
+export function initAudioContext() {
+    const ctx = getLocalContext();
+    if (ctx.state === 'suspended') {
+        ctx.resume().catch(() => {});
+    }
+}
+
 /**
  * 🔊 Plays a single chunk with zero-latency streaming (Most Reliable for Continuity)
  */
