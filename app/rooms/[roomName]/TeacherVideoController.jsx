@@ -115,9 +115,14 @@ export default function TeacherVideoController({
       if (!endedAnnouncedRef.current) {
         endedAnnouncedRef.current = true;
         try {
-          await speakText(
-            "Ok guys, I have finished the class. ask doubt box enter your doubt i am clarify one by one ."
-          );
+          const txt = "Ok guys, I have finished the class. ask doubt box enter your doubt i am clarify one by one .";
+          await speakText(txt);
+          if (room) {
+            room.localParticipant.publishData(
+              new TextEncoder().encode(JSON.stringify({ action: "AI_SPEAK_BROADCAST", text: txt })),
+              { reliable: true }
+            );
+          }
         } catch (e) {
           console.error('End TTS failed:', e);
         }
@@ -240,13 +245,17 @@ export default function TeacherVideoController({
               { reliable: true }
             );
 
-            await speakText(
-              `${msg.name}, you raised your hand. Do you have any doubts? If so, please click the ‘Ask a Doubt’ button to submit your question.`,
-              {
-                audioContext: recordingAudioContext.current,
-                destinationNode: recordingDestNode.current
-              }
-            );
+            const txt = `${msg.name}, you raised your hand. Do you have any doubts? If so, please click the ‘Ask a Doubt’ button to submit your question.`;
+            await speakText(txt, {
+              audioContext: recordingAudioContext.current,
+              destinationNode: recordingDestNode.current
+            });
+            if (room) {
+              room.localParticipant.publishData(
+                new TextEncoder().encode(JSON.stringify({ action: "AI_SPEAK_BROADCAST", text: txt })),
+                { reliable: true }
+              );
+            }
           }
         } else if (msg.action === 'HAND_RAISE') {
           console.log('✋ Hand lowered by:', msg.name);

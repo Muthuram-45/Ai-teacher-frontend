@@ -1892,6 +1892,11 @@ function RoomContent() {
                         audioContext: recordingAudioContext.current,
                         destinationNode: recordingDestNode.current,
                     }).catch((err) => console.error("Greeting TTS error:", err));
+                    
+                    room.localParticipant.publishData(
+                        new TextEncoder().encode(JSON.stringify({ action: "AI_SPEAK_BROADCAST", text: reply })),
+                        { reliable: true }
+                    );
                     return;
                 }
 
@@ -1945,6 +1950,14 @@ function RoomContent() {
                     msg.name === localParticipant?.identity
                 ) {
                     setIsHandRaised(msg.raised);
+                }
+
+                // 📢 AI General Speak Broadcast (Student Side & Other Teachers)
+                if (msg.action === "AI_SPEAK_BROADCAST" && msg.text) {
+                    speakText(msg.text, {
+                        audioContext: recordingAudioContext.current,
+                        destinationNode: recordingDestNode.current,
+                    }).catch((err) => console.error("Broadcast TTS error:", err));
                 }
 
                 // 🤖 AI Answer Broadcast (Student Side & Other Teachers)
@@ -2057,6 +2070,13 @@ function RoomContent() {
             { reliable: true },
         );
         console.log("✅ sendToStudent: Published AI_ANSWER_BROADCAST");
+        
+        // Also play locally for the Teacher
+        const audioString = `${doubt.name} asked: ${doubt.text}. ${doubt.answer}`;
+        speakText(audioString, {
+            audioContext: recordingAudioContext.current,
+            destinationNode: recordingDestNode.current,
+        }).catch((err) => console.error("Teacher local TTS error:", err));
 
         setDoubts((prev) =>
             prev.map((d) => (d.id === doubt.id ? { ...d, isBroadcasting: true } : d)),
@@ -2715,9 +2735,14 @@ function HandRaiseAudioNotifier({ queue, role }) {
         // ⭐ Special Case: 5+ Students (Batch Announcement)
         if (queue.length >= 5 && !hasSpokenBatchMsg.current) {
             hasSpokenBatchMsg.current = true;
-            speakText(
-                "As several students have raised doubts, I will now conclude the session and proceed to clarify each of your questions.",
-            ).catch((err) => console.error("TTS Error:", err));
+            const txt = "As several students have raised doubts, I will now conclude the session and proceed to clarify each of your questions.";
+            speakText(txt).catch((err) => console.error("TTS Error:", err));
+            if (room) {
+                room.localParticipant.publishData(
+                    new TextEncoder().encode(JSON.stringify({ action: "AI_SPEAK_BROADCAST", text: txt })),
+                    { reliable: true }
+                );
+            }
             return;
         }
 
@@ -2731,9 +2756,14 @@ function HandRaiseAudioNotifier({ queue, role }) {
 
                 // Small delay to ensure previous audio (like a greeting) finished
                 setTimeout(() => {
-                    speakText(
-                        `${currentLead}, you raised your hand. Do you have any doubts? If so, please click the ‘Ask a Doubt’ button to submit your question.`,
-                    ).catch((err) => console.error("TTS Error:", err));
+                    const txt = `${currentLead}, you raised your hand. Do you have any doubts? If so, please click the ‘Ask a Doubt’ button to submit your question.`;
+                    speakText(txt).catch((err) => console.error("TTS Error:", err));
+                    if (room) {
+                        room.localParticipant.publishData(
+                            new TextEncoder().encode(JSON.stringify({ action: "AI_SPEAK_BROADCAST", text: txt })),
+                            { reliable: true }
+                        );
+                    }
                 }, 2000);
             }
         }
