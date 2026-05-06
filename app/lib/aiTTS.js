@@ -75,6 +75,13 @@ export function initAudioContext() {
     if (ctx.state === 'suspended') {
         ctx.resume().catch(() => {});
     }
+    
+    // Also unlock browser's native speech synthesis (required for fallback on Safari/iOS/Chrome)
+    if (typeof window !== 'undefined' && window.speechSynthesis) {
+        const unlockUtterance = new SpeechSynthesisUtterance(" ");
+        unlockUtterance.volume = 0; // silent
+        window.speechSynthesis.speak(unlockUtterance);
+    }
 }
 
 /**
