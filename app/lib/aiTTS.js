@@ -151,12 +151,15 @@ async function playRecordableChunk(text, audioContext, destinationNode) {
         const chunks = splitIntoChunks(text, 200);
         console.log(`🔊 Google TTS fallback: speaking ${chunks.length} chunk(s)`);
 
+        let successCount = 0;
         for (const chunk of chunks) {
             if (stopRequested) break;
             try {
                 const url = `${BACKEND_URL}/api/tts?text=${encodeURIComponent(chunk)}`;
                 const response = await fetch(url);
-                if (!response.ok) continue;
+                if (!response.ok) {
+                    throw new Error(`Google TTS failed with status ${response.status}`);
+                }
                 const arrayBuffer = await response.arrayBuffer();
                 const audioBuffer = await ctx.decodeAudioData(arrayBuffer);
 
@@ -169,9 +172,14 @@ async function playRecordableChunk(text, audioContext, destinationNode) {
                     activeSource = source;
                     source.start(0);
                 });
+                successCount++;
             } catch (chunkErr) {
                 console.warn("⚠️ Chunk TTS failed:", chunkErr);
             }
+        }
+
+        if (successCount === 0 && chunks.length > 0 && !stopRequested) {
+            throw new Error("All TTS proxy chunks failed");
         }
     }
 }
