@@ -674,6 +674,8 @@
  .dashWrap {
 
    max-width: 980px;
+   
+   width: 100%;
 
    margin: 0 auto;
 
@@ -1123,11 +1125,16 @@
 
    .dashHeader {
 
-     flex-direction: column;
+     flex-direction: row;
 
-     align-items: flex-start;
+     justify-content: space-between;
 
+     gap: 16px;
 
+   }
+
+   .panel {
+     padding: 24px 20px;
    }
 
 
