@@ -25,6 +25,31 @@ export default function StudentQuizView({
   const [showProctorNote, setShowProctorNote] = useState(true);
   const [videoActivityLogs, setVideoActivityLogs] = useState([]);
 
+  // Video Dragging States
+  const [videoDrag, setVideoDrag] = useState({ x: 0, y: 0 });
+  const videoDragStart = useRef(null);
+
+  const handlePointerDown = (e) => {
+    if (typeof window !== "undefined" && window.innerWidth > 1024) return;
+    videoDragStart.current = {
+      startX: e.clientX,
+      startY: e.clientY,
+      initialX: videoDrag.x,
+      initialY: videoDrag.y
+    };
+    e.currentTarget.setPointerCapture(e.pointerId);
+  };
+  const handlePointerMove = (e) => {
+    if (!videoDragStart.current) return;
+    const dx = e.clientX - videoDragStart.current.startX;
+    const dy = e.clientY - videoDragStart.current.startY;
+    setVideoDrag({ x: videoDragStart.current.initialX + dx, y: videoDragStart.current.initialY + dy });
+  };
+  const handlePointerUp = (e) => {
+    videoDragStart.current = null;
+    e.currentTarget.releasePointerCapture(e.pointerId);
+  };
+
   // Alert popups
   const [showOutOfFrameAlert, setShowOutOfFrameAlert] = useState(false);
   const [showTabSwitchAlert, setShowTabSwitchAlert] = useState(false);
@@ -307,7 +332,7 @@ export default function StudentQuizView({
         );
 
         const mediaStream = await navigator.mediaDevices.getUserMedia({
-          video: { width: 640, height: 480 },
+          video: { width: 640, height: 480, facingMode: "user" },
           audio: true,
         });
         if (!isActive) {
@@ -721,6 +746,125 @@ export default function StudentQuizView({
           border-radius: 50%;
           animation: pulse-ring 2s infinite;
         }
+
+        @media (max-width: 1024px) {
+          .main-layout {
+            flex-direction: column !important;
+            height: auto !important;
+            min-height: 100dvh !important;
+            overflow-y: auto !important;
+            overflow-x: hidden !important;
+            padding: 0 !important;
+          }
+          
+          .left-workspace {
+            width: 100% !important;
+            padding: 16px 16px 24px 16px !important;
+            height: auto !important;
+            overflow: visible !important;
+            flex: none !important;
+          }
+
+          .right-sidebar {
+            width: 100% !important;
+            padding: 0 16px 40px 16px !important;
+            margin: 0 !important;
+            background: transparent !important;
+            border: none !important;
+            backdrop-filter: none !important;
+            height: auto !important;
+          }
+
+          .top-bar-container {
+            width: 100% !important;
+            height: auto !important;
+            flex-direction: column !important;
+            align-items: flex-start !important;
+            margin: 0 !important;
+            gap: 16px !important;
+          }
+          
+          .top-bar-stats {
+            width: 100% !important;
+            flex-direction: row !important;
+            justify-content: space-between !important;
+            gap: 8px !important;
+            flex-wrap: wrap !important;
+          }
+          
+          .progress-bar-wrapper {
+             width: 100% !important;
+             max-width: 100% !important;
+             flex: 1 !important;
+          }
+
+          .question-text {
+            font-size: 20px !important;
+            margin-left: 0 !important;
+            margin-bottom: 24px !important;
+            line-height: 1.5 !important;
+            max-width: 100% !important;
+            margin-top: 24px !important;
+          }
+
+          .options-container {
+            margin-left: 0 !important;
+            max-width: 100% !important;
+          }
+          
+          .option-button {
+             padding: 14px 16px !important;
+             font-size: 15px !important;
+          }
+
+          .bottom-controls {
+            flex-direction: column !important;
+            align-items: stretch !important;
+            margin-top: 32px !important;
+            gap: 12px !important;
+          }
+          
+          .nav-button {
+             width: 100% !important;
+             justify-content: center !important;
+          }
+
+          .nav-group {
+            width: 100% !important;
+            flex-direction: column !important;
+            gap: 12px !important;
+            align-items: stretch !important;
+          }
+
+          .question-navigator-container {
+             margin-top: 0 !important;
+          }
+
+          .student-info { display: none !important; }
+
+          .video-monitor-container {
+            position: fixed !important;
+            top: 16px !important;
+            right: 16px !important;
+            width: 110px !important;
+            z-index: 10000 !important;
+            cursor: move !important;
+            touch-action: none !important;
+            border-radius: 12px !important;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.6) !important;
+            margin: 0 !important;
+            padding: 0 !important;
+          }
+          
+          .intelligent-monitor-header { display: none !important; }
+          
+          .video-monitor-container .glass-card {
+            padding: 0 !important;
+            border-radius: 12px !important;
+            border: 2px solid rgba(255,255,255,0.2) !important;
+            background: #000 !important; /* Prevent transparency artifacts */
+          }
+        }
       `}</style>
 
       {/* 🛡️ Fullscreen Enforcement Overlay */}
@@ -881,21 +1025,21 @@ export default function StudentQuizView({
       )}
 
       {/* MAIN LAYOUT */}
-      <div style={{ display: "flex", height: "100dvh", width: "100%" }}>
+      <div className="main-layout" style={{ display: "flex", height: "100dvh", width: "100%" }}>
 
         {/* LEFT SIDE - Questions & Workspace */}
-        <div style={{ flex: 1, display: "flex", flexDirection: "column", height: "100%", padding: "32px" }}>
+        <div className="left-workspace" style={{ flex: 1, display: "flex", flexDirection: "column", height: "100%", padding: "32px", overflowY: "auto", overflowX: "hidden" }}>
 
           {/* Top Bar */}
-          <div style={{
+          <div className="top-bar-container" style={{
             display: "flex",
-            justifyContent: "end",
+            justifyContent: "space-between",
             alignItems: "center",
             marginBottom: "20px",
-            marginTop: "20px",
-            height: "40px"
+            marginTop: "10px",
+            minHeight: "40px"
           }}>
-            <div style={{ display: "flex", gap: "24px", alignItems: "center" }}>
+            <div className="top-bar-stats" style={{ display: "flex", gap: "24px", alignItems: "center" }}>
               <div className="glass-card" style={{
                 padding: "8px 16px",
                 borderRadius: "12px",
@@ -906,10 +1050,10 @@ export default function StudentQuizView({
                 gap: "8px"
               }}>
                 <span style={{ color: "#6366f1" }}>⏱️</span>
-                <span>{minutes}:{seconds.toString().padStart(2, "0")} <span style={{ opacity: 0.5, fontWeight: "400" }}>remaining</span></span>
+                <span>{minutes}:{seconds.toString().padStart(2, "0")} <span style={{ opacity: 0.5, fontWeight: "400" }}>left</span></span>
               </div>
 
-              <div style={{
+              <div className="progress-bar-wrapper" style={{
                 height: "6px",
                 width: "200px",
                 background: "rgba(255,255,255,0.05)",
@@ -936,7 +1080,7 @@ export default function StudentQuizView({
           </div>
 
           {/* Question View Area */}
-          <h2 style={{
+          <h2 className="question-text" style={{
             fontSize: "24px",
             fontWeight: "600",
             lineHeight: 1.5,
@@ -947,7 +1091,7 @@ export default function StudentQuizView({
             {currentQuestion?.question}
           </h2>
 
-          <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: "16px", maxWidth: "800px", marginLeft: "80px" }}>
+          <div className="options-container" style={{ display: "grid", gridTemplateColumns: "1fr", gap: "16px", maxWidth: "800px", marginLeft: "80px" }}>
             {currentQuestion?.options.map((opt, i) => (
               <button
                 key={i}
@@ -985,10 +1129,10 @@ export default function StudentQuizView({
             ))}
           </div>
           {/* Bottom Control Bar */}
-          <div style={{
+          <div className="bottom-controls" style={{
             marginTop: "32px",
             display: "flex",
-            justifyContent: "end",
+            justifyContent: "space-between",
             alignItems: "center",
             gap: "10px"
           }}>
@@ -1014,7 +1158,7 @@ export default function StudentQuizView({
             </button>
 
             {/* Right Group: Flag & Next */}
-            <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
+            <div className="nav-group" style={{ display: "flex", gap: "12px", alignItems: "center" }}>
 
               <button
                 onClick={() => toggleFlag(currentIndex)}
@@ -1054,7 +1198,7 @@ export default function StudentQuizView({
       </div>
 
       {/* RIGHT SIDEBAR - Monitor & Navigation */}
-      <div style={{
+      <div className="right-sidebar" style={{
         width: "360px",
         background: "rgba(10, 10, 18, 0.4)",
         borderLeft: "1px solid rgba(255,255,255,0.05)",
@@ -1067,8 +1211,15 @@ export default function StudentQuizView({
       }}>
 
         {/* Virtual Proctor View */}
-        <div>
-          <div style={{
+        <div
+          className="video-monitor-container"
+          onPointerDown={handlePointerDown}
+          onPointerMove={handlePointerMove}
+          onPointerUp={handlePointerUp}
+          onPointerCancel={handlePointerUp}
+          style={typeof window !== 'undefined' && window.innerWidth <= 1024 ? { transform: `translate(${videoDrag.x}px, ${videoDrag.y}px)` } : {}}
+        >
+          <div className="intelligent-monitor-header" style={{
             fontWeight: "700",
             fontSize: "13px",
             textTransform: "uppercase",
@@ -1172,7 +1323,7 @@ export default function StudentQuizView({
         </div>
 
         {/* Question Navigator */}
-        <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
+        <div className="question-navigator-container" style={{ flex: 1, display: "flex", flexDirection: "column" }}>
           <div style={{
             fontWeight: "700",
             fontSize: "13px",
@@ -1253,7 +1404,7 @@ export default function StudentQuizView({
         </div>
 
         {/* Student Info Footer */}
-        <div className="glass-card" style={{
+        <div className="student-info glass-card" style={{
           padding: "16px",
           borderRadius: "16px",
           display: "flex",
