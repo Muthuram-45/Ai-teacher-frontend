@@ -142,7 +142,7 @@ export default function AISidebar({
             position: 'fixed',
             top: 0,
             right: `${right}px`,
-            width: '380px',
+            width: 'min(380px, 100vw)',
             height: '90vh',
             background: '#111',
             borderLeft: '1px solid #333',

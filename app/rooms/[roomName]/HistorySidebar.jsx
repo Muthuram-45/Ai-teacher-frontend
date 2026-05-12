@@ -2,14 +2,13 @@
 import { FaEnvelopeOpenText } from "react-icons/fa";
 
 export default function HistorySidebar({ doubtsWithAnswers = [], right = 0, onClose }) {
-    if (doubtsWithAnswers.length === 0) return null;
-
+    // Removed the silent return null so an empty sidebar is actually shown!
     return (
         <div style={{
             position: 'fixed',
             top: 0,
             right: `${right}px`,
-            width: '380px',
+            width: 'min(380px, 100vw)',
             height: '90vh',
             background: '#111',
             borderLeft: '1px solid #333',
@@ -32,20 +31,26 @@ export default function HistorySidebar({ doubtsWithAnswers = [], right = 0, onCl
                 <div style={{ fontSize: '0.8rem', color: '#888', marginBottom: '16px', fontStyle: 'italic' }}>
                     Total Qs:: {doubtsWithAnswers.length}
                 </div>
-                {doubtsWithAnswers.map((item, idx) => (
-                    <div key={idx} style={{
-                        marginBottom: '12px',
-                        background: '#1a1a1a',
-                        borderRadius: '8px',
-                        padding: '12px',
-                        border: '1px solid #222',
-                        boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-                    }}>
-                        <div style={{ fontSize: '0.9rem', lineHeight: '1.4' }}>
-                            <b style={{ color: '#2196F3' }}>[{item.name}]</b>: {item.text}
-                        </div>
+                {doubtsWithAnswers.length === 0 ? (
+                    <div style={{ textAlign: "center", padding: "40px 20px", color: "#555", fontStyle: "italic" }}>
+                        No activity or questions yet.
                     </div>
-                )).reverse()}
+                ) : (
+                    doubtsWithAnswers.map((item, idx) => (
+                        <div key={idx} style={{
+                            marginBottom: '12px',
+                            background: '#1a1a1a',
+                            borderRadius: '8px',
+                            padding: '12px',
+                            border: '1px solid #222',
+                            boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                        }}>
+                            <div style={{ fontSize: '0.9rem', lineHeight: '1.4' }}>
+                                <b style={{ color: '#2196F3' }}>[{item.name}]</b>: {item.text}
+                            </div>
+                        </div>
+                    )).reverse()
+                )}
             </div>
         </div>
     );

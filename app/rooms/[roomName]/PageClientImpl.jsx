@@ -110,7 +110,7 @@ import {
     BsMicFill,
     BsMicMuteFill,
 } from "react-icons/bs";
-import { FaAngleDown } from "react-icons/fa";
+import { FaAngleDown, FaAngleUp } from "react-icons/fa";
 
 /* ---------------- MEETING ENDED OVERLAY ---------------- */
 function MeetingEndedOverlay() {
@@ -181,7 +181,8 @@ function WaitingRoom({ waitingStudents, onAdmit, onReject }) {
 
     if (waitingStudents.length === 0) return null;
 
-    const showSummaryHeader = waitingStudents.length > 2 || (isExpanded && waitingStudents.length > 0);
+    const showSummaryHeader =
+        waitingStudents.length > 2 || (isExpanded && waitingStudents.length > 0);
 
     const handleAdmitAll = () => {
         waitingStudents.forEach((s) => onAdmit(s.id));
@@ -193,6 +194,7 @@ function WaitingRoom({ waitingStudents, onAdmit, onReject }) {
 
     return (
         <div
+            className="waiting-room-container"
             style={{
                 position: "absolute",
                 top: 24,
@@ -208,6 +210,7 @@ function WaitingRoom({ waitingStudents, onAdmit, onReject }) {
             {/* 📋 Summary View (Admit All / Decline All) */}
             {showSummaryHeader && (
                 <div
+                    className="waiting-room-summary"
                     style={{
                         background: "rgba(15, 23, 42, 0.95)",
                         backdropFilter: "blur(16px)",
@@ -219,7 +222,8 @@ function WaitingRoom({ waitingStudents, onAdmit, onReject }) {
                         display: "flex",
                         alignItems: "center",
                         gap: "24px",
-                        animation: "slideInVertical 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275)",
+                        animation:
+                            "slideInVertical 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275)",
                         pointerEvents: "auto",
                         minWidth: "420px",
                     }}
@@ -233,9 +237,11 @@ function WaitingRoom({ waitingStudents, onAdmit, onReject }) {
                             letterSpacing: "-0.2px",
                         }}
                     >
-                        {waitingStudents.length} {waitingStudents.length === 1 ? "Student is" : "Students are"} waiting to join
+                        {waitingStudents.length}{" "}
+                        {waitingStudents.length === 1 ? "Student is" : "Students are"}{" "}
+                        waiting to join
                     </div>
-                    <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+                    <div className="waiting-room-actions" style={{ display: "flex", gap: "10px", alignItems: "center" }}>
                         <button
                             onClick={handleAdmitAll}
                             style={{
@@ -316,6 +322,7 @@ function WaitingRoom({ waitingStudents, onAdmit, onReject }) {
                 waitingStudents.map((s) => (
                     <div
                         key={s.id}
+                        className="waiting-room-student-card"
                         style={{
                             background: "rgba(15, 23, 42, 0.92)",
                             backdropFilter: "blur(12px)",
@@ -327,7 +334,8 @@ function WaitingRoom({ waitingStudents, onAdmit, onReject }) {
                             display: "flex",
                             alignItems: "center",
                             gap: "24px",
-                            animation: "slideInVertical 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275)",
+                            animation:
+                                "slideInVertical 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275)",
                             pointerEvents: "auto",
                             minWidth: "340px",
                         }}
@@ -343,7 +351,7 @@ function WaitingRoom({ waitingStudents, onAdmit, onReject }) {
                         >
                             {s.name}
                         </div>
-                        <div style={{ display: "flex", gap: "10px" }}>
+                        <div className="waiting-room-actions" style={{ display: "flex", gap: "10px" }}>
                             <button
                                 onClick={() => onAdmit(s.id)}
                                 style={{
@@ -383,11 +391,13 @@ function WaitingRoom({ waitingStudents, onAdmit, onReject }) {
                                     transition: "all 0.2s ease",
                                 }}
                                 onMouseOver={(e) => {
-                                    e.currentTarget.style.background = "rgba(255, 255, 255, 0.12)";
+                                    e.currentTarget.style.background =
+                                        "rgba(255, 255, 255, 0.12)";
                                     e.currentTarget.style.transform = "translateY(-1px)";
                                 }}
                                 onMouseOut={(e) => {
-                                    e.currentTarget.style.background = "rgba(255, 255, 255, 0.08)";
+                                    e.currentTarget.style.background =
+                                        "rgba(255, 255, 255, 0.08)";
                                     e.currentTarget.style.transform = "translateY(0)";
                                 }}
                             >
@@ -427,12 +437,13 @@ function TeacherOnlyUI({
     handlePauseRecording,
     handleResumeRecording,
     handleSaveRecording,
-    recordingDuration
+    recordingDuration,
 }) {
     const { localParticipant } = useLocalParticipant();
     const room = useRoomContext();
     const [showExitMenu, setShowExitMenu] = useState(false);
     const [showShareMenu, setShowShareMenu] = useState(false);
+    const [showMobileNavMenu, setShowMobileNavMenu] = useState(false);
     const [copied, setCopied] = useState(false);
 
     const shareLink = `${window.location.origin}/join/${room.name}`;
@@ -504,14 +515,7 @@ function TeacherOnlyUI({
             />
 
             {/* 📁 Teacher Upload/Class tool */}
-            <div
-                style={{
-                    position: "absolute",
-                    bottom: 14,
-                    right: "calc(50% + 365px)",
-                    zIndex: 1000,
-                }}
-            >
+            <div className="teacher-tool-container">
                 <TeacherVideoController
                     onGenerateQuiz={onGenerateQuiz}
                     onClassStatusChange={onClassStatusChange}
@@ -529,223 +533,23 @@ function TeacherOnlyUI({
             </div>
 
             {/* 🔔 Notifications & History (Near Leave button) */}
-            <div
-                style={{
-                    position: "absolute",
-                    bottom: 14,
-                    left: "calc(50% + 365px)",
-                    zIndex: 1000,
-                    display: "flex",
-                    gap: "12px",
-                }}
-            >
-                {/* 📜 History Button */}
+            <div className="teacher-nav-container">
                 <button
-                    onClick={onShowHistory}
-                    title="Activity Log"
-                    style={{
-                        width: 44,
-                        height: 44,
-                        borderRadius: "50%",
-                        background: "rgba(255,255,255,0.1)",
-                        border: "1px solid rgba(255,255,255,0.2)",
-                        color: "#fff",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        cursor: "pointer",
-                        fontSize: "1.2rem",
-                        boxShadow: "0 4px 12px rgba(0,0,0,0.3)",
-                        transition: "all 0.2s",
-                        borderRadius: "8px",
-                    }}
-                    onMouseOver={(e) =>
-                        (e.currentTarget.style.background = "rgba(255,255,255,0.2)")
-                    }
-                    onMouseOut={(e) =>
-                        (e.currentTarget.style.background = "rgba(255,255,255,0.1)")
-                    }
+                    className="mobile-nav-toggle-btn"
+                    onClick={() => setShowMobileNavMenu(!showMobileNavMenu)}
                 >
-                    <LuLogs />
+                    {showMobileNavMenu ? <FaAngleDown size={22} /> : <FaAngleUp size={22} />}
                 </button>
-
-                {/* 📋 Attendance Button */}
-                <button
-                    onClick={() => onShowAttendance && onShowAttendance()}
-                    title="Attendance List"
-                    style={{
-                        width: 44,
-                        height: 44,
-                        borderRadius: "8px",
-                        background: "rgba(255,255,255,0.1)",
-                        border: "1px solid rgba(255,255,255,0.2)",
-                        color: "#fff",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        cursor: "pointer",
-                        fontSize: "1.2rem",
-                        boxShadow: "0 4px 12px rgba(0,0,0,0.3)",
-                        transition: "all 0.2s",
-                    }}
-                    onMouseOver={(e) =>
-                        (e.currentTarget.style.background = "rgba(33, 150, 243, 0.4)")
-                    }
-                    onMouseOut={(e) =>
-                        (e.currentTarget.style.background = "rgba(255,255,255,0.1)")
-                    }
-                >
-                    <GiNotebook />
-                </button>
-
-                {/* 📝 Quiz Results Button */}
-                <button
-                    onClick={() => onShowQuiz && onShowQuiz()}
-                    title="View Quiz Results"
-                    style={{
-                        width: 44,
-                        height: 44,
-                        borderRadius: "8px",
-                        background: "rgba(255,255,255,0.1)",
-                        border: "1px solid rgba(255,255,255,0.2)",
-                        color: "#fff",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        cursor: "pointer",
-                        fontSize: "1.2rem",
-                        boxShadow: "0 4px 12px rgba(0,0,0,0.3)",
-                        transition: "all 0.2s",
-                    }}
-                    onMouseOver={(e) =>
-                        (e.currentTarget.style.background = "rgba(76, 175, 80, 0.4)")
-                    }
-                    onMouseOut={(e) =>
-                        (e.currentTarget.style.background = "rgba(255,255,255,0.1)")
-                    }
-                >
-                    <MdOutlineQuiz />
-                </button>
-
-                {/* 🔗 Share Meeting Link Button */}
-                <div style={{ position: "relative" }}>
-                    {showShareMenu && (
-                        <div
-                            style={{
-                                position: "absolute",
-                                bottom: "60px",
-                                right: "0",
-                                background: "rgba(15, 23, 42, 0.95)",
-                                backdropFilter: "blur(12px)",
-                                border: "1px solid rgba(255, 255, 255, 0.1)",
-                                borderRadius: "12px",
-                                padding: "8px",
-                                display: "flex",
-                                alignItems: "center",
-                                gap: "4px",
-                                boxShadow: "0 20px 40px rgba(0,0,0,0.6)",
-                                animation: "slideUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)",
-                                zIndex: 1000,
-                            }}
-                        >
-                            {/* Copy Option */}
-                            <button
-                                onClick={() => {
-                                    handleCopy();
-                                    setShowShareMenu(false);
-                                }}
-                                style={{ ...shareOptionStyle, width: "auto", padding: "8px" }}
-                                title={copied ? "Copied!" : "Copy Link"}
-                                onMouseOver={(e) =>
-                                    (e.currentTarget.style.background = "rgba(255,255,255,0.05)")
-                                }
-                                onMouseOut={(e) => (e.currentTarget.style.background = "none")}
-                            >
-                                <div
-                                    style={{
-                                        ...iconBoxStyle,
-                                        background: "rgba(255,255,255,0.1)",
-                                        color: "#fff",
-                                    }}
-                                >
-                                    <FaLink size={14} />
-                                </div>
-                            </button>
-
-                            <div
-                                style={{
-                                    width: "1px",
-                                    height: "20px",
-                                    background: "rgba(255,255,255,0.1)",
-                                }}
-                            />
-
-                            {/* WhatsApp Option */}
-                            <button
-                                onClick={() => {
-                                    handleWhatsApp();
-                                    setShowShareMenu(false);
-                                }}
-                                style={{ ...shareOptionStyle, width: "auto", padding: "8px" }}
-                                title="Share via WhatsApp"
-                                onMouseOver={(e) =>
-                                    (e.currentTarget.style.background = "rgba(255,255,255,0.05)")
-                                }
-                                onMouseOut={(e) => (e.currentTarget.style.background = "none")}
-                            >
-                                <div
-                                    style={{
-                                        ...iconBoxStyle,
-                                        background: "rgba(255,255,255,0.1)",
-                                        color: "#fff",
-                                    }}
-                                >
-                                    <FaWhatsapp size={16} />
-                                </div>
-                            </button>
-
-                            <div
-                                style={{
-                                    width: "1px",
-                                    height: "20px",
-                                    background: "rgba(255,255,255,0.1)",
-                                }}
-                            />
-
-                            {/* Email Option */}
-                            <button
-                                onClick={() => {
-                                    handleEmail();
-                                    setShowShareMenu(false);
-                                }}
-                                style={{ ...shareOptionStyle, width: "auto", padding: "8px" }}
-                                title="Share via Email"
-                                onMouseOver={(e) =>
-                                    (e.currentTarget.style.background = "rgba(255,255,255,0.05)")
-                                }
-                                onMouseOut={(e) => (e.currentTarget.style.background = "none")}
-                            >
-                                <div
-                                    style={{
-                                        ...iconBoxStyle,
-                                        background: "rgba(255,255,255,0.1)",
-                                        color: "#fff",
-                                    }}
-                                >
-                                    <MdEmail size={16} />
-                                </div>
-                            </button>
-                        </div>
-                    )}
-
+                <div className={`nav-buttons-wrapper ${showMobileNavMenu ? "open" : ""}`}>
+                    {/* 📜 History Button */}
                     <button
-                        onClick={() => setShowShareMenu(!showShareMenu)}
-                        title="Share Meeting Link"
+                        onClick={onShowHistory}
+                        title="Activity Log"
                         style={{
                             width: 44,
                             height: 44,
-                            borderRadius: "8px",
-                            background: showShareMenu ? "#2196F3" : "rgba(255,255,255,0.1)",
+                            borderRadius: "50%",
+                            background: "rgba(255,255,255,0.1)",
                             border: "1px solid rgba(255,255,255,0.2)",
                             color: "#fff",
                             display: "flex",
@@ -754,89 +558,277 @@ function TeacherOnlyUI({
                             cursor: "pointer",
                             fontSize: "1.2rem",
                             boxShadow: "0 4px 12px rgba(0,0,0,0.3)",
-                            transition: "all 0.3s",
+                            transition: "all 0.2s",
+                            borderRadius: "8px",
                         }}
                         onMouseOver={(e) =>
-                            !showShareMenu &&
                             (e.currentTarget.style.background = "rgba(255,255,255,0.2)")
                         }
                         onMouseOut={(e) =>
-                            !showShareMenu &&
                             (e.currentTarget.style.background = "rgba(255,255,255,0.1)")
                         }
                     >
-                        <FiExternalLink />
+                        <LuLogs />
                     </button>
-                </div>
 
-                {/* 💬 AI Assistant / Doubt Notification */}
-                <button
-                    onClick={onShowDoubts}
-                    title="AI Support"
-                    style={{
-                        width: 44,
-                        height: 44,
-                        borderRadius: "8px",
-                        background: unreadCount > 0 ? "#f44336" : "rgba(33, 150, 243, 0.2)",
-                        border:
-                            unreadCount > 0 ? "none" : "1px solid rgba(33, 150, 243, 0.4)",
-                        color: "#fff",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        cursor: "pointer",
-                        fontSize: "1.2rem",
-                        boxShadow: "0 4px 12px rgba(0,0,0,0.3)",
-                        position: "relative",
-                        transition: "all 0.2s",
-                    }}
-                    onMouseOver={(e) =>
-                    (e.currentTarget.style.background =
-                        unreadCount > 0 ? "#d32f2f" : "rgba(33, 150, 243, 0.4)")
-                    }
-                    onMouseOut={(e) =>
-                    (e.currentTarget.style.background =
-                        unreadCount > 0 ? "#f44336" : "rgba(33, 150, 243, 0.2)")
-                    }
-                >
-                    {unreadCount > 0 ? <BsQuestionSquareFill /> : <FaRobot />}
-                    {unreadCount > 0 && (
-                        <span
+                    {/* 📋 Attendance Button */}
+                    <button
+                        onClick={() => onShowAttendance && onShowAttendance()}
+                        title="Attendance List"
+                        style={{
+                            width: 44,
+                            height: 44,
+                            borderRadius: "8px",
+                            background: "rgba(255,255,255,0.1)",
+                            border: "1px solid rgba(255,255,255,0.2)",
+                            color: "#fff",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            cursor: "pointer",
+                            fontSize: "1.2rem",
+                            boxShadow: "0 4px 12px rgba(0,0,0,0.3)",
+                            transition: "all 0.2s",
+                        }}
+                        onMouseOver={(e) =>
+                            (e.currentTarget.style.background = "rgba(33, 150, 243, 0.4)")
+                        }
+                        onMouseOut={(e) =>
+                            (e.currentTarget.style.background = "rgba(255,255,255,0.1)")
+                        }
+                    >
+                        <GiNotebook />
+                    </button>
+
+                    {/* 📝 Quiz Results Button */}
+                    <button
+                        onClick={() => onShowQuiz && onShowQuiz()}
+                        title="View Quiz Results"
+                        style={{
+                            width: 44,
+                            height: 44,
+                            borderRadius: "8px",
+                            background: "rgba(255,255,255,0.1)",
+                            border: "1px solid rgba(255,255,255,0.2)",
+                            color: "#fff",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            cursor: "pointer",
+                            fontSize: "1.2rem",
+                            boxShadow: "0 4px 12px rgba(0,0,0,0.3)",
+                            transition: "all 0.2s",
+                        }}
+                        onMouseOver={(e) =>
+                            (e.currentTarget.style.background = "rgba(76, 175, 80, 0.4)")
+                        }
+                        onMouseOut={(e) =>
+                            (e.currentTarget.style.background = "rgba(255,255,255,0.1)")
+                        }
+                    >
+                        <MdOutlineQuiz />
+                    </button>
+
+                    {/* 🔗 Share Meeting Link Button */}
+                    <div style={{ position: "relative" }}>
+                        {showShareMenu && (
+                            <div
+                                style={{
+                                    position: "absolute",
+                                    bottom: "60px",
+                                    right: "0",
+                                    background: "rgba(15, 23, 42, 0.95)",
+                                    backdropFilter: "blur(12px)",
+                                    border: "1px solid rgba(255, 255, 255, 0.1)",
+                                    borderRadius: "12px",
+                                    padding: "8px",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    gap: "4px",
+                                    boxShadow: "0 20px 40px rgba(0,0,0,0.6)",
+                                    animation: "slideUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)",
+                                    zIndex: 1000,
+                                }}
+                            >
+                                {/* Copy Option */}
+                                <button
+                                    onClick={() => {
+                                        handleCopy();
+                                        setShowShareMenu(false);
+                                    }}
+                                    style={{ ...shareOptionStyle, width: "auto", padding: "8px" }}
+                                    title={copied ? "Copied!" : "Copy Link"}
+                                    onMouseOver={(e) =>
+                                        (e.currentTarget.style.background = "rgba(255,255,255,0.05)")
+                                    }
+                                    onMouseOut={(e) => (e.currentTarget.style.background = "none")}
+                                >
+                                    <div
+                                        style={{
+                                            ...iconBoxStyle,
+                                            background: "rgba(255,255,255,0.1)",
+                                            color: "#fff",
+                                        }}
+                                    >
+                                        <FaLink size={14} />
+                                    </div>
+                                </button>
+
+                                <div
+                                    style={{
+                                        width: "1px",
+                                        height: "20px",
+                                        background: "rgba(255,255,255,0.1)",
+                                    }}
+                                />
+
+                                {/* WhatsApp Option */}
+                                <button
+                                    onClick={() => {
+                                        handleWhatsApp();
+                                        setShowShareMenu(false);
+                                    }}
+                                    style={{ ...shareOptionStyle, width: "auto", padding: "8px" }}
+                                    title="Share via WhatsApp"
+                                    onMouseOver={(e) =>
+                                        (e.currentTarget.style.background = "rgba(255,255,255,0.05)")
+                                    }
+                                    onMouseOut={(e) => (e.currentTarget.style.background = "none")}
+                                >
+                                    <div
+                                        style={{
+                                            ...iconBoxStyle,
+                                            background: "rgba(255,255,255,0.1)",
+                                            color: "#fff",
+                                        }}
+                                    >
+                                        <FaWhatsapp size={16} />
+                                    </div>
+                                </button>
+
+                                <div
+                                    style={{
+                                        width: "1px",
+                                        height: "20px",
+                                        background: "rgba(255,255,255,0.1)",
+                                    }}
+                                />
+
+                                {/* Email Option */}
+                                <button
+                                    onClick={() => {
+                                        handleEmail();
+                                        setShowShareMenu(false);
+                                    }}
+                                    style={{ ...shareOptionStyle, width: "auto", padding: "8px" }}
+                                    title="Share via Email"
+                                    onMouseOver={(e) =>
+                                        (e.currentTarget.style.background = "rgba(255,255,255,0.05)")
+                                    }
+                                    onMouseOut={(e) => (e.currentTarget.style.background = "none")}
+                                >
+                                    <div
+                                        style={{
+                                            ...iconBoxStyle,
+                                            background: "rgba(255,255,255,0.1)",
+                                            color: "#fff",
+                                        }}
+                                    >
+                                        <MdEmail size={16} />
+                                    </div>
+                                </button>
+                            </div>
+                        )}
+
+                        <button
+                            onClick={() => setShowShareMenu(!showShareMenu)}
+                            title="Share Meeting Link"
                             style={{
-                                position: "absolute",
-                                top: -5,
-                                right: -5,
-                                background: "#fff",
-                                color: "#f44336",
-                                borderRadius: "50%",
-                                width: 20,
-                                height: 20,
-                                fontSize: "0.75rem",
-                                fontWeight: "bold",
+                                width: 44,
+                                height: 44,
+                                borderRadius: "8px",
+                                background: showShareMenu ? "#2196F3" : "rgba(255,255,255,0.1)",
+                                border: "1px solid rgba(255,255,255,0.2)",
+                                color: "#fff",
                                 display: "flex",
                                 alignItems: "center",
                                 justifyContent: "center",
+                                cursor: "pointer",
+                                fontSize: "1.2rem",
+                                boxShadow: "0 4px 12px rgba(0,0,0,0.3)",
+                                transition: "all 0.3s",
                             }}
+                            onMouseOver={(e) =>
+                                !showShareMenu &&
+                                (e.currentTarget.style.background = "rgba(255,255,255,0.2)")
+                            }
+                            onMouseOut={(e) =>
+                                !showShareMenu &&
+                                (e.currentTarget.style.background = "rgba(255,255,255,0.1)")
+                            }
                         >
-                            {unreadCount}
-                        </span>
-                    )}
-                </button>
+                            <FiExternalLink />
+                        </button>
+                    </div>
+
+                    {/* 💬 AI Assistant / Doubt Notification */}
+                    <button
+                        onClick={onShowDoubts}
+                        title="AI Support"
+                        style={{
+                            width: 44,
+                            height: 44,
+                            borderRadius: "8px",
+                            background: unreadCount > 0 ? "#f44336" : "rgba(33, 150, 243, 0.2)",
+                            border:
+                                unreadCount > 0 ? "none" : "1px solid rgba(33, 150, 243, 0.4)",
+                            color: "#fff",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            cursor: "pointer",
+                            fontSize: "1.2rem",
+                            boxShadow: "0 4px 12px rgba(0,0,0,0.3)",
+                            position: "relative",
+                            transition: "all 0.2s",
+                        }}
+                        onMouseOver={(e) =>
+                        (e.currentTarget.style.background =
+                            unreadCount > 0 ? "#d32f2f" : "rgba(33, 150, 243, 0.4)")
+                        }
+                        onMouseOut={(e) =>
+                        (e.currentTarget.style.background =
+                            unreadCount > 0 ? "#f44336" : "rgba(33, 150, 243, 0.2)")
+                        }
+                    >
+                        {unreadCount > 0 ? <BsQuestionSquareFill /> : <FaRobot />}
+                        {unreadCount > 0 && (
+                            <span
+                                style={{
+                                    position: "absolute",
+                                    top: -5,
+                                    right: -5,
+                                    background: "#fff",
+                                    color: "#f44336",
+                                    borderRadius: "50%",
+                                    width: 20,
+                                    height: 20,
+                                    fontSize: "0.75rem",
+                                    fontWeight: "bold",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                }}
+                            >
+                                {unreadCount}
+                            </span>
+                        )}
+                    </button>
+                </div>
             </div>
 
             {/* ❌ Unified Exit Menu (Right Corner) */}
-            <div
-                style={{
-                    position: "absolute",
-                    bottom: 14,
-                    right: 20,
-                    zIndex: 1000,
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: "flex-end",
-                    gap: "10px",
-                }}
-            >
+            <div className="teacher-exit-container">
                 {/* Expandable Menu */}
                 {showExitMenu && (
                     <div
@@ -999,6 +991,136 @@ function TeacherOnlyUI({
                 </button>
 
                 <style>{`
+                    .teacher-tool-container {
+                        position: absolute;
+                        bottom: 14px;
+                        right: calc(50% + 365px);
+                        z-index: 1000;
+                    }
+                    .teacher-nav-container {
+                        position: absolute;
+                        bottom: 14px;
+                        left: calc(50% + 365px);
+                        z-index: 1000;
+                        display: flex;
+                        gap: 12px;
+                    }
+                    .teacher-exit-container {
+                        position: absolute;
+                        bottom: 14px;
+                        right: 20px;
+                        z-index: 1000;
+                        display: flex;
+                        flex-direction: column;
+                        align-items: flex-end;
+                        gap: 10px;
+                    }
+
+                    @media (max-width: 1100px) {
+                        .teacher-tool-container {
+                            right: auto;
+                            left: 16px;
+                            bottom: 84px;
+                        }
+                        .teacher-nav-container {
+                            left: auto;
+                            right: 50%;
+                            transform: translateX(50%);
+                            bottom: 84px;
+                            background: rgba(15, 23, 42, 0.85);
+                            padding: 8px 12px;
+                            border-radius: 12px;
+                            backdrop-filter: blur(10px);
+                            border: 1px solid rgba(255, 255, 255, 0.1);
+                        }
+                        .teacher-exit-container {
+                            bottom: 84px;
+                            right: 16px;
+                        }
+                    }
+
+                    @media (max-width: 768px) {
+                        .teacher-nav-container {
+                            flex-wrap: wrap;
+                            justify-content: center;
+                            max-width: 85vw;
+                            width: max-content;
+                            gap: 8px;
+                            bottom: 84px; /* moved higher to prevent overlapping with bottom left/right tools */
+                        }
+                        .teacher-tool-container {
+                            bottom: 78px;
+                            left: 10px;
+                        }
+                        .teacher-exit-container {
+                            bottom: 84px;
+                            right: 12px;
+                        }
+                        /* Optional: Make nav buttons a bit smaller on mobile */
+                        .teacher-nav-container button, .nav-buttons-wrapper button {
+                            width: 38px !important;
+                            height: 38px !important;
+                            font-size: 1rem !important;
+                        }
+                    }
+
+                    @media (max-width: 320px) {
+                        .mobile-nav-toggle-btn {
+                            display: flex !important;
+                            align-items: center;
+                            justify-content: center;
+                            width: 38px;
+                            height: 38px;
+                            border-radius: 8px;
+                            background: rgba(15, 23, 42, 0.85);
+                            color: #fff;
+                            border: 1px solid rgba(255, 255, 255, 0.2);
+                            z-index: 1002;
+                            cursor: pointer;
+                        }
+                        .teacher-nav-container {
+                            background: transparent !important;
+                            border: none !important;
+                            padding: 0 !important;
+                            backdrop-filter: none !important;
+                            left: 95px;
+                            bottom: 79px;
+                        }
+                        .nav-buttons-wrapper {
+                            position: absolute;
+                            bottom: 50px; 
+                            left: 50%;
+                            transform: translateX(-50%) translateY(20px) scale(0.95);
+                            display: flex;
+                            flex-direction: column;
+                            gap: 8px;
+                            background: rgba(15, 23, 42, 0.95);
+                            padding: 10px;
+                            border-radius: 12px;
+                            border: 1px solid rgba(255, 255, 255, 0.1);
+                            backdrop-filter: blur(10px);
+                            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+                            transition: all 0.3s ease;
+                            opacity: 0;
+                            pointer-events: none;
+                        }
+                        .nav-buttons-wrapper.open {
+                            opacity: 1;
+                            pointer-events: auto;
+                            transform: translateX(-50%) translateY(0) scale(1);
+                            display: -webkit-inline-box;         
+                            left: 30px;
+                        }
+                    }
+
+                    .mobile-nav-toggle-btn {
+                        display: none;
+                    }
+                    .nav-buttons-wrapper {
+                        display: flex;
+                        gap: 12px;
+                    }
+
                     @keyframes slideUp {
                         from { opacity: 0; transform: translateY(15px) scale(0.9); }
                         to { opacity: 1; transform: translateY(0) scale(1); }
@@ -1149,28 +1271,11 @@ function StudentOnlyUI({
                 </div>
             )}
 
-            <div
-                style={{
-                    position: "absolute",
-                    bottom: 14,
-                    left: "calc(50% - 465px)",
-                    zIndex: 100,
-                }}
-            >
+            <div className="student-tool-container">
                 <StudentHandRaise isHandRaised={isHandRaised} onToggle={onToggleHand} />
             </div>
 
-            <div
-                style={{
-                    position: "absolute",
-                    bottom: 14,
-                    right: 20,
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 12,
-                    zIndex: 100,
-                }}
-            >
+            <div className="student-nav-container">
                 {isHandRaised && <StudentTextDoubt />}
 
                 {/* 👥 People Button */}
@@ -1200,7 +1305,7 @@ function StudentOnlyUI({
                     }
                 >
                     <IoIosPeople size={22} style={{ fontSize: "18px" }}></IoIosPeople>
-                    Participants
+                    <span className="hide-on-mobile">Participants</span>
                     <span
                         style={{
                             background: "#2196F3",
@@ -1230,6 +1335,51 @@ function StudentOnlyUI({
                 />
             )}
             {showPeople && <ParticipantList onClose={() => setShowPeople(false)} />}
+
+            <style>{`
+                .student-tool-container {
+                    position: absolute;
+                    bottom: 14px;
+                    left: calc(50% - 465px);
+                    z-index: 100;
+                }
+                .student-nav-container {
+                    position: absolute;
+                    bottom: 14px;
+                    right: 20px;
+                    display: flex;
+                    align-items: center;
+                    gap: 12px;
+                    z-index: 100;
+                }
+
+                @media (max-width: 1024px) {
+                    .student-tool-container {
+                        left: 16px;
+                        bottom: 84px;
+                    }
+                    .student-nav-container {
+                        right: 16px;
+                        bottom: 84px;
+                    }
+                }
+                
+                @media (max-width: 768px) {
+                    .student-tool-container {
+                        left: 16px;
+                        bottom: 84px;
+                    }
+                    .student-nav-container {
+                        right: 10px;
+                        bottom: 84px;
+                        flex-direction: column;
+                        align-items: flex-end;
+                    }
+                    .hide-on-mobile {
+                        display: none !important;
+                    }
+                }
+            `}</style>
         </>
     );
 }
@@ -1332,14 +1482,14 @@ function RoomContent() {
     useEffect(() => {
         const unlockAudio = () => {
             initAudioContext();
-            document.removeEventListener('click', unlockAudio);
-            document.removeEventListener('touchstart', unlockAudio);
+            document.removeEventListener("click", unlockAudio);
+            document.removeEventListener("touchstart", unlockAudio);
         };
-        document.addEventListener('click', unlockAudio);
-        document.addEventListener('touchstart', unlockAudio);
+        document.addEventListener("click", unlockAudio);
+        document.addEventListener("touchstart", unlockAudio);
         return () => {
-            document.removeEventListener('click', unlockAudio);
-            document.removeEventListener('touchstart', unlockAudio);
+            document.removeEventListener("click", unlockAudio);
+            document.removeEventListener("touchstart", unlockAudio);
         };
     }, []);
 
@@ -1389,9 +1539,7 @@ function RoomContent() {
         if (role !== "teacher" || !room?.name) return;
 
         const interval = setInterval(() => {
-            fetch(
-                `${BACKEND_URL}/waiting-students/${room.name}`,
-            )
+            fetch(`${BACKEND_URL}/waiting-students/${room.name}`)
                 .then((r) => r.json())
                 .then((data) => {
                     setWaitingStudents(data.waiting || []);
@@ -1404,14 +1552,11 @@ function RoomContent() {
 
     const handleAdmit = async (requestId) => {
         try {
-            const res = await fetch(
-                `${BACKEND_URL}/admit-student`,
-                {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ requestId }),
-                },
-            );
+            const res = await fetch(`${BACKEND_URL}/admit-student`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ requestId }),
+            });
             if (res.ok) {
                 setWaitingStudents((prev) => prev.filter((s) => s.id !== requestId));
             }
@@ -1422,14 +1567,11 @@ function RoomContent() {
 
     const handleReject = async (requestId) => {
         try {
-            const res = await fetch(
-                `${BACKEND_URL}/reject-student`,
-                {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ requestId }),
-                },
-            );
+            const res = await fetch(`${BACKEND_URL}/reject-student`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ requestId }),
+            });
             if (res.ok) {
                 setWaitingStudents((prev) => prev.filter((s) => s.id !== requestId));
             }
@@ -1907,10 +2049,12 @@ function RoomContent() {
                         audioContext: recordingAudioContext.current,
                         destinationNode: recordingDestNode.current,
                     }).catch((err) => console.error("Greeting TTS error:", err));
-                    
+
                     room.localParticipant.publishData(
-                        new TextEncoder().encode(JSON.stringify({ action: "AI_SPEAK_BROADCAST", text: reply })),
-                        { reliable: true }
+                        new TextEncoder().encode(
+                            JSON.stringify({ action: "AI_SPEAK_BROADCAST", text: reply }),
+                        ),
+                        { reliable: true },
                     );
                     return;
                 }
@@ -2085,7 +2229,7 @@ function RoomContent() {
             { reliable: true },
         );
         console.log("✅ sendToStudent: Published AI_ANSWER_BROADCAST");
-        
+
         // Also play locally for the Teacher
         const audioString = `${doubt.name} asked: ${doubt.text}. ${doubt.answer}`;
         speakText(audioString, {
@@ -2213,14 +2357,11 @@ function RoomContent() {
 
                 // ⭐ GENERATE CLASS SUMMARY
                 try {
-                    const summaryRes = await fetch(
-                        `${BACKEND_URL}/generate-summary`,
-                        {
-                            method: "POST",
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({ topic: finalTopic, studentQuestions }),
-                        },
-                    );
+                    const summaryRes = await fetch(`${BACKEND_URL}/generate-summary`, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ topic: finalTopic, studentQuestions }),
+                    });
                     const summaryData = await summaryRes.json();
                     if (summaryData.summary) {
                         if (summaryData.summary) setClassSummary(summaryData.summary);
@@ -2323,8 +2464,6 @@ function RoomContent() {
         }, 1000);
         return () => clearInterval(timer);
     }, []);
-
-
 
     return (
         <>
@@ -2618,16 +2757,23 @@ function StudentVideoThumbs({ participants, onShowFullGrid }) {
                         className="custom-student-grid"
                         key={`${trackRef.participant.identity}_${trackRef.source}`}
                         style={{
-                            height: "180px",
-                            minHeight: "180px",
+                            height: 'min-content',
+                            minHeight: 'min-content',
                             position: "relative",
                             borderRadius: "16px",
                             overflow: "hidden",
-                            border: isSpeaking ? "2px solid #2196F3" : "1px solid rgba(255, 255, 255, 0.12)",
-                            boxShadow: isSpeaking ? "0 0 20px rgba(33, 150, 243, 0.4), inset 0 0 0 1px rgba(33,150,243,0.2)" : "0 8px 24px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255,255,255,0.05)",
-                            transform: isSpeaking ? "scale(1.02) translateY(-2px)" : "scale(1) translateY(0)",
+                            border: isSpeaking
+                                ? "2px solid #2196F3"
+                                : "1px solid rgba(255, 255, 255, 0.12)",
+                            boxShadow: isSpeaking
+                                ? "0 0 20px rgba(33, 150, 243, 0.4), inset 0 0 0 1px rgba(33,150,243,0.2)"
+                                : "0 8px 24px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255,255,255,0.05)",
+                            transform: isSpeaking
+                                ? "scale(1.02) translateY(-2px)"
+                                : "scale(1) translateY(0)",
                             transition: "all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1)",
-                            background: "linear-gradient(180deg, rgba(20,25,35,0.6) 0%, rgba(10,15,25,0.9) 100%)",
+                            background:
+                                "linear-gradient(180deg, rgba(20,25,35,0.6) 0%, rgba(10,15,25,0.9) 100%)",
                         }}
                     >
                         {/* Custom Name Badge */}
@@ -2656,12 +2802,28 @@ function StudentVideoThumbs({ participants, onShowFullGrid }) {
                                     width: "8px",
                                     height: "8px",
                                     borderRadius: "50%",
-                                    background: (trackRef.participant.isMicrophoneEnabled || trackRef.participant.isCameraEnabled) ? "#2196F3" : "#f44336",
-                                    boxShadow: (trackRef.participant.isMicrophoneEnabled || trackRef.participant.isCameraEnabled) ? "0 0 8px rgba(33, 150, 243, 0.8)" : "none",
+                                    background:
+                                        trackRef.participant.isMicrophoneEnabled ||
+                                            trackRef.participant.isCameraEnabled
+                                            ? "#2196F3"
+                                            : "#f44336",
+                                    boxShadow:
+                                        trackRef.participant.isMicrophoneEnabled ||
+                                            trackRef.participant.isCameraEnabled
+                                            ? "0 0 8px rgba(33, 150, 243, 0.8)"
+                                            : "none",
                                 }}
                             />
                             {trackRef.participant.identity}
-                            <div style={{ display: "flex", alignItems: "center", gap: "4px", marginLeft: "4px", color: "rgba(255,255,255,0.8)" }}>
+                            <div
+                                style={{
+                                    display: "flex",
+                                    alignItems: "center",
+                                    gap: "4px",
+                                    marginLeft: "4px",
+                                    color: "rgba(255,255,255,0.8)",
+                                }}
+                            >
                                 {trackRef.participant.isMicrophoneEnabled ? (
                                     <BsMicFill size={12} color="#2196F3" />
                                 ) : (
@@ -2690,31 +2852,57 @@ function StudentVideoThumbs({ participants, onShowFullGrid }) {
                         flexDirection: "column",
                         alignItems: "center",
                         justifyContent: "center",
-                        background: "linear-gradient(145deg, rgba(30, 41, 59, 0.6), rgba(15, 23, 42, 0.8))",
+                        background:
+                            "linear-gradient(145deg, rgba(30, 41, 59, 0.6), rgba(15, 23, 42, 0.8))",
                         backdropFilter: "blur(16px)",
                         border: "1px solid rgba(255, 255, 255, 0.08)",
                         borderRadius: "16px",
                         color: "#fff",
                         fontFamily: "Inter, sans-serif",
-                        boxShadow: "0 8px 25px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255,255,255,0.05)",
+                        boxShadow:
+                            "0 8px 25px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255,255,255,0.05)",
                         transition: "all 0.3s ease",
                         cursor: "pointer",
                     }}
                     onMouseOver={(e) => {
-                        e.currentTarget.style.background = "linear-gradient(145deg, rgba(40, 51, 70, 0.7), rgba(20, 30, 50, 0.9))";
+                        e.currentTarget.style.background =
+                            "linear-gradient(145deg, rgba(40, 51, 70, 0.7), rgba(20, 30, 50, 0.9))";
                         e.currentTarget.style.transform = "translateY(-2px)";
-                        e.currentTarget.style.boxShadow = "0 12px 30px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255,255,255,0.1)";
+                        e.currentTarget.style.boxShadow =
+                            "0 12px 30px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255,255,255,0.1)";
                     }}
                     onMouseOut={(e) => {
-                        e.currentTarget.style.background = "linear-gradient(145deg, rgba(30, 41, 59, 0.6), rgba(15, 23, 42, 0.8))";
+                        e.currentTarget.style.background =
+                            "linear-gradient(145deg, rgba(30, 41, 59, 0.6), rgba(15, 23, 42, 0.8))";
                         e.currentTarget.style.transform = "translateY(0)";
-                        e.currentTarget.style.boxShadow = "0 8px 25px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255,255,255,0.05)";
+                        e.currentTarget.style.boxShadow =
+                            "0 8px 25px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255,255,255,0.05)";
                     }}
                 >
-                    <div style={{ fontSize: "2.5rem", fontWeight: "800", background: "linear-gradient(135deg, #ffffff, #94a3b8)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", textShadow: "0 2px 10px rgba(255,255,255,0.1)" }}>
+                    <div
+                        style={{
+                            fontSize: "2.5rem",
+                            fontWeight: "800",
+                            background: "linear-gradient(135deg, #ffffff, #94a3b8)",
+                            WebkitBackgroundClip: "text",
+                            WebkitTextFillColor: "transparent",
+                            textShadow: "0 2px 10px rgba(255,255,255,0.1)",
+                        }}
+                    >
                         +{extraCount}
                     </div>
-                    <div style={{ fontSize: "0.85rem", color: "rgba(255,255,255,0.5)", marginTop: "6px", fontWeight: "600", letterSpacing: "0.5px", textTransform: "uppercase" }}>More Students</div>
+                    <div
+                        style={{
+                            fontSize: "0.85rem",
+                            color: "rgba(255,255,255,0.5)",
+                            marginTop: "6px",
+                            fontWeight: "600",
+                            letterSpacing: "0.5px",
+                            textTransform: "uppercase",
+                        }}
+                    >
+                        More Students
+                    </div>
                 </div>
             )}
         </>
@@ -2750,12 +2938,15 @@ function HandRaiseAudioNotifier({ queue, role }) {
         // ⭐ Special Case: 5+ Students (Batch Announcement)
         if (queue.length >= 5 && !hasSpokenBatchMsg.current) {
             hasSpokenBatchMsg.current = true;
-            const txt = "As several students have raised doubts, I will now conclude the session and proceed to clarify each of your questions.";
+            const txt =
+                "As several students have raised doubts, I will now conclude the session and proceed to clarify each of your questions.";
             speakText(txt).catch((err) => console.error("TTS Error:", err));
             if (room) {
                 room.localParticipant.publishData(
-                    new TextEncoder().encode(JSON.stringify({ action: "AI_SPEAK_BROADCAST", text: txt })),
-                    { reliable: true }
+                    new TextEncoder().encode(
+                        JSON.stringify({ action: "AI_SPEAK_BROADCAST", text: txt }),
+                    ),
+                    { reliable: true },
                 );
             }
             return;
@@ -2775,8 +2966,10 @@ function HandRaiseAudioNotifier({ queue, role }) {
                     speakText(txt).catch((err) => console.error("TTS Error:", err));
                     if (room) {
                         room.localParticipant.publishData(
-                            new TextEncoder().encode(JSON.stringify({ action: "AI_SPEAK_BROADCAST", text: txt })),
-                            { reliable: true }
+                            new TextEncoder().encode(
+                                JSON.stringify({ action: "AI_SPEAK_BROADCAST", text: txt }),
+                            ),
+                            { reliable: true },
                         );
                     }
                 }, 2000);
@@ -2797,9 +2990,8 @@ function NoiseFilterActivator() {
 
         async function applyFilter() {
             // Dynamic import to avoid SSR "Worker is not defined" error
-            const { KrispNoiseFilter, isKrispNoiseFilterSupported } = await import(
-                "@livekit/krisp-noise-filter"
-            );
+            const { KrispNoiseFilter, isKrispNoiseFilterSupported } =
+                await import("@livekit/krisp-noise-filter");
 
             if (!isKrispNoiseFilterSupported()) {
                 console.warn("[KrispNoiseFilter] Not supported in this browser.");
@@ -2811,7 +3003,7 @@ function NoiseFilterActivator() {
             // Wait for the microphone track to become available
             const getMicTrack = () => {
                 const pub = localParticipant?.getTrackPublication(
-                    Track.Source.Microphone
+                    Track.Source.Microphone,
                 );
                 return pub?.track ?? null;
             };
@@ -2844,7 +3036,7 @@ function NoiseFilterActivator() {
         return () => {
             cancelled = true;
             const mic = localParticipant?.getTrackPublication(
-                Track.Source.Microphone
+                Track.Source.Microphone,
             )?.track;
             if (mic && filterRef.current) {
                 mic.stopProcessor().catch(() => { });
@@ -2872,35 +3064,74 @@ function FullStudentGridOverlay({ participants, onClose }) {
     );
 
     return (
-        <div style={{
-            position: "fixed", inset: 0, zIndex: 99998,
-            background: "rgba(10, 15, 30, 0.95)", backdropFilter: "blur(20px)",
-            display: "flex", flexDirection: "column", padding: "24px"
-        }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
-                <h2 style={{ color: "#fff", margin: 0, fontFamily: "Inter, sans-serif", fontWeight: 700, fontSize: "1.5rem" }}>
+        <div
+            style={{
+                position: "fixed",
+                inset: 0,
+                zIndex: 99998,
+                background: "rgba(10, 15, 30, 0.95)",
+                backdropFilter: "blur(20px)",
+                display: "flex",
+                flexDirection: "column",
+                padding: "24px",
+            }}
+        >
+            <div
+                style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    marginBottom: "20px",
+                }}
+            >
+                <h2
+                    style={{
+                        color: "#fff",
+                        margin: 0,
+                        fontFamily: "Inter, sans-serif",
+                        fontWeight: 700,
+                        fontSize: "1.5rem",
+                    }}
+                >
                     Participants ({participants.length})
                 </h2>
                 <button
                     onClick={onClose}
                     style={{
-                        background: "rgba(255,255,255,0.1)", border: "none", color: "#fff",
-                        width: "44px", height: "44px", borderRadius: "12px",
-                        display: "flex", alignItems: "center", justifyContent: "center",
-                        cursor: "pointer", transition: "all 0.2s"
+                        background: "rgba(255,255,255,0.1)",
+                        border: "none",
+                        color: "#fff",
+                        width: "44px",
+                        height: "44px",
+                        borderRadius: "12px",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        cursor: "pointer",
+                        transition: "all 0.2s",
                     }}
-                    onMouseOver={(e) => e.currentTarget.style.background = "rgba(244, 67, 54, 0.8)"}
-                    onMouseOut={(e) => e.currentTarget.style.background = "rgba(255,255,255,0.1)"}
+                    onMouseOver={(e) =>
+                        (e.currentTarget.style.background = "rgba(244, 67, 54, 0.8)")
+                    }
+                    onMouseOut={(e) =>
+                        (e.currentTarget.style.background = "rgba(255,255,255,0.1)")
+                    }
                 >
                     <MdClose size={24} />
                 </button>
             </div>
 
-            <div className="custom-scrollbar-hide" style={{
-                flex: 1, overflowY: "auto", display: "grid", gap: "20px",
-                gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))",
-                alignContent: "start"
-            }}>
+            <div
+                className="custom-scrollbar-hide"
+                style={{
+                    flex: 1,
+                    overflowY: "auto",
+                    display: "grid",
+                    gap: "20px",
+                    gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))",
+                    alignContent: "start",
+                }}
+            >
                 <style>{`
                     .custom-student-grid .lk-participant-metadata,
                     .custom-student-grid .lk-participant-name,
@@ -2926,29 +3157,77 @@ function FullStudentGridOverlay({ participants, onClose }) {
                             className="custom-student-grid"
                             key={`${trackRef.participant.identity}_${trackRef.source}`}
                             style={{
-                                height: "240px", borderRadius: "16px", overflow: "hidden", position: "relative",
-                                border: isSpeaking ? "2px solid #2196F3" : "1px solid rgba(255, 255, 255, 0.1)",
-                                boxShadow: isSpeaking ? "0 0 24px rgba(33, 150, 243, 0.3)" : "0 10px 30px rgba(0, 0, 0, 0.4)",
-                                background: "linear-gradient(180deg, rgba(20,25,35,0.6) 0%, rgba(10,15,25,0.9) 100%)",
+                                height: "240px",
+                                borderRadius: "16px",
+                                overflow: "hidden",
+                                position: "relative",
+                                border: isSpeaking
+                                    ? "2px solid #2196F3"
+                                    : "1px solid rgba(255, 255, 255, 0.1)",
+                                boxShadow: isSpeaking
+                                    ? "0 0 24px rgba(33, 150, 243, 0.3)"
+                                    : "0 10px 30px rgba(0, 0, 0, 0.4)",
+                                background:
+                                    "linear-gradient(180deg, rgba(20,25,35,0.6) 0%, rgba(10,15,25,0.9) 100%)",
                             }}
                         >
-                            <div style={{
-                                position: "absolute", bottom: "12px", left: "12px",
-                                background: "rgba(0, 0, 0, 0.6)", backdropFilter: "blur(8px)",
-                                padding: "6px 12px", borderRadius: "8px", color: "#fff",
-                                fontSize: "14px", fontWeight: "600", fontFamily: "Inter, sans-serif",
-                                zIndex: 10, border: "1px solid rgba(255, 255, 255, 0.05)",
-                                display: "flex", alignItems: "center", gap: "8px"
-                            }}>
-                                <span style={{
-                                    width: "8px", height: "8px", borderRadius: "50%",
-                                    background: (trackRef.participant.isMicrophoneEnabled || trackRef.participant.isCameraEnabled) ? "#2196F3" : "#f44336",
-                                    boxShadow: (trackRef.participant.isMicrophoneEnabled || trackRef.participant.isCameraEnabled) ? "0 0 8px rgba(33, 150, 243, 0.8)" : "none",
-                                }} />
+                            <div
+                                style={{
+                                    position: "absolute",
+                                    bottom: "12px",
+                                    left: "12px",
+                                    background: "rgba(0, 0, 0, 0.6)",
+                                    backdropFilter: "blur(8px)",
+                                    padding: "6px 12px",
+                                    borderRadius: "8px",
+                                    color: "#fff",
+                                    fontSize: "14px",
+                                    fontWeight: "600",
+                                    fontFamily: "Inter, sans-serif",
+                                    zIndex: 10,
+                                    border: "1px solid rgba(255, 255, 255, 0.05)",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    gap: "8px",
+                                }}
+                            >
+                                <span
+                                    style={{
+                                        width: "8px",
+                                        height: "8px",
+                                        borderRadius: "50%",
+                                        background:
+                                            trackRef.participant.isMicrophoneEnabled ||
+                                                trackRef.participant.isCameraEnabled
+                                                ? "#2196F3"
+                                                : "#f44336",
+                                        boxShadow:
+                                            trackRef.participant.isMicrophoneEnabled ||
+                                                trackRef.participant.isCameraEnabled
+                                                ? "0 0 8px rgba(33, 150, 243, 0.8)"
+                                                : "none",
+                                    }}
+                                />
                                 {trackRef.participant.identity}
-                                <div style={{ display: "flex", alignItems: "center", gap: "6px", marginLeft: "6px", color: "rgba(255,255,255,0.8)" }}>
-                                    {trackRef.participant.isMicrophoneEnabled ? <BsMicFill size={14} color="#2196F3" /> : <BsMicMuteFill size={14} color="#f44336" />}
-                                    {trackRef.participant.isCameraEnabled ? <BsCameraVideoFill size={14} color="#2196F3" /> : <BsCameraVideoOffFill size={14} color="#f44336" />}
+                                <div
+                                    style={{
+                                        display: "flex",
+                                        alignItems: "center",
+                                        gap: "6px",
+                                        marginLeft: "6px",
+                                        color: "rgba(255,255,255,0.8)",
+                                    }}
+                                >
+                                    {trackRef.participant.isMicrophoneEnabled ? (
+                                        <BsMicFill size={14} color="#2196F3" />
+                                    ) : (
+                                        <BsMicMuteFill size={14} color="#f44336" />
+                                    )}
+                                    {trackRef.participant.isCameraEnabled ? (
+                                        <BsCameraVideoFill size={14} color="#2196F3" />
+                                    ) : (
+                                        <BsCameraVideoOffFill size={14} color="#f44336" />
+                                    )}
                                 </div>
                             </div>
                             <TrackRefContext.Provider value={trackRef}>

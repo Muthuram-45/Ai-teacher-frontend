@@ -1,7 +1,54 @@
 'use client';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { useRoomContext, useRemoteParticipants, useLocalParticipant } from '@livekit/components-react';
 import { Track } from 'livekit-client';
+
+/* ---- Mini thumbnail that attaches a participant's video track ---- */
+function ParticipantThumb({ participant, label }) {
+    const thumbRef = useRef(null);
+
+    useEffect(() => {
+        const attach = () => {
+            participant.videoTrackPublications.forEach((pub) => {
+                if (pub.isSubscribed && pub.track && thumbRef.current) {
+                    pub.track.attach(thumbRef.current);
+                }
+            });
+        };
+        attach();
+        participant.on('trackSubscribed', attach);
+        return () => participant.off('trackSubscribed', attach);
+    }, [participant]);
+
+    return (
+        <div style={{
+            borderRadius: 10,
+            overflow: 'hidden',
+            background: '#1a1a2e',
+            border: '1px solid rgba(255,255,255,0.12)',
+            aspectRatio: '16/9',
+            position: 'relative',
+            flexShrink: 0,
+        }}>
+            <video
+                ref={thumbRef}
+                autoPlay
+                playsInline
+                muted
+                style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+            />
+            <div style={{
+                position: 'absolute', bottom: 0, left: 0, right: 0,
+                background: 'linear-gradient(transparent, rgba(0,0,0,0.7))',
+                padding: '4px 8px',
+                fontSize: '0.7rem', color: '#fff',
+                overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+            }}>
+                {label}
+            </div>
+        </div>
+    );
+}
 export default function StudentVideoPanel() {
     const room = useRoomContext();
     const remoteParticipants = useRemoteParticipants();
@@ -196,15 +243,15 @@ export default function StudentVideoPanel() {
                 left: 0,
                 width: '100vw',
                 height: '90vh',
-                background: '#000',
-                zIndex: 1, // Slightly above base background
+                background: 'transparent',
+                // zIndex: 1, // Slightly above base background
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                overflow: 'hidden'
+                overflow: 'hidden',
+                zIndex: 1
             }}
         >
-
 
             <video
                 ref={videoRef}

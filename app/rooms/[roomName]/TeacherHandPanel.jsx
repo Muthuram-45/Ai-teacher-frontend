@@ -79,7 +79,7 @@ export default function TeacherHandPanel() {
     if (!visible || hands.length === 0) return null;
 
     return (
-        <div style={{
+        <div className="hand-panel-container" style={{
             position: 'fixed',
             top: 24,
             left: '50%',
@@ -94,6 +94,7 @@ export default function TeacherHandPanel() {
             {hands.map((h, i) => (
                 <div
                     key={i}
+                    className="hand-panel-card"
                     style={{
                         background: "rgba(15, 23, 42, 0.92)",
                         backdropFilter: "blur(12px)",
@@ -127,7 +128,7 @@ export default function TeacherHandPanel() {
                         )}
                     </div>
 
-                    <div style={{
+                    <div className="hand-panel-text" style={{
                         fontSize: "15px",
                         fontFamily: "'Source Sans Pro', 'Noto Sans Tamil', 'Segoe UI', Roboto, Arial, sans-serif",
                         fontWeight: "500",

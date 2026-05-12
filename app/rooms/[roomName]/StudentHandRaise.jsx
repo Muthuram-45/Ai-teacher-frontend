@@ -46,7 +46,7 @@ export default function StudentHandRaise({ isHandRaised, onToggle }) {
                     animation: 'handRaiseSlideInRight 0.4s cubic-bezier(0, 0, 0.2, 1)',
                 }}
             />
-            {isHandRaised ? 'Raise' : 'Raise'}
+            <span className="hide-on-mobile">{isHandRaised ? 'Raise' : 'Raise'}</span>
         </button>
     );
 }
