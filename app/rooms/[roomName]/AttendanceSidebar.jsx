@@ -114,7 +114,7 @@ export default function AttendanceSidebar({ attendance, doubtsWithAnswers = [], 
             top: 0,
             bottom: 0,
             right: right,
-            width: '380px',
+            width: 'min(380px, 100vw)',
             height: '90vh',
             background: '#111',
             borderLeft: '1px solid #333',
@@ -158,7 +158,7 @@ export default function AttendanceSidebar({ attendance, doubtsWithAnswers = [], 
             </div>
 
             {/* List */}
-            <div style={{ flex: 1, overflowY: 'auto', padding: '10px' }}>
+            <div style={{ flex: 1, overflowY: 'auto', overflowX: 'auto', padding: '10px' }}>
                 {studentAttendance.length === 0 ? (
                     <div style={{ textAlign: 'center', padding: '40px 20px', color: '#555' }}>
                         No students have joined yet.

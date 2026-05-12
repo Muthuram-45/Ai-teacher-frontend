@@ -69,3 +69,155 @@ body {
     opacity: 1;
   }
 }
+
+/* ========================= */
+/* 📱 RESPONSIVE: WaitingRoom Popup */
+/* ========================= */
+
+/* Tablet (≤768px) */
+@media (max-width: 768px) {
+  .waiting-room-container {
+    right: 15px !important;
+    top: 12px !important;
+    left: 500px;
+    align-items: stretch !important;
+  }
+
+  .waiting-room-summary {
+    min-width: unset !important;
+    padding: 10px 16px !important;
+    gap: 14px !important;
+    flex-wrap: wrap !important;
+    border-radius: 12px !important;
+  }
+
+  .waiting-room-summary > div:first-child {
+    font-size: 13px !important;
+  }
+
+  .waiting-room-actions {
+    gap: 8px !important;
+  }
+
+  .waiting-room-actions button {
+    padding: 7px 14px !important;
+    font-size: 13px !important;
+    border-radius: 8px !important;
+  }
+
+  .waiting-room-student-card {
+    min-width: unset !important;
+    padding: 8px 14px !important;
+    gap: 14px !important;
+    border-radius: 12px !important;
+  }
+
+  .waiting-room-student-card > div:first-child {
+    font-size: 14px !important;
+  }
+
+  /* Hand-raise / mic panel */
+  .hand-panel-container {
+    top: 12px !important;
+    width: calc(100% - 24px) !important;
+    left: 12px !important;
+    transform: none !important;
+  }
+
+  .hand-panel-card {
+    padding: 8px 16px !important;
+    gap: 12px !important;
+    border-radius: 12px !important;
+    width: 100% !important;
+    min-width: unset !important;
+  }
+
+  .hand-panel-text {
+    font-size: 13px !important;
+  }
+}
+
+/* Mobile (≤480px) */
+@media (max-width: 480px) {
+  .waiting-room-container {
+    right: 6px !important;
+    top: 6px !important;
+    left: 6px !important;
+    gap: 8px !important;
+  }
+
+  .waiting-room-summary {
+    padding: 8px 12px !important;
+    gap: 8px !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    border-radius: 10px !important;
+  }
+
+  .waiting-room-summary > div:first-child {
+    font-size: 12px !important;
+    text-align: center;
+  }
+
+  .waiting-room-actions {
+    justify-content: center !important;
+    gap: 6px !important;
+  }
+
+  .waiting-room-actions button {
+    padding: 6px 12px !important;
+    font-size: 12px !important;
+    border-radius: 8px !important;
+    flex: 1;
+  }
+
+  .waiting-room-student-card {
+    padding: 8px 10px !important;
+    gap: 10px !important;
+    border-radius: 10px !important;
+    flex-wrap: wrap !important;
+  }
+
+  .waiting-room-student-card > div:first-child {
+    font-size: 13px !important;
+    flex: 1 !important;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .waiting-room-student-card .waiting-room-actions {
+    width: 100%;
+    justify-content: flex-end !important;
+  }
+
+  /* Hand-raise / mic panel mobile */
+  .hand-panel-container {
+    top: 6px !important;
+    width: calc(100% - 12px) !important;
+    left: 6px !important;
+    gap: 6px !important;
+  }
+
+  .hand-panel-card {
+    padding: 6px 12px !important;
+    gap: 10px !important;
+    border-radius: 10px !important;
+  }
+
+  .hand-panel-card > div:first-child {
+    width: 30px !important;
+    height: 30px !important;
+    border-radius: 8px !important;
+  }
+
+  .hand-panel-card > div:first-child svg {
+    width: 16px !important;
+    height: 16px !important;
+  }
+
+  .hand-panel-text {
+    font-size: 12px !important;
+  }
+}

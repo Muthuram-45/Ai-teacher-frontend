@@ -181,7 +181,7 @@ export default function QuizSidebar({ quizId, topic, onClose, right = 0 }) {
             top: 0,
             right: right,
             bottom: 0,
-            width: '380px',
+            width: 'min(380px, 100vw)',
             height: '90vh',
             background: 'linear-gradient(135deg, #1e1e2e 0%, #2a2a3e 100%)',
             borderLeft: '1px solid rgba(255, 255, 255, 0.1)',
