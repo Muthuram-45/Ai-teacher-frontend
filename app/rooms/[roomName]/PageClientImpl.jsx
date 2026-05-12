@@ -427,7 +427,9 @@ function TeacherOnlyUI({
     handlePauseRecording,
     handleResumeRecording,
     handleSaveRecording,
-    recordingDuration
+    recordingDuration,
+    recordingAudioContext,
+    recordingDestNode
 }) {
     const { localParticipant } = useLocalParticipant();
     const room = useRoomContext();
@@ -525,6 +527,8 @@ function TeacherOnlyUI({
                     handleResumeRecording={handleResumeRecording}
                     handleSaveRecording={handleSaveRecording}
                     recordingDuration={recordingDuration}
+                    recordingAudioContext={recordingAudioContext}
+                    recordingDestNode={recordingDestNode}
                 />
             </div>
 
@@ -2723,6 +2727,7 @@ function StudentVideoThumbs({ participants, onShowFullGrid }) {
 
 /* 🔊 COMPONENT: Handles sequential audio so it doesn't re-trigger on every render of RoomContent */
 function HandRaiseAudioNotifier({ queue, role }) {
+    const room = useRoomContext();
     const notifiedIdentities = useRef(new Set());
     const delayTimerRef = useRef(null);
     const hasSpokenBatchMsg = useRef(false);
