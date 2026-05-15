@@ -445,6 +445,29 @@ function TeacherOnlyUI({
     const [showShareMenu, setShowShareMenu] = useState(false);
     const [showMobileNavMenu, setShowMobileNavMenu] = useState(false);
     const [copied, setCopied] = useState(false);
+    const mobileNavRef = useRef(null);
+    const mobileNavToggleRef = useRef(null);
+
+    // Close mobile nav panel when clicking outside
+    useEffect(() => {
+        if (!showMobileNavMenu) return;
+        const handleOutsideClick = (e) => {
+            if (
+                mobileNavRef.current &&
+                !mobileNavRef.current.contains(e.target) &&
+                mobileNavToggleRef.current &&
+                !mobileNavToggleRef.current.contains(e.target)
+            ) {
+                setShowMobileNavMenu(false);
+            }
+        };
+        document.addEventListener("mousedown", handleOutsideClick);
+        document.addEventListener("touchstart", handleOutsideClick);
+        return () => {
+            document.removeEventListener("mousedown", handleOutsideClick);
+            document.removeEventListener("touchstart", handleOutsideClick);
+        };
+    }, [showMobileNavMenu]);
 
     const shareLink = `${window.location.origin}/join/${room.name}`;
 
@@ -535,12 +558,13 @@ function TeacherOnlyUI({
             {/* 🔔 Notifications & History (Near Leave button) */}
             <div className="teacher-nav-container">
                 <button
+                    ref={mobileNavToggleRef}
                     className="mobile-nav-toggle-btn"
                     onClick={() => setShowMobileNavMenu(!showMobileNavMenu)}
                 >
                     {showMobileNavMenu ? <FaAngleDown size={22} /> : <FaAngleUp size={22} />}
                 </button>
-                <div className={`nav-buttons-wrapper ${showMobileNavMenu ? "open" : ""}`}>
+                <div ref={mobileNavRef} className={`nav-buttons-wrapper ${showMobileNavMenu ? "open" : ""}`}>
                     {/* 📜 History Button */}
                     <button
                         onClick={onShowHistory}
@@ -1064,7 +1088,7 @@ function TeacherOnlyUI({
                         }
                     }
 
-                    @media (max-width: 320px) {
+                    @media (max-width: 768px) {
                         .mobile-nav-toggle-btn {
                             display: flex !important;
                             align-items: center;
