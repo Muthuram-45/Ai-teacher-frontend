@@ -1201,8 +1201,7 @@ function StudentOnlyUI({
 
     return (
         <>
-            {/* 📺 Student video viewer (Full Screen Background) */}
-            <StudentVideoViewer />
+            {/* 📺 Student video viewer is now handled in unified layout above */}
             <VoiceDoubt setShowAI={setShowAI} />
 
             {/* 🚀 Quiz Starting Pop-in for students */}
@@ -1365,7 +1364,7 @@ function StudentOnlyUI({
                     position: absolute;
                     bottom: 14px;
                     left: calc(50% - 465px);
-                    z-index: 100;
+                    z-index: 1100;
                 }
                 .student-nav-container {
                     position: absolute;
@@ -1374,7 +1373,7 @@ function StudentOnlyUI({
                     display: flex;
                     align-items: center;
                     gap: 12px;
-                    z-index: 100;
+                    z-index: 1100;
                 }
 
                 @media (max-width: 1024px) {
@@ -1930,7 +1929,7 @@ function RoomContent() {
     const customComponents = useMemo(
         () => ({
             Chat: NoComponent,
-            ParticipantGrid: role === "teacher" ? undefined : NoComponent,
+            ParticipantGrid: undefined,
             ControlBar: role === "teacher" ? TeacherControlBar : undefined,
             DisconnectButton: role === "teacher" ? NoComponent : undefined,
         }),
@@ -2183,6 +2182,14 @@ function RoomContent() {
                 // 🏁 Meeting Ended (Student Side Only)
                 if (msg.action === "MEETING_ENDED" && role === "student") {
                     setMeetingEnded(true);
+                }
+
+                // 📺 Video Started/Stopped (Student Side Only - Sync layout)
+                if (msg.action === 'VIDEO_START' && role === "student") {
+                    setTeacherClassStarted(true);
+                }
+                if (msg.action === 'VIDEO_STOP' && role === "student") {
+                    setTeacherClassStarted(false);
                 }
             } catch (err) {
                 console.error("Data packet error:", err);
@@ -2588,9 +2595,10 @@ function RoomContent() {
                 />
             )}
 
-            {role === "teacher" && teacherClassStarted ? (
+            {(role === "teacher" || role === "student") && teacherClassStarted ? (
                 <>
                     <div
+                        className="class-video-layout"
                         style={{
                             display: "flex",
                             width: "100%",
@@ -2598,15 +2606,14 @@ function RoomContent() {
                             position: "relative",
                         }}
                     >
-                        {/* 🔹 Left Panel (80%) - Video container is handled by TeacherVideoController,
-                         but we ensure the space is allocated here.
-                         Actually, TeacherVideoController renders its own fixed/absolute video.
-                         We'll make it 80% in its own file. Here we just render the sidebar. */}
-                        <div style={{ width: "80%", height: "100%" }} />
+                        {/* 🔹 Left Panel (80%) - Video container */}
+                        <div className="video-main-panel" style={{ width: "80%", height: "100%" }}>
+                            {role === "student" && <StudentVideoViewer isEmbedded={true} />}
+                        </div>
 
-                        {/* 🔹 Right Panel (20%) - Student videos */}
+                        {/* 🔹 Right Panel (20%) - Participant videos */}
                         <div
-                            className="custom-scrollbar-hide"
+                            className="video-side-panel custom-scrollbar-hide"
                             style={{
                                 width: "20%",
                                 height: "100%",
@@ -2622,20 +2629,22 @@ function RoomContent() {
                                 zIndex: 10,
                             }}
                         >
-                            {/* 🔹 Explicit Track Mapping for Students to avoid TrackRef context errors */}
                             <StudentVideoThumbs
                                 participants={participants.filter((p) => {
-                                    try {
-                                        return JSON.parse(p.metadata || "{}").role !== "teacher";
-                                    } catch {
-                                        return true;
+                                    if (role === 'teacher') {
+                                        try {
+                                            return JSON.parse(p.metadata || "{}").role !== "teacher";
+                                        } catch {
+                                            return true;
+                                        }
                                     }
+                                    return true; // Students see everyone
                                 })}
                                 onShowFullGrid={() => setShowFullStudentGrid(true)}
                             />
                         </div>
                     </div>
-                    {/* 🎛 Restoring bottom control bar for teacher layout */}
+                    {/* 🎛 Restoring bottom control bar for unified layout */}
                     <div
                         style={{
                             position: "fixed",
@@ -2650,12 +2659,18 @@ function RoomContent() {
                         }}
                     >
                         <ControlBar
-                            controls={{
+                            controls={role === 'teacher' ? {
                                 microphone: true,
                                 camera: true,
                                 screenShare: true,
                                 chat: false,
                                 leave: false,
+                            } : {
+                                microphone: true,
+                                camera: true,
+                                screenShare: false,
+                                chat: false,
+                                leave: true,
                             }}
                         />
                     </div>
@@ -2773,6 +2788,43 @@ function StudentVideoThumbs({ participants, onShowFullGrid }) {
                     -ms-overflow-style: none;  /* IE and Edge */
                     scrollbar-width: none;  /* Firefox */
                 }
+
+                @media (max-width: 768px) {
+                    .class-video-layout {
+                        flex-direction: column !important;
+                        height: 90vh !important;
+                    }
+                    .video-main-panel {
+                        width: 100% !important;
+                        height: 65% !important;
+                    }
+                    .video-side-panel {
+                        width: 100% !important;
+                        height: 35% !important;
+                        border-left: none !important;
+                        border-top: 1px solid rgba(255, 255, 255, 0.1) !important;
+                        flex-direction: row !important;
+                        overflow-x: auto !important;
+                        overflow-y: hidden !important;
+                        padding: 10px !important;
+                        gap: 12px !important;
+                    }
+                    .custom-student-grid {
+                        width: 140px !important;
+                        height: 100% !important;
+                        flex-shrink: 0 !important;
+                    }
+                    .extra-students-box {
+                        width: 100px !important;
+                        height: 100% !important;
+                        min-height: unset !important;
+                        flex-shrink: 0 !important;
+                    }
+                    .teacher-main-video {
+                        width: 100vw !important;
+                        height: 60vh !important;
+                    }
+                }
             `}</style>
             {studentTracks.map((trackRef) => {
                 const isSpeaking = trackRef.participant.isSpeaking;
@@ -2869,6 +2921,7 @@ function StudentVideoThumbs({ participants, onShowFullGrid }) {
             {extraCount > 0 && (
                 <div
                     onClick={onShowFullGrid}
+                    className="extra-students-box"
                     style={{
                         height: "160px",
                         minHeight: "160px",
@@ -2935,19 +2988,28 @@ function StudentVideoThumbs({ participants, onShowFullGrid }) {
 
 /* 🔊 COMPONENT: Handles sequential audio so it doesn't re-trigger on every render of RoomContent */
 function HandRaiseAudioNotifier({ queue, role }) {
+    const room = useRoomContext();
     const notifiedIdentities = useRef(new Set());
     const delayTimerRef = useRef(null);
+    const notificationTimeoutRef = useRef(null);
     const hasSpokenBatchMsg = useRef(false);
 
     useEffect(() => {
         if (role !== "teacher") return;
 
-        // If queue is empty, we don't clear the 'notified' set immediately
+        // Cleanup: If queue is empty, we don't clear the 'notified' set immediately
         // to prevent repeats if someone spam clicks. We only clear it if the queue stays empty
         if (queue.length === 0) {
+            // Clear any pending individual notification if queue becomes empty
+            if (notificationTimeoutRef.current) {
+                clearTimeout(notificationTimeoutRef.current);
+                notificationTimeoutRef.current = null;
+            }
+
             if (!delayTimerRef.current) {
                 delayTimerRef.current = setTimeout(() => {
                     notifiedIdentities.current.clear();
+                    hasSpokenBatchMsg.current = false; // Reset batch flag too after silence
                 }, 10000); // Clear history after 10s of silence
             }
             return;
@@ -2976,17 +3038,26 @@ function HandRaiseAudioNotifier({ queue, role }) {
             return;
         }
 
-        // Regular individual notifications
-        if (queue.length < 5) {
+        // Regular individual notifications (Sequential)
+        if (queue.length > 0 && queue.length < 5) {
             const currentLead = queue[0];
 
             // Only notify if we haven't notified this person in this "session"
-            if (!notifiedIdentities.current.has(currentLead)) {
+            if (currentLead && !notifiedIdentities.current.has(currentLead)) {
                 notifiedIdentities.current.add(currentLead);
 
+                // Clear any previous pending notification to avoid overlaps
+                if (notificationTimeoutRef.current) {
+                    clearTimeout(notificationTimeoutRef.current);
+                }
+
                 // Small delay to ensure previous audio (like a greeting) finished
-                setTimeout(() => {
+                notificationTimeoutRef.current = setTimeout(() => {
+                    // Final check: is this person STILL in the queue?
+                    // Note: 'queue' here is from the closure of the effect that scheduled this.
+                    // If the queue changed, the cleanup/re-run would have cleared this timeout.
                     const txt = `${currentLead}, you raised your hand. Do you have any doubts? If so, please click the ‘Ask a Doubt’ button to submit your question.`;
+                    
                     speakText(txt).catch((err) => console.error("TTS Error:", err));
                     if (room) {
                         room.localParticipant.publishData(
@@ -2996,10 +3067,25 @@ function HandRaiseAudioNotifier({ queue, role }) {
                             { reliable: true },
                         );
                     }
+                    notificationTimeoutRef.current = null;
                 }, 2000);
             }
         }
-    }, [queue, role]);
+
+        return () => {
+            // Optional: we don't necessarily want to clear everything on every queue update
+            // because that might delay notifications indefinitely if many people join.
+            // But we SHOULD clear on unmount.
+        };
+    }, [queue, role, room]);
+
+    // Unmount cleanup
+    useEffect(() => {
+        return () => {
+            if (delayTimerRef.current) clearTimeout(delayTimerRef.current);
+            if (notificationTimeoutRef.current) clearTimeout(notificationTimeoutRef.current);
+        };
+    }, []);
 
     return null;
 }

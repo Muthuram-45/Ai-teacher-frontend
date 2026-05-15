@@ -35,7 +35,7 @@ export default function TeacherHandPanel() {
                         hideTimer = setTimeout(() => {
                             setVisible(false);
                             setHands(prev => prev.filter(h => h.type !== 'hand'));
-                        }, 15000);
+                        }, 5000);
                     }
                 }
 
@@ -51,7 +51,7 @@ export default function TeacherHandPanel() {
                     hideTimer = setTimeout(() => {
                         setVisible(false);
                         setHands(prev => prev.filter(h => h.type !== 'mic'));
-                    }, 15000);
+                    }, 5000);
                 }
 
                 if (msg.action === 'VOICE_DOUBT_END') {

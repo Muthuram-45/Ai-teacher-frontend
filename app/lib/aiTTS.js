@@ -10,6 +10,8 @@ let currentSource = null;
 let isPlaying = false;
 let abortController = null;
 let speechQueue = Promise.resolve();
+let cachedActiveVoice = null;
+let lastVoiceCheckTime = 0;
 
 /**
  * Splits text into chunks ≤ maxLen chars, breaking at sentence boundaries.
@@ -95,6 +97,27 @@ async function playRecordableChunk(text, audioContext, destinationNode) {
 
     try {
         console.log("🚀 Starting Streamed Synthesis...");
+
+        // 🔍 Check if we should use trained voice or default (Google TTS)
+        let activeVoice = cachedActiveVoice;
+        if (!activeVoice || (Date.now() - lastVoiceCheckTime > 5000)) {
+            try {
+                const activeResp = await fetch(`${BACKEND_URL}/active-voice`);
+                const activeData = await activeResp.json();
+                activeVoice = activeData.activeVoice;
+                cachedActiveVoice = activeVoice;
+                lastVoiceCheckTime = Date.now();
+            } catch (e) {
+                console.warn("⚠️ Failed to fetch active voice, assuming default:", e);
+                activeVoice = 'reference_voice.wav';
+            }
+        }
+        
+        if (activeVoice === 'reference_voice.wav') {
+            console.log("ℹ️ Default voice active - switching to Google TTS");
+            throw new Error("DEFAULT_VOICE_SELECTED"); 
+        }
+
         const response = await fetch(`${PYTHON_BACKEND_URL}/synthesize`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },

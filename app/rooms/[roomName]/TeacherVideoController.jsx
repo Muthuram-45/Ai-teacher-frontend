@@ -714,7 +714,7 @@ export default function TeacherVideoController({
       {/* 📺 Class Management Panel */}
       {(videoURL || classStarted) && (
         <div
-          style={{
+          style={classStarted ? { display: 'contents' } : {
             position: 'absolute',
             bottom: 60,
             left: 0,
@@ -728,67 +728,69 @@ export default function TeacherVideoController({
             zIndex: 100,
           }}
         >
-          <div
-            style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              marginBottom: 12,
-            }}
-          >
-            <h4 style={{ margin: 0 }}>👩‍🏫 Class Control</h4>
-            <button
-              onClick={async () => {
-                // 📡 Notify students that video has stopped
-                if (room && publishedRef.current) {
-                  try {
-                    room.localParticipant.publishData(
-                      new TextEncoder().encode(
-                        JSON.stringify({ action: 'VIDEO_STOP' })
-                      ),
-                      { reliable: true }
-                    );
-                  } catch (e) {
-                    console.error('Failed to send VIDEO_STOP', e);
-                  }
-
-                  // Unpublish the video/audio tracks from LiveKit
-                  try {
-                    await publisherRef.current.stopPublishing();
-                  } catch (e) {
-                    console.error('Failed to stop publishing', e);
-                  }
-                }
-
-                // ✅ Stop broadcasting time updates
-                stopTimeSync();
-
-                // Pause the local video element
-                if (videoRef.current) {
-                  videoRef.current.pause();
-                }
-
-                setVideoURL(null);
-                setClassStarted(false);
-                if (onClassStatusChange) onClassStatusChange(false);
-                publishedRef.current = false;
-
-                // ✅ reset finish logic
-                doubtCountRef.current = 0;
-                announcedFinishRef.current = false;
-
-                // ✅ reset end announcement
-                endedAnnouncedRef.current = false;
-                // ✅ clear file input so same file can be selected again
-                if (fileInputRef.current) {
-                  fileInputRef.current.value = "";
-                }
+          {!classStarted && (
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                marginBottom: 12,
               }}
-              style={{ background: 'none', border: 'none', color: '#666', cursor: 'pointer' }}
             >
-              ✕
-            </button>
-          </div>
+              <h4 style={{ margin: 0 }}>👩‍🏫 Class Control</h4>
+              <button
+                onClick={async () => {
+                  // 📡 Notify students that video has stopped
+                  if (room && publishedRef.current) {
+                    try {
+                      room.localParticipant.publishData(
+                        new TextEncoder().encode(
+                          JSON.stringify({ action: 'VIDEO_STOP' })
+                        ),
+                        { reliable: true }
+                      );
+                    } catch (e) {
+                      console.error('Failed to send VIDEO_STOP', e);
+                    }
+
+                    // Unpublish the video/audio tracks from LiveKit
+                    try {
+                      await publisherRef.current.stopPublishing();
+                    } catch (e) {
+                      console.error('Failed to stop publishing', e);
+                    }
+                  }
+
+                  // ✅ Stop broadcasting time updates
+                  stopTimeSync();
+
+                  // Pause the local video element
+                  if (videoRef.current) {
+                    videoRef.current.pause();
+                  }
+
+                  setVideoURL(null);
+                  setClassStarted(false);
+                  if (onClassStatusChange) onClassStatusChange(false);
+                  publishedRef.current = false;
+
+                  // ✅ reset finish logic
+                  doubtCountRef.current = 0;
+                  announcedFinishRef.current = false;
+
+                  // ✅ reset end announcement
+                  endedAnnouncedRef.current = false;
+                  // ✅ clear file input so same file can be selected again
+                  if (fileInputRef.current) {
+                    fileInputRef.current.value = "";
+                  }
+                }}
+                style={{ background: 'none', border: 'none', color: '#666', cursor: 'pointer' }}
+              >
+                ✕
+              </button>
+            </div>
+          )}
 
           {/* 🎥 Video preview */}
           {videoURL && (
@@ -797,6 +799,7 @@ export default function TeacherVideoController({
               src={videoURL}
               controls={true}
               onPlay={() => { }}
+              className="teacher-main-video"
               style={classStarted ? {
                 position: 'fixed',
                 top: 0,
@@ -816,49 +819,51 @@ export default function TeacherVideoController({
           )}
 
           {/* ▶ Start Class / 📝 Generate Quiz */}
-          <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            {videoURL && !classStarted && (
-              <button
-                onClick={startClass}
-                style={{
-                  width: '100%',
-                  padding: '10px',
-                  fontWeight: 'bold',
-                  background: '#4CAF50',
-                  color: '#fff',
-                  borderRadius: 8,
-                  border: 'none',
-                  cursor: 'pointer',
-                }}
-              >
-                ▶ Start Class
-              </button>
-            )}
+          {!classStarted && (
+            <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              {videoURL && !classStarted && (
+                <button
+                  onClick={startClass}
+                  style={{
+                    width: '100%',
+                    padding: '10px',
+                    fontWeight: 'bold',
+                    background: '#4CAF50',
+                    color: '#fff',
+                    borderRadius: 8,
+                    border: 'none',
+                    cursor: 'pointer',
+                  }}
+                >
+                  ▶ Start Class
+                </button>
+              )}
 
-            {classStarted && videoEnded && (
-              <button
-                onClick={handleQuizRequest}
-                style={{
-                  width: '100%',
-                  padding: '10px',
-                  fontWeight: 'bold',
-                  background: '#2196F3',
-                  color: '#fff',
-                  borderRadius: 8,
-                  border: 'none',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '8px',
-                }}
-              >
-                📝 Generate AI Quiz
-              </button>
-            )}
-          </div>
+              {classStarted && videoEnded && (
+                <button
+                  onClick={handleQuizRequest}
+                  style={{
+                    width: '100%',
+                    padding: '10px',
+                    fontWeight: 'bold',
+                    background: '#2196F3',
+                    color: '#fff',
+                    borderRadius: 8,
+                    border: 'none',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '8px',
+                  }}
+                >
+                  📝 Generate AI Quiz
+                </button>
+              )}
+            </div>
+          )}
 
-          {classStarted && !videoEnded && (
+          {!classStarted && classStarted && !videoEnded && (
             <div
               style={{
                 marginTop: 10,
@@ -872,7 +877,7 @@ export default function TeacherVideoController({
             </div>
           )}
 
-          {videoEnded && (
+          {!classStarted && videoEnded && (
             <div
               style={{
                 marginTop: 10,

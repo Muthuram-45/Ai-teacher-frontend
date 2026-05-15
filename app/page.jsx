@@ -395,15 +395,15 @@ export default function Home() {
                       className="inputTight"
 
                     >
-                      {availableVoices.length > 0 ? (
-                        availableVoices.map(v => (
+                      <option value="reference_voice.wav">Default Voice</option>
+                      {availableVoices
+                        .filter(v => v !== 'reference_voice.wav')
+                        .map(v => (
                           <option key={v} value={v}>
                             {v.replace('.wav', '').replace(/_/g, ' ')}
                           </option>
                         ))
-                      ) : (
-                        <option value="reference_voice.wav">Default Voice</option>
-                      )}
+                      }
                     </select>
 
                   </div>
