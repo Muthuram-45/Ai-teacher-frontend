@@ -88,7 +88,10 @@ export default function VoiceDoubt() {
     };
 
     recognition.onerror = (event) => {
-      if (event.error === "no-speech") return;
+      if (event.error === "no-speech" || event.error === "network" || event.error === "not-allowed") {
+        console.warn("Speech recognition error (ignored):", event.error);
+        return;
+      }
 
       console.error("Speech recognition error:", event.error);
     };

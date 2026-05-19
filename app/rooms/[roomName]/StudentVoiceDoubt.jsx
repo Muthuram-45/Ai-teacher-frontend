@@ -60,6 +60,12 @@ export default function StudentVoiceDoubt() {
         }
       })();
     };
+    recognition.onerror = (event) => {
+      if (event.error === "network" || event.error === "not-allowed") {
+        alert("Speech recognition failed due to browser network/security restrictions. Please use the text chat.");
+      }
+      console.warn('Speech recognition error:', event.error);
+    };
 
     recognition.start();
   };
