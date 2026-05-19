@@ -32,6 +32,7 @@ export default function Home() {
   const [isClient, setIsClient] = useState(false);
   const [availableVoices, setAvailableVoices] = useState([]);
   const [selectedVoice, setSelectedVoice] = useState('reference_voice.wav');
+  const [showRejoinPopup, setShowRejoinPopup] = useState(false);
 
   useEffect(() => {
     setIsClient(true);
@@ -89,6 +90,9 @@ export default function Home() {
         setIsLoggedIn(true);
         if (data.teacherName) {
           setTeacherName(data.teacherName);
+        }
+        if (localStorage.getItem("lastMeetingRoom")) {
+          setShowRejoinPopup(true);
         }
       } else {
         alert(data.error || 'Invalid credentials');
@@ -211,6 +215,11 @@ export default function Home() {
     setLoading(true);
 
     try {
+      localStorage.setItem("lastMeetingRoom", createdRoom);
+      localStorage.setItem("lastMeetingClassName", className.trim());
+      localStorage.setItem("lastMeetingTopic", topic.trim());
+      localStorage.setItem("lastMeetingMeetingName", meetingName);
+
       const res = await fetch(`${BACKEND_URL}/token`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -256,6 +265,61 @@ export default function Home() {
     setOtp('');
     setNewPassword('');
   };
+
+  const handleRejoinYes = () => {
+    const r = localStorage.getItem("lastMeetingRoom");
+    const c = localStorage.getItem("lastMeetingClassName") || "";
+    const t = localStorage.getItem("lastMeetingTopic") || "";
+    const m = localStorage.getItem("lastMeetingMeetingName") || `${c}-${t}`;
+
+    setCreatedRoom(r);
+    setClassName(c);
+    setTopic(t);
+    relaunchMeeting(r, c, t, m);
+  };
+
+  const handleRejoinNo = () => {
+    localStorage.removeItem("lastMeetingRoom");
+    localStorage.removeItem("lastMeetingClassName");
+    localStorage.removeItem("lastMeetingTopic");
+    localStorage.removeItem("lastMeetingMeetingName");
+    setShowRejoinPopup(false);
+  };
+
+  async function relaunchMeeting(r, c, t, m) {
+    setShowRejoinPopup(false);
+    setLoading(true);
+    try {
+      const res = await fetch(`${BACKEND_URL}/token`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: teacherName,
+          room: r,
+          role: 'teacher',
+          className: c,
+          topic: t
+        }),
+      });
+
+      const data = await res.json();
+
+      if (typeof data.token === 'string') {
+        router.push(
+          `/rooms/${r}?token=${encodeURIComponent(data.token)}&url=${encodeURIComponent(
+            data.url,
+          )}&className=${encodeURIComponent(m)}`,
+        );
+      } else {
+        alert('Invalid token received. Check your .env.local API key/secret.');
+        setLoading(false);
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Something went wrong while generating token');
+      setLoading(false);
+    }
+  }
 
   const onCopyLink = async () => {
     try {
@@ -343,6 +407,24 @@ export default function Home() {
   // ---------------- DASHBOARD (after login) ----------------
   return (
     <div className="dashPage">
+      {showRejoinPopup && (
+        <div style={{
+          position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999
+        }}>
+          <div style={{ background: '#1e293b', padding: '30px', borderRadius: '12px', textAlign: 'center', border: '1px solid #334155' }}>
+            <h2 style={{ color: '#fff', marginBottom: '20px' }}>Join Last Meeting?</h2>
+            <p style={{ color: '#cbd5e1', marginBottom: '30px' }}>You left a meeting recently. Would you like to rejoin it?</p>
+            <div style={{ display: 'flex', gap: '15px', justifyContent: 'center' }}>
+              <button onClick={handleRejoinYes} style={{ padding: '10px 24px', background: '#4f46e5', color: '#fff', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}>
+                Yes, Rejoin
+              </button>
+              <button onClick={handleRejoinNo} style={{ padding: '10px 24px', background: 'transparent', color: '#cbd5e1', border: '1px solid #475569', borderRadius: '8px', cursor: 'pointer' }}>
+                No, Create New
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       <div className="dashWrap">
         <header className="dashHeader">
           <div className="brand" style={{ cursor: 'pointer' }} onClick={() => router.push('/')}>

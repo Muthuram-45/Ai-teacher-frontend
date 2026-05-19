@@ -2454,6 +2454,12 @@ function RoomContent() {
                 await room.disconnect();
             }
 
+            // Clear last meeting details since we're ending it
+            localStorage.removeItem("lastMeetingRoom");
+            localStorage.removeItem("lastMeetingClassName");
+            localStorage.removeItem("lastMeetingTopic");
+            localStorage.removeItem("lastMeetingMeetingName");
+
             // 4️⃣ Redirect teacher
             window.location.href = "/";
         } catch (e) {
