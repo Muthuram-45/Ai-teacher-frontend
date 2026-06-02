@@ -2200,25 +2200,63 @@ function RoomContent() {
         return () => room.off("dataReceived", handleData);
     }, [room, role, localParticipant?.identity, scheduleAutoAsk]);
 
+    /* 🔄 FIFO Doubt Processing Queue (Teacher Side)
+     * Ensures doubts are processed one-by-one:
+     * Student 1's full response (AI fetch + TTS playback) completes
+     * before Student 2's response begins.
+     */
+    const doubtQueueRef = useRef([]);
+    const isProcessingDoubtRef = useRef(false);
+
+    const processDoubtQueue = async () => {
+        if (isProcessingDoubtRef.current) return; // Already processing
+        if (doubtQueueRef.current.length === 0) return; // Nothing to process
+
+        isProcessingDoubtRef.current = true;
+
+        while (doubtQueueRef.current.length > 0) {
+            const doubt = doubtQueueRef.current[0]; // Peek at first item
+            console.log(`🔄 Processing doubt from queue: "${doubt?.text}" (${doubtQueueRef.current.length} in queue)`);
+
+            try {
+                await processDoubt(doubt);
+            } catch (e) {
+                console.error("❌ Doubt processing error:", e);
+            }
+
+            doubtQueueRef.current.shift(); // Remove processed item
+        }
+
+        isProcessingDoubtRef.current = false;
+    };
+
     /* 👩‍🏫 Teacher Handlers (Centralized) */
-    const askAI = async (doubt) => {
-        console.log(`🤖 askAI triggered for: "${doubt?.text}"`);
+
+    // Internal: Process a single doubt end-to-end (AI fetch → broadcast → TTS)
+    const processDoubt = async (doubt) => {
         if (!doubt) return;
 
         clearAutoAskTimer(doubt.id);
-
         setLoadingAI(doubt.id);
+
         try {
+            const enrichedTopic = classNameFromURL ? `${classNameFromURL} ${meetingTopic ? `- ${meetingTopic}` : ""}` : meetingTopic;
             const res = await fetch(`${BACKEND_URL}/ask-ai`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     question: doubt.text,
                     studentName: doubt.name,
-                    topic: meetingTopic, // Pass the class topic from metadata
+                    topic: enrichedTopic,
                 }),
             });
             const data = await res.json();
+
+            if (data.ignored) {
+                setDoubts((prev) => prev.filter((d) => d.id !== doubt.id));
+                return;
+            }
+
             const answer = data.answer || "No answer received.";
 
             setDoubts((prev) =>
@@ -2226,7 +2264,9 @@ function RoomContent() {
             );
 
             const answeredDoubt = { ...doubt, answer };
-            setTimeout(() => sendToStudent(answeredDoubt), 500);
+            // Wait briefly, then send + await TTS completion before moving to next
+            await new Promise((r) => setTimeout(r, 500));
+            await sendToStudent(answeredDoubt);
         } catch (e) {
             console.error("AI error", e);
         } finally {
@@ -2234,7 +2274,19 @@ function RoomContent() {
         }
     };
 
-    const sendToStudent = (doubt) => {
+    // Public: Enqueue a doubt for sequential processing
+    const askAI = async (doubt) => {
+        console.log(`🤖 askAI triggered for: "${doubt?.text}"`);
+        if (!doubt) return;
+
+        clearAutoAskTimer(doubt.id);
+
+        // Add to FIFO queue and start processing
+        doubtQueueRef.current.push(doubt);
+        processDoubtQueue();
+    };
+
+    const sendToStudent = async (doubt) => {
         console.log(
             `📤 sendToStudent: Broadcasting answer for doubtId=${doubt.id}`,
         );
@@ -2261,12 +2313,16 @@ function RoomContent() {
         );
         console.log("✅ sendToStudent: Published AI_ANSWER_BROADCAST");
 
-        // Also play locally for the Teacher
+        // Play locally for the Teacher — AWAIT completion before moving to next doubt
         const audioString = `${doubt.name} asked: ${doubt.text}. ${doubt.answer}`;
-        speakText(audioString, {
-            audioContext: recordingAudioContext.current,
-            destinationNode: recordingDestNode.current,
-        }).catch((err) => console.error("Teacher local TTS error:", err));
+        try {
+            await speakText(audioString, {
+                audioContext: recordingAudioContext.current,
+                destinationNode: recordingDestNode.current,
+            });
+        } catch (err) {
+            console.error("Teacher local TTS error:", err);
+        }
 
         setDoubts((prev) =>
             prev.map((d) => (d.id === doubt.id ? { ...d, isBroadcasting: true } : d)),
@@ -3063,7 +3119,7 @@ function HandRaiseAudioNotifier({ queue, role }) {
                     // Note: 'queue' here is from the closure of the effect that scheduled this.
                     // If the queue changed, the cleanup/re-run would have cleared this timeout.
                     const txt = `${currentLead}, you raised your hand. Do you have any doubts? If so, please click the ‘Ask a Doubt’ button to submit your question.`;
-                    
+
                     speakText(txt).catch((err) => console.error("TTS Error:", err));
                     if (room) {
                         room.localParticipant.publishData(

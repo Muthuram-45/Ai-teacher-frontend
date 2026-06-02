@@ -12,6 +12,7 @@ let abortController = null;
 let speechQueue = Promise.resolve();
 let cachedActiveVoice = null;
 let lastVoiceCheckTime = 0;
+let queueEpoch = 0;
 
 /**
  * Splits text into chunks ≤ maxLen chars, breaking at sentence boundaries.
@@ -48,20 +49,35 @@ function splitIntoChunks(text, maxLen = 200) {
 export async function speakText(text, options = {}) {
     if (!text) return;
 
-    stopRequested = false; // Reset stop flag on new speak request
+    const myEpoch = queueEpoch;
 
-    const { audioContext, destinationNode } = options;
-    console.log(`🎙️ AI Voice Processing: "${text.substring(0, 50)}${text.length > 50 ? '...' : ''}"`);
-
-    try {
-        // Use AudioBuffer approach for reliable recording injection (Full text in one go)
-        await playRecordableChunk(text, audioContext, destinationNode);
-    } catch (err) {
-        if (!stopRequested) {
-            console.warn("⚠️ Text playback failed, falling back to browser synthesis:", err);
-            await fallbackToBrowserTTS(text).catch(() => { });
+    // 🔊 FIFO Queue: chain this speak request after all previous ones
+    // This ensures sequential playback — Student 1's response finishes
+    // completely before Student 2's response begins.
+    const speakJob = () => {
+        if (myEpoch !== queueEpoch) {
+            return Promise.resolve();
         }
-    }
+        stopRequested = false; // Reset stop flag for this new speak request
+
+        const { audioContext, destinationNode } = options;
+        console.log(`🎙️ AI Voice Processing (queued): "${text.substring(0, 50)}${text.length > 50 ? '...' : ''}"`);
+
+        return (async () => {
+            try {
+                await playRecordableChunk(text, audioContext, destinationNode);
+            } catch (err) {
+                if (!stopRequested) {
+                    console.warn("⚠️ Text playback failed, falling back to browser synthesis:", err);
+                    await fallbackToBrowserTTS(text).catch(() => { });
+                }
+            }
+        })();
+    };
+
+    // Chain onto the queue — waits for previous speech to finish first
+    speechQueue = speechQueue.then(speakJob, speakJob);
+    return speechQueue;
 }
 
 // 🔌 Global singleton for local playback (used by students who aren't recording)
@@ -75,9 +91,9 @@ function getLocalContext() {
 export function initAudioContext() {
     const ctx = getLocalContext();
     if (ctx.state === 'suspended') {
-        ctx.resume().catch(() => {});
+        ctx.resume().catch(() => { });
     }
-    
+
     // Also unlock browser's native speech synthesis (required for fallback on Safari/iOS/Chrome)
     if (typeof window !== 'undefined' && window.speechSynthesis) {
         const unlockUtterance = new SpeechSynthesisUtterance(" ");
@@ -112,10 +128,10 @@ async function playRecordableChunk(text, audioContext, destinationNode) {
                 activeVoice = 'reference_voice.wav';
             }
         }
-        
+
         if (activeVoice === 'reference_voice.wav') {
             console.log("ℹ️ Default voice active - switching to Google TTS");
-            throw new Error("DEFAULT_VOICE_SELECTED"); 
+            throw new Error("DEFAULT_VOICE_SELECTED");
         }
 
         const response = await fetch(`${PYTHON_BACKEND_URL}/synthesize`, {
@@ -131,6 +147,7 @@ async function playRecordableChunk(text, audioContext, destinationNode) {
 
         // Internal PCM buffer
         let leftover = new Uint8Array(0);
+        let lastEndPromise = Promise.resolve();
 
         while (true) {
             if (stopRequested) {
@@ -178,6 +195,14 @@ async function playRecordableChunk(text, audioContext, destinationNode) {
             const startTime = Math.max(ctx.currentTime, nextStartTime);
             source.start(startTime);
             nextStartTime = startTime + audioBuffer.duration;
+
+            lastEndPromise = new Promise(resolve => {
+                source.onended = resolve;
+            });
+        }
+
+        if (!stopRequested) {
+            await lastEndPromise;
         }
 
         console.log("✅ Streaming finished");
@@ -273,6 +298,10 @@ if (typeof window !== 'undefined' && window.speechSynthesis) {
 
 export function stopSpeaking() {
     stopRequested = true; // Set flag to stop the loop
+    queueEpoch++;
+
+    // Reset the queue so pending speech jobs don't play after stop
+    speechQueue = Promise.resolve();
 
     // 1. Stop Web Audio source if playing
     if (activeSource) {
