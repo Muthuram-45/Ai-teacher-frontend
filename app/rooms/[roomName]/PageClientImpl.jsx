@@ -8,7 +8,7 @@ import {
     useCallback,
 } from "react";
 import { useSearchParams } from "next/navigation";
-import { BACKEND_URL } from "../../lib/config";
+import { BACKEND_URL, ATTENTION_POPUP_INTERVAL } from "../../lib/config";
 import {
     startClassRecording,
     stopClassRecording,
@@ -33,11 +33,41 @@ import {
 import { Track } from "livekit-client";
 // @livekit/krisp-noise-filter is dynamically imported inside NoiseFilterActivator (SSR-safe)
 import "@livekit/components-styles";
+// Intercept and downgrade/suppress spurious LiveKit DataChannel and pagination errors in Next.js development
+if (typeof window !== "undefined") {
+    const originalConsoleError = console.error;
+    console.error = (...args) => {
+        const errorStr = args
+            .map((arg) => {
+                if (arg instanceof Error) return arg.message;
+                if (arg && typeof arg === "object") {
+                    try {
+                        return JSON.stringify(arg);
+                    } catch {
+                        return "";
+                    }
+                }
+                return String(arg);
+            })
+            .join(" ");
+
+        if (
+            errorStr.includes("Unknown DataChannel error on") ||
+            errorStr.includes("not part of the array")
+        ) {
+            console.warn("[Suppressed LiveKit Error]:", ...args);
+            return;
+        }
+        originalConsoleError(...args);
+    };
+}
+
 /* ---- Error boundary to swallow LiveKit pagination race ---- */
 class GridErrorBoundary extends Component {
     constructor(props) {
         super(props);
         this.state = { hasError: false };
+        this.recoverTimeout = null;
     }
     static getDerivedStateFromError(error) {
         // Only catch the known LiveKit pagination placeholder error
@@ -48,24 +78,47 @@ class GridErrorBoundary extends Component {
     }
     componentDidCatch(error, info) {
         console.warn(
-            "[GridErrorBoundary] Caught LiveKit pagination race — recovering…",
+            "[GridErrorBoundary] Caught LiveKit pagination race — recovering in next tick…",
             error.message,
         );
-    }
-    componentDidUpdate(prevProps, prevState) {
-        // Auto-recover on next render cycle
-        if (this.state.hasError) {
+        if (this.recoverTimeout) {
+            clearTimeout(this.recoverTimeout);
+        }
+        // Recover after a small delay (allowing the React commit phase to complete and internal LiveKit states to sync)
+        this.recoverTimeout = setTimeout(() => {
             this.setState({ hasError: false });
+        }, 150);
+    }
+    componentWillUnmount() {
+        if (this.recoverTimeout) {
+            clearTimeout(this.recoverTimeout);
         }
     }
     render() {
-        if (this.state.hasError) return this.props.children; // re-render children immediately
+        if (this.state.hasError) {
+            // Render fallback layout while recovering to prevent infinite rendering crash loop
+            return (
+                <div
+                    style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        height: "100%",
+                        color: "rgba(255,255,255,0.7)",
+                        fontFamily: "Inter, sans-serif",
+                    }}
+                >
+                    Reconnecting grid…
+                </div>
+            );
+        }
         return this.props.children;
     }
 }
 
 import QuizSidebar from "./QuizSidebar";
 import StudentQuizView from "./StudentQuizView";
+import StudentPopupQuestion from "./StudentPopupQuestion";
 import StudentHandRaise from "./StudentHandRaise";
 import StudentTextDoubt from "./StudentTextDoubt";
 import TeacherHandPanel from "./TeacherHandPanel";
@@ -1171,10 +1224,83 @@ function StudentOnlyUI({
     onQuizSubmit,
     onCloseQuiz,
     quizStarting,
+    teacherClassStarted,
 }) {
     const { localParticipant } = useLocalParticipant();
     const [showPeople, setShowPeople] = useState(false);
     const [countdown, setCountdown] = useState(3);
+    const [attentionQuestion, setAttentionQuestion] = useState(null);
+
+    // Periodic Attention Check Timer
+    useEffect(() => {
+        let role = "";
+        try {
+            role = localParticipant?.metadata
+                ? JSON.parse(localParticipant.metadata).role
+                : "";
+        } catch {
+            role = localParticipant?.metadata || "";
+        }
+
+        if (role !== "student" || !teacherClassStarted) {
+            setAttentionQuestion(null);
+            return;
+        }
+
+        // Read interval from config (in minutes).
+        const intervalMinutes = parseFloat(ATTENTION_POPUP_INTERVAL);
+        const intervalMs = intervalMinutes * 60 * 1000;
+
+        console.log(`⏱️ Attention check timer started: every ${intervalMinutes} minutes`);
+
+        const triggerAttentionCheck = async () => {
+            try {
+                let className = "General";
+                let topic = "General Study";
+                try {
+                    // Find the teacher in the participants list to get the class name and topic
+                    const teacher = participants.find((p) => {
+                        try {
+                            const meta = JSON.parse(p.metadata || "{}");
+                            return meta.role === "teacher";
+                        } catch {
+                            return false;
+                        }
+                    });
+
+                    if (teacher) {
+                        const meta = JSON.parse(teacher.metadata || "{}");
+                        className = meta.className || "General";
+                        topic = meta.topic || "General Study";
+                    }
+                } catch (err) {
+                    console.error("Failed to parse teacher metadata for attention check:", err);
+                }
+
+                console.log(`🎯 Triggering periodic attention check question for Class: "${className}", Topic: "${topic}"...`);
+                const res = await fetch(`${BACKEND_URL}/api/attention-question`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ className, topic }),
+                });
+
+                if (res.ok) {
+                    const data = await res.json();
+                    setAttentionQuestion(data);
+                } else {
+                    console.error("Failed to generate attention question");
+                }
+            } catch (err) {
+                console.error("Error triggering attention check:", err);
+            }
+        };
+
+        const timerId = setInterval(triggerAttentionCheck, intervalMs);
+
+        return () => {
+            clearInterval(timerId);
+        };
+    }, [teacherClassStarted, localParticipant, participants]);
 
     // Reset countdown whenever quizStarting becomes true
     useEffect(() => {
@@ -1358,6 +1484,13 @@ function StudentOnlyUI({
                 />
             )}
             {showPeople && <ParticipantList onClose={() => setShowPeople(false)} />}
+
+            {attentionQuestion && (
+                <StudentPopupQuestion
+                    questionData={attentionQuestion}
+                    onClose={() => setAttentionQuestion(null)}
+                />
+            )}
 
             <style>{`
                 .student-tool-container {
@@ -2606,6 +2739,7 @@ function RoomContent() {
                     exitFS();
                 }}
                 quizStarting={role === "student" ? quizStarting : false}
+                teacherClassStarted={teacherClassStarted}
             />
 
             {/* 📜 Dedicated History Sidebar (Teacher Only) - Now on FAR RIGHT */}
@@ -3054,6 +3188,7 @@ function HandRaiseAudioNotifier({ queue, role }) {
     const notifiedIdentities = useRef(new Set());
     const delayTimerRef = useRef(null);
     const notificationTimeoutRef = useRef(null);
+    const activeTimeoutLeadRef = useRef(null);
     const hasSpokenBatchMsg = useRef(false);
 
     useEffect(() => {
@@ -3067,6 +3202,7 @@ function HandRaiseAudioNotifier({ queue, role }) {
                 clearTimeout(notificationTimeoutRef.current);
                 notificationTimeoutRef.current = null;
             }
+            activeTimeoutLeadRef.current = null;
 
             if (!delayTimerRef.current) {
                 delayTimerRef.current = setTimeout(() => {
@@ -3106,31 +3242,34 @@ function HandRaiseAudioNotifier({ queue, role }) {
 
             // Only notify if we haven't notified this person in this "session"
             if (currentLead && !notifiedIdentities.current.has(currentLead)) {
-                notifiedIdentities.current.add(currentLead);
-
-                // Clear any previous pending notification to avoid overlaps
-                if (notificationTimeoutRef.current) {
+                // If there's already a timeout running for a DIFFERENT lead, clear it
+                if (activeTimeoutLeadRef.current !== currentLead && notificationTimeoutRef.current) {
                     clearTimeout(notificationTimeoutRef.current);
+                    notificationTimeoutRef.current = null;
                 }
 
                 // Small delay to ensure previous audio (like a greeting) finished
-                notificationTimeoutRef.current = setTimeout(() => {
-                    // Final check: is this person STILL in the queue?
-                    // Note: 'queue' here is from the closure of the effect that scheduled this.
-                    // If the queue changed, the cleanup/re-run would have cleared this timeout.
-                    const txt = `${currentLead}, you raised your hand. Do you have any doubts? If so, please click the ‘Ask a Doubt’ button to submit your question.`;
+                if (!notificationTimeoutRef.current) {
+                    activeTimeoutLeadRef.current = currentLead;
+                    notificationTimeoutRef.current = setTimeout(() => {
+                        if (!notifiedIdentities.current.has(currentLead)) {
+                            notifiedIdentities.current.add(currentLead);
+                            const txt = `${currentLead}, you raised your hand. Do you have any doubts? If so, please click the ‘Ask a Doubt’ button to submit your question.`;
 
-                    speakText(txt).catch((err) => console.error("TTS Error:", err));
-                    if (room) {
-                        room.localParticipant.publishData(
-                            new TextEncoder().encode(
-                                JSON.stringify({ action: "AI_SPEAK_BROADCAST", text: txt }),
-                            ),
-                            { reliable: true },
-                        );
-                    }
-                    notificationTimeoutRef.current = null;
-                }, 2000);
+                            speakText(txt).catch((err) => console.error("TTS Error:", err));
+                            if (room) {
+                                room.localParticipant.publishData(
+                                    new TextEncoder().encode(
+                                        JSON.stringify({ action: "AI_SPEAK_BROADCAST", text: txt }),
+                                    ),
+                                    { reliable: true },
+                                );
+                            }
+                        }
+                        notificationTimeoutRef.current = null;
+                        activeTimeoutLeadRef.current = null;
+                    }, 2000);
+                }
             }
         }
 

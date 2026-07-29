@@ -244,18 +244,6 @@ export default function TeacherVideoController({
               ),
               { reliable: true }
             );
-
-            const txt = `${msg.name}, you raised your hand. Do you have any doubts? If so, please click the ‘Ask a Doubt’ button to submit your question.`;
-            if (room) {
-              room.localParticipant.publishData(
-                new TextEncoder().encode(JSON.stringify({ action: "AI_SPEAK_BROADCAST", text: txt })),
-                { reliable: true }
-              );
-            }
-            await speakText(txt, {
-              audioContext: recordingAudioContext.current,
-              destinationNode: recordingDestNode.current
-            });
           }
         } else if (msg.action === 'HAND_RAISE') {
           console.log('✋ Hand lowered by:', msg.name);
