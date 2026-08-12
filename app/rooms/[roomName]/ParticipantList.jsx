@@ -1,9 +1,11 @@
 'use client';
+import React from 'react';
 import { useParticipants, useLocalParticipant } from '@livekit/components-react';
 import { FaMicrophone, FaMicrophoneSlash, FaVideo, FaVideoSlash } from 'react-icons/fa';
-import { BACKEND_URL } from "../../lib/config";
 
-export default function ParticipantList({ onClose }) {
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:3001";
+
+export default function ParticipantList({ onClose, studentActivities = {} }) {
     const participants = useParticipants();
     const { localParticipant } = useLocalParticipant();
 
@@ -18,7 +20,7 @@ export default function ParticipantList({ onClose }) {
             position: 'absolute',
             bottom: 80,
             right: 20,
-            width: 280,
+            width: 380,
             background: 'rgba(17, 17, 17, 0.95)',
             backdropFilter: 'blur(12px)',
             border: '1px solid rgba(255, 255, 255, 0.1)',
@@ -30,7 +32,35 @@ export default function ParticipantList({ onClose }) {
             fontFamily: 'Inter, sans-serif'
         }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-                <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 600 }}>Participants ({participants.length})</h3>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 600 }}>Participants ({participants.length})</h3>
+                    {myRole === 'teacher' && (
+                        <button
+                            onClick={() => {
+                                const roomName = window.location.pathname.split("/").pop();
+                                window.open(`${BACKEND_URL}/api/activity-history/${roomName}`, '_blank');
+                            }}
+                            title="Download Activity Report"
+                            style={{
+                                background: 'rgba(33, 150, 243, 0.2)',
+                                border: '1px solid rgba(33, 150, 243, 0.4)',
+                                color: '#2196F3',
+                                cursor: 'pointer',
+                                padding: '4px 8px',
+                                borderRadius: '6px',
+                                fontSize: '0.75rem',
+                                fontWeight: 600,
+                                display: 'flex',
+                                alignItems: 'center',
+                                transition: 'all 0.2s'
+                            }}
+                            onMouseOver={(e) => { e.currentTarget.style.background = 'rgba(33, 150, 243, 0.4)'; }}
+                            onMouseOut={(e) => { e.currentTarget.style.background = 'rgba(33, 150, 243, 0.2)'; }}
+                        >
+                            ⬇ CSV Report
+                        </button>
+                    )}
+                </div>
                 <button
                     onClick={onClose}
                     style={{
@@ -60,6 +90,26 @@ export default function ParticipantList({ onClose }) {
 
                     const isMicOn = p.isMicrophoneEnabled;
                     const isCameraOn = p.isCameraEnabled;
+                    
+                    const activity = studentActivities[p.identity];
+                    let statusColor = '#4CAF50';
+                    let statusText = '🟢 Active';
+                    
+                    if (activity && activity.status !== 'ACTIVE') {
+                        statusColor = '#f59e0b';
+                        if (activity.status === 'INACTIVE') statusText = '🟡 Inactive';
+                        else if (activity.status === 'TAB_AWAY') statusText = '🔴 Switched Tab';
+                        else if (activity.status === 'POSSIBLE_EXTERNAL_ACTIVITY') statusText = '🔴 Possible External Activity';
+                        else if (activity.status === 'BACKGROUND') statusText = '🟣 Background Active';
+                    }
+
+                    const formatDuration = (ms) => {
+                        if (!ms) return '00:00';
+                        const totalSeconds = Math.floor(ms / 1000);
+                        const m = Math.floor(totalSeconds / 60);
+                        const s = totalSeconds % 60;
+                        return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+                    };
 
                     return (
                         <div key={p.sid} style={{
@@ -79,7 +129,19 @@ export default function ParticipantList({ onClose }) {
                                 }}>
                                     {p.identity} {p.isLocal && <span style={{ color: '#4CAF50', fontSize: '0.8rem', marginLeft: '4px' }}>(You)</span>}
                                 </div>
-                                <div style={{ fontSize: '0.75rem', color: '#888', marginTop: '2px' }}>{role}</div>
+                                <div style={{ fontSize: '0.75rem', color: '#888', marginTop: '2px' }}>
+                                    {role} 
+                                    {role === 'student' && !p.isLocal && (
+                                        <span style={{ marginLeft: '8px', color: statusColor, fontWeight: 'bold' }}>
+                                            {statusText}
+                                        </span>
+                                    )}
+                                </div>
+                                {role === 'student' && activity?.durationAwayMs > 0 && (
+                                    <div style={{ fontSize: '0.7rem', color: '#f59e0b', marginTop: '2px' }}>
+                                        Away Time: {formatDuration(activity.durationAwayMs)}
+                                    </div>
+                                )}
                             </div>
                             <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
                                 <div title={isMicOn ? "Microphone On" : "Microphone Off"} style={{ color: isMicOn ? '#4CAF50' : '#f44336', display: 'flex' }}>

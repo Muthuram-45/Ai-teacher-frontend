@@ -131,6 +131,8 @@ import { speakText, stopSpeaking, initAudioContext } from "@/app/lib/aiTTS";
 import HistorySidebar from "./HistorySidebar";
 import AttendanceSidebar from "./AttendanceSidebar";
 import VoiceDoubt from "./VoiceDoubt";
+import { useActivityMonitor } from "../../lib/useActivityMonitor";
+import StudentWarning from "./StudentWarning";
 import { HiOutlineHandRaised } from "react-icons/hi2";
 import { IoIosPeople } from "react-icons/io";
 import { LuLogs } from "react-icons/lu";
@@ -475,6 +477,8 @@ function TeacherOnlyUI({
     onShowAttendance,
     onShowQuiz,
     onGenerateQuiz,
+    onShowParticipants,
+    showParticipants,
     onEndMeeting,
     onLeaveMeeting,
     waitingStudents,
@@ -618,6 +622,35 @@ function TeacherOnlyUI({
                     {showMobileNavMenu ? <FaAngleDown size={22} /> : <FaAngleUp size={22} />}
                 </button>
                 <div ref={mobileNavRef} className={`nav-buttons-wrapper ${showMobileNavMenu ? "open" : ""}`}>
+                    {/* 👥 Participants Button */}
+                    <button
+                        onClick={onShowParticipants}
+                        title="Participants List"
+                        style={{
+                            width: 44,
+                            height: 44,
+                            borderRadius: "8px",
+                            background: showParticipants ? "rgba(33, 150, 243, 0.4)" : "rgba(255,255,255,0.1)",
+                            border: "1px solid rgba(255,255,255,0.2)",
+                            color: "#fff",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            cursor: "pointer",
+                            fontSize: "1.2rem",
+                            boxShadow: "0 4px 12px rgba(0,0,0,0.3)",
+                            transition: "all 0.2s",
+                        }}
+                        onMouseOver={(e) =>
+                            (e.currentTarget.style.background = "rgba(33, 150, 243, 0.4)")
+                        }
+                        onMouseOut={(e) =>
+                            (e.currentTarget.style.background = showParticipants ? "rgba(33, 150, 243, 0.4)" : "rgba(255,255,255,0.1)")
+                        }
+                    >
+                        <IoIosPeople />
+                    </button>
+
                     {/* 📜 History Button */}
                     <button
                         onClick={onShowHistory}
@@ -1227,20 +1260,91 @@ function StudentOnlyUI({
     teacherClassStarted,
 }) {
     const { localParticipant } = useLocalParticipant();
+    const room = useRoomContext();
+    
+    let role = "";
+    try {
+        role = localParticipant?.metadata
+            ? JSON.parse(localParticipant.metadata).role
+            : "";
+    } catch {
+        role = localParticipant?.metadata || "";
+    }
+    role = (typeof role === 'string' ? role.toLowerCase() : "");
+
     const [showPeople, setShowPeople] = useState(false);
     const [countdown, setCountdown] = useState(3);
     const [attentionQuestion, setAttentionQuestion] = useState(null);
 
+    const totalAwayTime = useRef(0);
+    const totalInactiveTime = useRef(0);
+    const totalBackgroundTime = useRef(0);
+    const warningCount = useRef(0);
+
+    const { currentStatus: activityStatus } = useActivityMonitor({
+        enabled: role === 'student',
+        onStatusChange: (status, durationAwayMs, previousStatus) => {
+            if (status !== 'ACTIVE') {
+                warningCount.current += 1;
+            } else if (durationAwayMs > 0 && previousStatus) {
+                if (previousStatus === 'TAB_AWAY' || previousStatus === 'POSSIBLE_EXTERNAL_ACTIVITY') {
+                    totalAwayTime.current += durationAwayMs;
+                } else if (previousStatus === 'INACTIVE') {
+                    totalInactiveTime.current += durationAwayMs;
+                } else if (previousStatus === 'BACKGROUND') {
+                    totalBackgroundTime.current += durationAwayMs;
+                }
+            }
+
+            if (room && room.localParticipant) {
+                try {
+                    // Send to teacher via LiveKit
+                    const dataObj = {
+                        type: "student_activity",
+                        identity: room.localParticipant.identity,
+                        status,
+                        durationAwayMs,
+                        timestamp: Date.now()
+                    };
+                    const payload = new TextEncoder().encode(JSON.stringify(dataObj));
+                    room.localParticipant.publishData(payload, { reliable: true });
+
+                    // Sync to backend via HTTP
+                    fetch(`${BACKEND_URL}/api/activity-sync`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            roomName: room.name,
+                            studentName: room.localParticipant.identity,
+                            awayTime: totalAwayTime.current,
+                            inactiveTime: totalInactiveTime.current,
+                            backgroundTime: totalBackgroundTime.current,
+                            warningCount: warningCount.current
+                        })
+                    }).catch(err => console.error("Failed to sync activity to backend", err));
+                } catch (err) {
+                    console.error("Failed to publish activity status", err);
+                }
+            }
+        }
+    });
+
+    // Tracking duration for the warning UI when status is away
+    const [durationAwayMs, setDurationAwayMs] = useState(0);
+    useEffect(() => {
+        let interval;
+        if (activityStatus !== 'ACTIVE') {
+            interval = setInterval(() => {
+                setDurationAwayMs(prev => prev + 1000);
+            }, 1000);
+        } else {
+            setDurationAwayMs(0);
+        }
+        return () => { if (interval) clearInterval(interval); };
+    }, [activityStatus]);
+
     // Periodic Attention Check Timer
     useEffect(() => {
-        let role = "";
-        try {
-            role = localParticipant?.metadata
-                ? JSON.parse(localParticipant.metadata).role
-                : "";
-        } catch {
-            role = localParticipant?.metadata || "";
-        }
 
         if (role !== "student" || !teacherClassStarted) {
             setAttentionQuestion(null);
@@ -1314,19 +1418,12 @@ function StudentOnlyUI({
         };
     }, [quizStarting]);
 
-    let role = "";
-    try {
-        role = localParticipant?.metadata
-            ? JSON.parse(localParticipant.metadata).role
-            : "";
-    } catch {
-        role = localParticipant?.metadata || "";
-    }
 
     if (role !== "student") return null;
 
     return (
         <>
+            <StudentWarning status={activityStatus} durationAwayMs={durationAwayMs} />
             {/* 📺 Student video viewer is now handled in unified layout above */}
             <VoiceDoubt setShowAI={setShowAI} />
 
@@ -1669,6 +1766,7 @@ function RoomContent() {
     const [notifications, setNotifications] = useState([]); // Google Meet-style join/leave toasts
     const [quizStarting, setQuizStarting] = useState(false); // ✅ student pop-in countdown
     const [showFullStudentGrid, setShowFullStudentGrid] = useState(false); // 🧑‍🎓 Full screen grid
+    const [studentActivities, setStudentActivities] = useState({}); // 📊 Student Activity states
     // 🎙️ Dynamic Audio Recording Refs
     const recordingAudioContext = useRef(null);
     const recordingDestNode = useRef(null);
@@ -1689,6 +1787,7 @@ function RoomContent() {
     } catch {
         role = localParticipant?.metadata || "";
     }
+    role = (typeof role === 'string' ? role.toLowerCase() : "");
 
     // Polling for Waiting Students (Teacher Only)
     useEffect(() => {
@@ -2173,7 +2272,7 @@ function RoomContent() {
     useEffect(() => {
         if (!room) return;
 
-        const handleData = (payload) => {
+        const handleData = (payload, participant) => {
             try {
                 const msg = JSON.parse(new TextDecoder().decode(payload));
 
@@ -2323,6 +2422,21 @@ function RoomContent() {
                 }
                 if (msg.action === 'VIDEO_STOP' && role === "student") {
                     setTeacherClassStarted(false);
+                }
+
+                // 📊 Student Activity Monitor (Teacher Side)
+                if (msg.type === "student_activity" && role === "teacher") {
+                    const studentId = msg.identity || participant?.identity;
+                    if (studentId) {
+                        setStudentActivities((prev) => ({
+                            ...prev,
+                            [studentId]: {
+                                status: msg.status,
+                                durationAwayMs: msg.durationAwayMs,
+                                timestamp: msg.timestamp
+                            }
+                        }));
+                    }
                 }
             } catch (err) {
                 console.error("Data packet error:", err);
@@ -2700,7 +2814,10 @@ function RoomContent() {
 
             {/* 👥 Teacher Participants Sidebar */}
             {role === "teacher" && showParticipants && (
-                <ParticipantList onClose={() => setShowParticipants(false)} />
+                <ParticipantList 
+                    onClose={() => setShowParticipants(false)} 
+                    studentActivities={studentActivities} 
+                />
             )}
 
             <style>{`
