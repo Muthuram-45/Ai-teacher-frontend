@@ -2,8 +2,7 @@
 import React from 'react';
 import { useParticipants, useLocalParticipant } from '@livekit/components-react';
 import { FaMicrophone, FaMicrophoneSlash, FaVideo, FaVideoSlash } from 'react-icons/fa';
-
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:3001";
+import { BACKEND_URL } from "../../lib/config";
 
 export default function ParticipantList({ onClose, studentActivities = {} }) {
     const participants = useParticipants();
