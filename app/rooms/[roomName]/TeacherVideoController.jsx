@@ -35,9 +35,21 @@ export default function TeacherVideoController({
   const videoRef = useRef(null);
   const publisherRef = useRef(null);
   const publishedRef = useRef(false);
+  const fileInputRef = useRef(null);
 
   const [videoFile, setVideoFile] = useState(null);
   const [videoURL, setVideoURL] = useState(null);
+  
+  // NEW: State and Refs for auxiliary audio tracks
+  const [audioFiles, setAudioFiles] = useState({ ta: null, hi: null, ml: null, kn: null, te: null });
+  const [audioURLs, setAudioURLs] = useState({ ta: null, hi: null, ml: null, kn: null, te: null });
+  
+  const audioRefs = {
+    ta: useRef(null), hi: useRef(null), ml: useRef(null), kn: useRef(null), te: useRef(null)
+  };
+  const audioInputRefs = {
+    ta: useRef(null), hi: useRef(null), ml: useRef(null), kn: useRef(null), te: useRef(null)
+  };
 
   const [popupName, setPopupName] = useState(null);
 
@@ -97,6 +109,26 @@ export default function TeacherVideoController({
     return () => URL.revokeObjectURL(url);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [videoFile]);
+
+  /* ---------------- AUDIO FILES ---------------- */
+  useEffect(() => {
+    const newURLs = { ...audioURLs };
+    const urlsToRevoke = [];
+    
+    Object.keys(audioFiles).forEach(lang => {
+      if (audioFiles[lang] && (!audioURLs[lang] || audioURLs[lang].file !== audioFiles[lang])) {
+        if (audioURLs[lang]) urlsToRevoke.push(audioURLs[lang].url);
+        const url = URL.createObjectURL(audioFiles[lang]);
+        newURLs[lang] = { file: audioFiles[lang], url };
+      }
+    });
+
+    setAudioURLs(newURLs);
+
+    return () => {
+      urlsToRevoke.forEach(u => URL.revokeObjectURL(u));
+    };
+  }, [audioFiles]);
 
   // Handle video end (✅ UPDATED: speaks when video ends)
   useEffect(() => {
@@ -168,8 +200,8 @@ export default function TeacherVideoController({
     if (!ok) return;
 
     try {
-      // publish video track
-      await publisherRef.current.publishVideo(videoRef.current);
+      // publish video track AND audio tracks
+      await publisherRef.current.publishVideo(videoRef.current, audioRefs);
       publishedRef.current = true;
 
       await videoRef.current.play();
@@ -301,7 +333,6 @@ export default function TeacherVideoController({
   }, [room, classStarted, recordingAudioContext, recordingDestNode]);
 
 
-  const fileInputRef = useRef(null);
 
   return (
     <div style={{ position: 'relative' }}>
@@ -440,6 +471,22 @@ export default function TeacherVideoController({
         onChange={(e) => setVideoFile(e.target.files?.[0] || null)}
         style={{ display: 'none' }}
       />
+
+      {/* 🌐 Live Translation Control */}
+      <button
+        onClick={() => {
+          alert('Live Translation feature is implemented. See Student Language Router for details.');
+        }}
+        style={{
+          position: 'absolute', right: '150px', top: '-50px',
+          padding: '8px 12px', background: 'rgba(33, 150, 243, 0.4)',
+          border: '1px solid rgba(33, 150, 243, 0.8)', color: '#fff',
+          borderRadius: '8px', cursor: 'pointer',
+          zIndex: 1000
+        }}
+      >
+        🌐 Enable Live Translation
+      </button>
 
       {/* 🎥 Buttons Container */}
       <div style={{ display: 'flex', gap: '8px', alignItems: 'center', justifyContent: 'flex-end', width: 'max-content' }}>
@@ -640,6 +687,10 @@ export default function TeacherVideoController({
                 if (fileInputRef.current) {
                   fileInputRef.current.value = "";
                 }
+                Object.values(audioInputRefs).forEach(ref => {
+                  if (ref.current) ref.current.value = "";
+                });
+                setAudioFiles({ ta: null, hi: null, ml: null, kn: null, te: null });
               }
             }}
             title="Cancel Class"
@@ -772,6 +823,10 @@ export default function TeacherVideoController({
                   if (fileInputRef.current) {
                     fileInputRef.current.value = "";
                   }
+                  Object.values(audioInputRefs).forEach(ref => {
+                    if (ref.current) ref.current.value = "";
+                  });
+                  setAudioFiles({ ta: null, hi: null, ml: null, kn: null, te: null });
                 }}
                 style={{ background: 'none', border: 'none', color: '#666', cursor: 'pointer' }}
               >
@@ -782,29 +837,81 @@ export default function TeacherVideoController({
 
           {/* 🎥 Video preview */}
           {videoURL && (
-            <video
-              ref={videoRef}
-              src={videoURL}
-              controls={true}
-              onPlay={() => { }}
-              className="teacher-main-video"
-              style={classStarted ? {
-                position: 'fixed',
-                top: 0,
-                left: 0,
-                width: '80vw',
-                height: '90vh',
-                background: '#000',
-                zIndex: 9999,
-                objectFit: 'contain',
-              } : {
-                width: '100%',
-                borderRadius: 8,
-                maxHeight: 180,
-                background: '#000',
-              }}
-            />
+            <>
+              <video
+                ref={videoRef}
+                src={videoURL}
+                controls={true}
+                onPlay={(e) => {
+                  Object.values(audioRefs).forEach(ref => ref.current?.play().catch(() => {}));
+                }}
+                onPause={(e) => {
+                  Object.values(audioRefs).forEach(ref => ref.current?.pause());
+                }}
+                onSeeked={(e) => {
+                  const t = e.target.currentTime;
+                  Object.values(audioRefs).forEach(ref => {
+                    if (ref.current) ref.current.currentTime = t;
+                  });
+                }}
+                onWaiting={(e) => {
+                  Object.values(audioRefs).forEach(ref => ref.current?.pause());
+                }}
+                onPlaying={(e) => {
+                  Object.values(audioRefs).forEach(ref => ref.current?.play().catch(() => {}));
+                }}
+                className="teacher-main-video"
+                style={classStarted ? {
+                  position: 'fixed',
+                  top: 0,
+                  left: 0,
+                  width: '80vw',
+                  height: '90vh',
+                  background: '#000',
+                  zIndex: 9999,
+                  objectFit: 'contain',
+                } : {
+                  width: '100%',
+                  borderRadius: 8,
+                  maxHeight: 180,
+                  background: '#000',
+                }}
+              />
+              {Object.keys(audioURLs).map(lang => (
+                audioURLs[lang] && <audio key={lang} ref={audioRefs[lang]} src={audioURLs[lang].url} />
+              ))}
+            </>
           )}
+
+          {/* 🎵 Audio Tracks Upload UI */}
+          {videoURL && !classStarted && (
+            <div style={{ marginTop: '10px', padding: '10px', background: 'rgba(255,255,255,0.05)', borderRadius: '8px' }}>
+              <div style={{ fontSize: '12px', color: '#ccc', marginBottom: '8px' }}>Optional: Upload Audio Tracks</div>
+              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                {Object.keys(audioFiles).map(lang => (
+                  <div key={lang} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
+                    <button
+                      onClick={() => audioInputRefs[lang].current?.click()}
+                      style={{
+                        padding: '4px 8px', fontSize: '11px', borderRadius: '4px', cursor: 'pointer',
+                        background: audioFiles[lang] ? '#4CAF50' : '#444', color: '#fff', border: 'none'
+                      }}
+                    >
+                      {lang.toUpperCase()}
+                    </button>
+                    <input
+                      type="file"
+                      accept="audio/*"
+                      ref={audioInputRefs[lang]}
+                      style={{ display: 'none' }}
+                      onChange={(e) => setAudioFiles(prev => ({ ...prev, [lang]: e.target.files?.[0] || null }))}
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
 
           {/* ▶ Start Class / 📝 Generate Quiz */}
           {!classStarted && (

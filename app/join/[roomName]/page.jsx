@@ -34,9 +34,24 @@ export default function StudentJoinPage() {
 
     const [status, setStatus] = useState('checking'); // 'checking' | 'ended' | 'active' | 'waiting'
     const [studentName, setStudentName] = useState('');
+    const [preferredLanguage, setPreferredLanguage] = useState('en');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [requestId, setRequestId] = useState(null);
+
+    // Load preferred language from local storage on mount
+    useEffect(() => {
+        const storedLanguage = localStorage.getItem('preferredLanguage');
+        if (storedLanguage) {
+            setPreferredLanguage(storedLanguage);
+        }
+    }, []);
+
+    const handleLanguageChange = (e) => {
+        const newLang = e.target.value;
+        setPreferredLanguage(newLang);
+        localStorage.setItem('preferredLanguage', newLang);
+    };
 
     // Check if meeting is ended
     useEffect(() => {
@@ -62,7 +77,7 @@ export default function StudentJoinPage() {
                     .then(data => {
                         if (data.status === 'admitted' && data.token) {
                             router.push(
-                                `/rooms/${roomName}?token=${encodeURIComponent(data.token)}&url=${encodeURIComponent(data.url)}`
+                                `/rooms/${roomName}?token=${encodeURIComponent(data.token)}&url=${encodeURIComponent(data.url)}&lang=${preferredLanguage}`
                             );
                             clearInterval(interval);
                         } else if (data.status === 'rejected') {
@@ -76,7 +91,7 @@ export default function StudentJoinPage() {
             }, 3000);
         }
         return () => clearInterval(interval);
-    }, [status, requestId, roomName, router]);
+    }, [status, requestId, roomName, router, preferredLanguage]);
 
     const handleJoin = async (e) => {
         e.preventDefault();
@@ -94,6 +109,7 @@ export default function StudentJoinPage() {
                 body: JSON.stringify({
                     name: studentName.trim(),
                     room: roomName,
+                    preferredLanguage: preferredLanguage,
                 }),
             });
 
@@ -182,6 +198,23 @@ export default function StudentJoinPage() {
                             disabled={loading}
                             autoFocus
                         />
+                    </div>
+
+                    <div className="joinField">
+                        <label className="joinLabel">Preferred Language</label>
+                        <select
+                            className="joinInput"
+                            value={preferredLanguage}
+                            onChange={handleLanguageChange}
+                            disabled={loading}
+                        >
+                            <option value="en">English (Default)</option>
+                            <option value="ta">Tamil</option>
+                            <option value="hi">Hindi</option>
+                            <option value="ml">Malayalam</option>
+                            <option value="kn">Kannada</option>
+                            <option value="te">Telugu</option>
+                        </select>
                     </div>
 
                     {error && (

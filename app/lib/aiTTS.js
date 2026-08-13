@@ -49,6 +49,26 @@ function splitIntoChunks(text, maxLen = 200) {
 export async function speakText(text, options = {}) {
     if (!text) return;
 
+    const preferredLanguage = typeof window !== 'undefined' ? localStorage.getItem('preferredLanguage') || 'en' : 'en';
+
+    // 🌐 Automatically translate hardcoded UI text to the user's preferred language before speaking
+    let finalSpeechText = text;
+    if (preferredLanguage !== 'en') {
+        try {
+            const res = await fetch(`${BACKEND_URL}/api/multilingual/translate-text`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ text, targetLanguage: preferredLanguage })
+            });
+            const data = await res.json();
+            if (data.translatedText) {
+                finalSpeechText = data.translatedText;
+            }
+        } catch (e) {
+            console.error('Auto-translation for TTS failed', e);
+        }
+    }
+
     const myEpoch = queueEpoch;
 
     // 🔊 FIFO Queue: chain this speak request after all previous ones
@@ -61,15 +81,15 @@ export async function speakText(text, options = {}) {
         stopRequested = false; // Reset stop flag for this new speak request
 
         const { audioContext, destinationNode } = options;
-        console.log(`🎙️ AI Voice Processing (queued): "${text.substring(0, 50)}${text.length > 50 ? '...' : ''}"`);
+        console.log(`🎙️ AI Voice Processing (queued): "${finalSpeechText.substring(0, 50)}${finalSpeechText.length > 50 ? '...' : ''}"`);
 
         return (async () => {
             try {
-                await playRecordableChunk(text, audioContext, destinationNode);
+                await playRecordableChunk(finalSpeechText, audioContext, destinationNode);
             } catch (err) {
                 if (!stopRequested) {
                     console.warn("⚠️ Text playback failed, falling back to browser synthesis:", err);
-                    await fallbackToBrowserTTS(text).catch(() => { });
+                    await fallbackToBrowserTTS(finalSpeechText).catch(() => { });
                 }
             }
         })();
@@ -114,6 +134,8 @@ async function playRecordableChunk(text, audioContext, destinationNode) {
     try {
         console.log("🚀 Starting Streamed Synthesis...");
 
+        const preferredLanguage = typeof window !== 'undefined' ? localStorage.getItem('preferredLanguage') || 'en' : 'en';
+
         // 🔍 Check if we should use trained voice or default (Google TTS)
         let activeVoice = cachedActiveVoice;
         if (!activeVoice || (Date.now() - lastVoiceCheckTime > 5000)) {
@@ -129,9 +151,9 @@ async function playRecordableChunk(text, audioContext, destinationNode) {
             }
         }
 
-        if (activeVoice === 'reference_voice.wav') {
-            console.log("ℹ️ Default voice active - switching to Google TTS");
-            throw new Error("DEFAULT_VOICE_SELECTED");
+        if (activeVoice === 'reference_voice.wav' || preferredLanguage !== 'en') {
+            console.log("ℹ️ Default voice active or non-English - switching to Google TTS");
+            throw new Error("DEFAULT_VOICE_SELECTED_OR_NON_ENGLISH");
         }
 
         const response = await fetch(`${PYTHON_BACKEND_URL}/synthesize`, {
@@ -213,11 +235,13 @@ async function playRecordableChunk(text, audioContext, destinationNode) {
         const chunks = splitIntoChunks(text, 200);
         console.log(`🔊 Google TTS fallback: speaking ${chunks.length} chunk(s)`);
 
+        const preferredLanguage = typeof window !== 'undefined' ? localStorage.getItem('preferredLanguage') || 'en' : 'en';
+
         let successCount = 0;
         for (const chunk of chunks) {
             if (stopRequested) break;
             try {
-                const url = `${BACKEND_URL}/api/tts?text=${encodeURIComponent(chunk)}`;
+                const url = `${BACKEND_URL}/api/tts?text=${encodeURIComponent(chunk)}&lang=${preferredLanguage}`;
                 const response = await fetch(url);
                 if (!response.ok) {
                     throw new Error(`Google TTS failed with status ${response.status}`);
@@ -253,23 +277,36 @@ function fallbackToBrowserTTS(text) {
     return new Promise((resolve) => {
         if (typeof window === 'undefined' || !window.speechSynthesis) return resolve();
 
+        const preferredLanguage = localStorage.getItem('preferredLanguage') || 'en';
+
         // Cancel any existing speech
         window.speechSynthesis.cancel();
 
         const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = preferredLanguage; // Help browser pick the right voice automatically
 
-        // Find Indian Voice (Preferring Tamil-English)
+        // Find specific voice based on preferredLanguage
         const voices = window.speechSynthesis.getVoices();
-        const indianVoice = voices.find(v =>
-            v.name.toLowerCase().includes('tamil') ||
-            v.name.toLowerCase().includes('india') ||
-            v.lang.includes('en-IN') ||
-            v.name.toLowerCase().includes('heera') ||
-            v.name.toLowerCase().includes('ravi')
-        );
+        
+        let targetVoice = null;
+        if (preferredLanguage === 'ta') {
+            targetVoice = voices.find(v => v.lang.startsWith('ta') || v.name.toLowerCase().includes('tamil'));
+        } else if (preferredLanguage === 'hi') {
+            targetVoice = voices.find(v => v.lang.startsWith('hi') || v.name.toLowerCase().includes('hindi'));
+        } else if (preferredLanguage === 'ml') {
+            targetVoice = voices.find(v => v.lang.startsWith('ml') || v.name.toLowerCase().includes('malayalam'));
+        } else {
+            // Default English/Indian English fallback
+            targetVoice = voices.find(v =>
+                v.name.toLowerCase().includes('india') ||
+                v.lang.includes('en-IN') ||
+                v.name.toLowerCase().includes('heera') ||
+                v.name.toLowerCase().includes('ravi')
+            );
+        }
 
-        if (indianVoice) {
-            utterance.voice = indianVoice;
+        if (targetVoice) {
+            utterance.voice = targetVoice;
             utterance.rate = 0.95;
             utterance.pitch = 1.0;
         }
