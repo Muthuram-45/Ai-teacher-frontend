@@ -2341,7 +2341,7 @@ function RoomContent() {
                     // Teacher only: logic for auto-AI
                     if (role === "teacher") {
                         editFreezeRef.current[doubtId] = false;
-                        const delay = msg.voiceGenerated ? 3000 : 10000;
+                        const delay = msg.voiceGenerated ? 1000 : 3000;
                         scheduleAutoAsk(newDoubt, delay);
                     }
                 }
@@ -2493,31 +2493,33 @@ function RoomContent() {
         setLoadingAI(doubt.id);
 
         try {
-            // 🌟 1. Fetch & Speak Encouragement First
-            try {
-                const encRes = await fetch(`${BACKEND_URL}/encourage-student`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ name: doubt.name, question: doubt.text }),
-                });
-                const encData = await encRes.json();
-                if (encData.encouragement) {
-                    await speakText(encData.encouragement, {
-                        audioContext: recordingAudioContext.current,
-                        destinationNode: recordingDestNode.current,
-                        skipTranslation: true,
+            // 🌟 1. Fetch & Speak Encouragement First (Only for English students)
+            if (!doubt.preferredLanguage || doubt.preferredLanguage === 'en') {
+                try {
+                    const encRes = await fetch(`${BACKEND_URL}/encourage-student`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ name: doubt.name, question: doubt.text }),
                     });
-                    if (room) {
-                        room.localParticipant.publishData(
-                            new TextEncoder().encode(JSON.stringify({ action: "AI_SPEAK_BROADCAST", text: encData.encouragement })),
-                            { reliable: true }
-                        );
+                    const encData = await encRes.json();
+                    if (encData.encouragement) {
+                        await speakText(encData.encouragement, {
+                            audioContext: recordingAudioContext.current,
+                            destinationNode: recordingDestNode.current,
+                            skipTranslation: true,
+                        });
+                        if (room) {
+                            room.localParticipant.publishData(
+                                new TextEncoder().encode(JSON.stringify({ action: "AI_SPEAK_BROADCAST", text: encData.encouragement })),
+                                { reliable: true }
+                            );
+                        }
+                        // Wait a bit after encouragement finishes before the answer starts
+                        await new Promise(r => setTimeout(r, 500));
                     }
-                    // Wait a bit after encouragement finishes before the answer starts
-                    await new Promise(r => setTimeout(r, 500));
+                } catch (err) {
+                    console.error('Failed to get encouragement in processDoubt', err);
                 }
-            } catch (err) {
-                console.error('Failed to get encouragement in processDoubt', err);
             }
 
             // 🤖 2. Fetch AI Answer
@@ -2671,7 +2673,7 @@ function RoomContent() {
             ? { ...updated, text: newText }
             : { id, text: newText };
 
-        scheduleAutoAsk(doubtObj, 5000); // ✅ save אחרי 5 sec auto ask
+        scheduleAutoAsk(doubtObj, 2000); // ✅ save אחרי 2 sec auto ask
     };
 
     // old prop => treat as SAVE
