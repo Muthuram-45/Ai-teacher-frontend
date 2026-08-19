@@ -2304,6 +2304,7 @@ function RoomContent() {
                     speakText(reply, {
                         audioContext: recordingAudioContext.current,
                         destinationNode: recordingDestNode.current,
+                        skipTranslation: false, // UI greeting, so we CAN translate this
                     }).catch((err) => console.error("Greeting TTS error:", err));
 
                     room.localParticipant.publishData(
@@ -2372,6 +2373,7 @@ function RoomContent() {
                     speakText(msg.text, {
                         audioContext: recordingAudioContext.current,
                         destinationNode: recordingDestNode.current,
+                        skipTranslation: true,
                     }).catch((err) => console.error("Broadcast TTS error:", err));
                 }
 
@@ -2394,6 +2396,7 @@ function RoomContent() {
                         speakText(audioString, {
                             audioContext: recordingAudioContext.current,
                             destinationNode: recordingDestNode.current,
+                            skipTranslation: true,
                         }).catch((err) => console.error("Broadcast TTS error:", err));
                     }
                 }
@@ -2488,6 +2491,34 @@ function RoomContent() {
         setLoadingAI(doubt.id);
 
         try {
+            // 🌟 1. Fetch & Speak Encouragement First
+            try {
+                const encRes = await fetch(`${BACKEND_URL}/encourage-student`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name: doubt.name, question: doubt.text }),
+                });
+                const encData = await encRes.json();
+                if (encData.encouragement) {
+                    await speakText(encData.encouragement, {
+                        audioContext: recordingAudioContext.current,
+                        destinationNode: recordingDestNode.current,
+                        skipTranslation: true,
+                    });
+                    if (room) {
+                        room.localParticipant.publishData(
+                            new TextEncoder().encode(JSON.stringify({ action: "AI_SPEAK_BROADCAST", text: encData.encouragement })),
+                            { reliable: true }
+                        );
+                    }
+                    // Wait a bit after encouragement finishes before the answer starts
+                    await new Promise(r => setTimeout(r, 500));
+                }
+            } catch (err) {
+                console.error('Failed to get encouragement in processDoubt', err);
+            }
+
+            // 🤖 2. Fetch AI Answer
             const enrichedTopic = classNameFromURL ? `${classNameFromURL} ${meetingTopic ? `- ${meetingTopic}` : ""}` : meetingTopic;
             const res = await fetch(`${BACKEND_URL}/ask-ai`, {
                 method: "POST",
@@ -2568,6 +2599,7 @@ function RoomContent() {
             await speakText(audioString, {
                 audioContext: recordingAudioContext.current,
                 destinationNode: recordingDestNode.current,
+                skipTranslation: true,
             });
         } catch (err) {
             console.error("Teacher local TTS error:", err);
@@ -3341,8 +3373,10 @@ function HandRaiseAudioNotifier({ queue, role }) {
         // ⭐ Special Case: 5+ Students (Batch Announcement)
         if (queue.length >= 5 && !hasSpokenBatchMsg.current) {
             hasSpokenBatchMsg.current = true;
-            const txt =
-                "As several students have raised doubts, I will now conclude the session and proceed to clarify each of your questions.";
+            const lang = localStorage.getItem('preferredLanguage') || 'en';
+            const txt = lang === 'ta'
+                ? "Niraiya students hand raise pannirukkurathala, na ippo session-a conclude pannittu unga questions ellathukkum answer pandren."
+                : "As several students have raised doubts, I will now conclude the session and proceed to clarify each of your questions.";
             speakText(txt).catch((err) => console.error("TTS Error:", err));
             if (room) {
                 room.localParticipant.publishData(
@@ -3373,9 +3407,12 @@ function HandRaiseAudioNotifier({ queue, role }) {
                     notificationTimeoutRef.current = setTimeout(() => {
                         if (!notifiedIdentities.current.has(currentLead)) {
                             notifiedIdentities.current.add(currentLead);
-                            const txt = `${currentLead}, you raised your hand. Do you have any doubts? If so, please click the ‘Ask a Doubt’ button to submit your question.`;
+                            const lang = localStorage.getItem('preferredLanguage') || 'en';
+                            const txt = lang === 'ta'
+                                ? `${currentLead}, neenga hand raise pannirukinga. Ungalukku yethavathu doubts irukka? Iruntha, please 'Ask a Doubt' button-a click panni unga question-a submit pannunga.`
+                                : `${currentLead}, you raised your hand. Do you have any doubts? If so, please click the ‘Ask a Doubt’ button to submit your question.`;
 
-                            speakText(txt).catch((err) => console.error("TTS Error:", err));
+                            speakText(txt, { skipTranslation: true }).catch((err) => console.error("TTS Error:", err));
                             if (room) {
                                 room.localParticipant.publishData(
                                     new TextEncoder().encode(

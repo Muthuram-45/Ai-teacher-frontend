@@ -35,31 +35,7 @@ export default function StudentVoiceDoubt() {
         { reliable: true }
       );
 
-      // 🌟 Encourage Student
-      (async () => {
-        try {
-          const res = await fetch(`${BACKEND_URL}/encourage-student`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              name: room.localParticipant.identity,
-              question: text
-            }),
-          });
-          const data = await res.json();
-          if (data.encouragement) {
-            speakText(data.encouragement).catch(err => console.error('Encourage TTS error:', err));
-            if (room) {
-              room.localParticipant.publishData(
-                new TextEncoder().encode(JSON.stringify({ action: "AI_SPEAK_BROADCAST", text: data.encouragement })),
-                { reliable: true }
-              );
-            }
-          }
-        } catch (err) {
-          console.error('Failed to get encouragement', err);
-        }
-      })();
+      // Encouragement is now handled on the Teacher side in PageClientImpl
     };
     recognition.onerror = (event) => {
       if (event.error === "network" || event.error === "not-allowed") {

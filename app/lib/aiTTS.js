@@ -53,7 +53,7 @@ export async function speakText(text, options = {}) {
 
     // 🌐 Automatically translate hardcoded UI text to the user's preferred language before speaking
     let finalSpeechText = text;
-    if (preferredLanguage !== 'en') {
+    if (preferredLanguage !== 'en' && !options.skipTranslation) {
         try {
             const res = await fetch(`${BACKEND_URL}/api/multilingual/translate-text`, {
                 method: 'POST',
