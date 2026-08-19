@@ -19,6 +19,7 @@ export default function StudentHandRaise({ isHandRaised, onToggle }) {
                     name: room.localParticipant.identity,
                     raised: !isHandRaised,
                     timestamp: Date.now(),
+                    preferredLanguage: localStorage.getItem('preferredLanguage') || 'en',
                 })
             ),
             { reliable: true }

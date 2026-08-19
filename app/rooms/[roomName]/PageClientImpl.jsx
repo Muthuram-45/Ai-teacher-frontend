@@ -2351,9 +2351,11 @@ function RoomContent() {
                     setHandRaiseQueue((prev) => {
                         let nextQueue = [...prev];
                         if (msg.raised) {
-                            if (!nextQueue.includes(msg.name)) nextQueue.push(msg.name);
+                            if (!nextQueue.find(item => (item.name || item) === msg.name)) {
+                                nextQueue.push({ name: msg.name, lang: msg.preferredLanguage || 'en' });
+                            }
                         } else {
-                            nextQueue = nextQueue.filter((name) => name !== msg.name);
+                            nextQueue = nextQueue.filter((item) => (item.name || item) !== msg.name);
                         }
                         return nextQueue;
                     });
@@ -3392,25 +3394,26 @@ function HandRaiseAudioNotifier({ queue, role }) {
         // Regular individual notifications (Sequential)
         if (queue.length > 0 && queue.length < 5) {
             const currentLead = queue[0];
+            const currentName = currentLead?.name || currentLead; // Handle both object and string formats
 
             // Only notify if we haven't notified this person in this "session"
-            if (currentLead && !notifiedIdentities.current.has(currentLead)) {
+            if (currentName && !notifiedIdentities.current.has(currentName)) {
                 // If there's already a timeout running for a DIFFERENT lead, clear it
-                if (activeTimeoutLeadRef.current !== currentLead && notificationTimeoutRef.current) {
+                if (activeTimeoutLeadRef.current !== currentName && notificationTimeoutRef.current) {
                     clearTimeout(notificationTimeoutRef.current);
                     notificationTimeoutRef.current = null;
                 }
 
                 // Small delay to ensure previous audio (like a greeting) finished
                 if (!notificationTimeoutRef.current) {
-                    activeTimeoutLeadRef.current = currentLead;
+                    activeTimeoutLeadRef.current = currentName;
                     notificationTimeoutRef.current = setTimeout(() => {
-                        if (!notifiedIdentities.current.has(currentLead)) {
-                            notifiedIdentities.current.add(currentLead);
-                            const lang = localStorage.getItem('preferredLanguage') || 'en';
+                        if (!notifiedIdentities.current.has(currentName)) {
+                            notifiedIdentities.current.add(currentName);
+                            const lang = currentLead?.lang || localStorage.getItem('preferredLanguage') || 'en';
                             const txt = lang === 'ta'
-                                ? `${currentLead}, neenga hand raise pannirukinga. Ungalukku yethavathu doubts irukka? Iruntha, please 'Ask a Doubt' button-a click panni unga question-a submit pannunga.`
-                                : `${currentLead}, you raised your hand. Do you have any doubts? If so, please click the ‘Ask a Doubt’ button to submit your question.`;
+                                ? `${currentName}, neenga hand raise pannirukinga. Ungalukku yethavathu doubts irukka? Iruntha, please 'Ask a Doubt' button-a click panni unga question-a submit pannunga.`
+                                : `${currentName}, you raised your hand. Do you have any doubts? If so, please click the ‘Ask a Doubt’ button to submit your question.`;
 
                             speakText(txt, { skipTranslation: true }).catch((err) => console.error("TTS Error:", err));
                             if (room) {
