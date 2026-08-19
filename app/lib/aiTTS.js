@@ -241,7 +241,9 @@ async function playRecordableChunk(text, audioContext, destinationNode) {
         for (const chunk of chunks) {
             if (stopRequested) break;
             try {
-                const url = `${BACKEND_URL}/api/tts?text=${encodeURIComponent(chunk)}&lang=${preferredLanguage}`;
+                // For Thanglish (Latin script), 'en-IN' sounds much more natural than 'ta' trying to read English chars
+                const ttsLang = preferredLanguage === 'ta' ? 'en-IN' : preferredLanguage;
+                const url = `${BACKEND_URL}/api/tts?text=${encodeURIComponent(chunk)}&lang=${ttsLang}`;
                 const response = await fetch(url);
                 if (!response.ok) {
                     throw new Error(`Google TTS failed with status ${response.status}`);
@@ -289,14 +291,12 @@ function fallbackToBrowserTTS(text) {
         const voices = window.speechSynthesis.getVoices();
         
         let targetVoice = null;
-        if (preferredLanguage === 'ta') {
-            targetVoice = voices.find(v => v.lang.startsWith('ta') || v.name.toLowerCase().includes('tamil'));
-        } else if (preferredLanguage === 'hi') {
+        if (preferredLanguage === 'hi') {
             targetVoice = voices.find(v => v.lang.startsWith('hi') || v.name.toLowerCase().includes('hindi'));
         } else if (preferredLanguage === 'ml') {
             targetVoice = voices.find(v => v.lang.startsWith('ml') || v.name.toLowerCase().includes('malayalam'));
         } else {
-            // Default English/Indian English fallback
+            // Default English/Indian English fallback (Also used for Thanglish since it's Latin script)
             targetVoice = voices.find(v =>
                 v.name.toLowerCase().includes('india') ||
                 v.lang.includes('en-IN') ||

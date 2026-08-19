@@ -3379,7 +3379,7 @@ function HandRaiseAudioNotifier({ queue, role }) {
             hasSpokenBatchMsg.current = true;
             const lang = localStorage.getItem('preferredLanguage') || 'en';
             const txt = lang === 'ta'
-                ? "Niraiya students hand raise pannirukkurathala, na ippo session-a conclude pannittu unga questions ellathukkum answer pandren."
+                ? "Niraiya students hand raise pannirukkeenga, so na ippo session conclude pannittu unga questions ellathukkum answer pandren."
                 : "As several students have raised doubts, I will now conclude the session and proceed to clarify each of your questions.";
             speakText(txt).catch((err) => console.error("TTS Error:", err));
             if (room) {
@@ -3414,7 +3414,7 @@ function HandRaiseAudioNotifier({ queue, role }) {
                             notifiedIdentities.current.add(currentName);
                             const lang = currentLead?.lang || localStorage.getItem('preferredLanguage') || 'en';
                             const txt = lang === 'ta'
-                                ? `${currentName}, neenga hand raise pannirukinga. Ungalukku yethavathu doubts irukka? Iruntha, please 'Ask a Doubt' button-a click panni unga question-a submit pannunga.`
+                                ? `${currentName}, neenga hand raise pannirukkeenga. Edhavadhu doubt irukka? Iruntha, keezha irukka 'Ask a Doubt' button click panni question submit pannunga.`
                                 : `${currentName}, you raised your hand. Do you have any doubts? If so, please click the ‘Ask a Doubt’ button to submit your question.`;
 
                             speakText(txt, { skipTranslation: true }).catch((err) => console.error("TTS Error:", err));
