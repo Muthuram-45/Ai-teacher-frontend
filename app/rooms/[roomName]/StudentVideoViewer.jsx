@@ -178,11 +178,36 @@ export default function StudentVideoPanel({ isEmbedded = false }) {
         const currentVideoTrack = videoTracks[selectedLang] || videoTracks['en'] || Object.values(videoTracks)[0];
         const currentAudioTrack = audioTracks[selectedLang] || audioTracks['en'] || Object.values(audioTracks)[0];
 
+        // MUTE ALL AUDIO TRACKS (LiveKit auto-plays them, so we must silence the inactive ones)
+        Object.values(audioTracks).forEach(track => {
+            if (track && track.setVolume) {
+                track.setVolume(0);
+            }
+            if (track && track.attachedElements) {
+                track.attachedElements.forEach(el => {
+                    el.muted = true;
+                    el.volume = 0;
+                });
+            }
+        });
+
         if (videoEl && currentVideoTrack) {
             currentVideoTrack.attach(videoEl);
         }
         if (audioEl && currentAudioTrack) {
+            // UNMUTE THE SELECTED AUDIO TRACK
+            if (currentAudioTrack.setVolume) {
+                currentAudioTrack.setVolume(1);
+            }
+            if (currentAudioTrack.attachedElements) {
+                currentAudioTrack.attachedElements.forEach(el => {
+                    el.muted = false;
+                    el.volume = 1;
+                });
+            }
             currentAudioTrack.attach(audioEl);
+            audioEl.muted = false;
+            audioEl.volume = 1;
         }
 
         return () => {
