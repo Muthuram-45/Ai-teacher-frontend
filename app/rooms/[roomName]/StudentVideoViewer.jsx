@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { useRoomContext, useRemoteParticipants, useLocalParticipant } from '@livekit/components-react';
 import { Track } from 'livekit-client';
+import { SUPPORTED_LANGUAGES } from '@/app/lib/config';
 
 /* ---- Mini thumbnail that attaches a participant's video track ---- */
 function ParticipantThumb({ participant, label }) {
@@ -49,11 +50,13 @@ function ParticipantThumb({ participant, label }) {
         </div>
     );
 }
+
 export default function StudentVideoPanel({ isEmbedded = false }) {
     const room = useRoomContext();
     const remoteParticipants = useRemoteParticipants();
 
     const videoRef = useRef(null);
+    const audioRef = useRef(null);
     const containerRef = useRef(null);
 
     const [teacherParticipant, setTeacherParticipant] = useState(null);
@@ -61,7 +64,19 @@ export default function StudentVideoPanel({ isEmbedded = false }) {
     const [duration, setDuration] = useState(0);
     const [isFullscreen, setIsFullscreen] = useState(false);
     const [showTeacherVideo, setShowTeacherVideo] = useState(false);
-    const [videoTrack, setVideoTrack] = useState(null);
+    
+    // Multi-lingual tracks
+    const [selectedLang, setSelectedLang] = useState(() => {
+        if (typeof window !== 'undefined') {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get('lang') || localStorage.getItem('preferredLanguage') || 'en';
+        }
+        return 'en';
+    });
+
+    const [videoTracks, setVideoTracks] = useState({});
+    const [audioTracks, setAudioTracks] = useState({});
+
     const { localParticipant } = useLocalParticipant();
 
     let role = '';
@@ -91,24 +106,44 @@ export default function StudentVideoPanel({ isEmbedded = false }) {
     /* ---------------- MANAGE TRACK SUBSCRIPTION ---------------- */
     useEffect(() => {
         if (!teacherParticipant) {
-            setVideoTrack(null);
+            setVideoTracks({});
+            setAudioTracks({});
             setShowTeacherVideo(false);
             return;
         }
 
-        const handleTrackSubscribed = (track) => {
-            if (track.kind === Track.Kind.Video) {
-                console.log('🎥 Teacher video track subscribed');
-                setVideoTrack(track);
+        const handleTrackSubscribed = (track, pub) => {
+            const trackName = pub?.trackName || track?.name || '';
+            console.log('👀 Track subscribed on student:', track.kind, trackName);
+            if (track.kind === Track.Kind.Video && trackName.startsWith('class-video-')) {
+                const lang = trackName.split('-')[2];
+                setVideoTracks(prev => ({ ...prev, [lang]: track }));
                 setShowTeacherVideo(true);
+            }
+            if (track.kind === Track.Kind.Audio && trackName.startsWith('class-audio-')) {
+                const lang = trackName.split('-')[2];
+                setAudioTracks(prev => ({ ...prev, [lang]: track }));
             }
         };
 
-        const handleTrackUnsubscribed = (track) => {
-            if (track.kind === Track.Kind.Video) {
-                console.log('❌ Teacher video track unsubscribed');
-                setVideoTrack(null);
-                setShowTeacherVideo(false);
+        const handleTrackUnsubscribed = (track, pub) => {
+            const trackName = pub?.trackName || track?.name || '';
+            if (track.kind === Track.Kind.Video && trackName.startsWith('class-video-')) {
+                const lang = trackName.split('-')[2];
+                setVideoTracks(prev => {
+                    const newMap = { ...prev };
+                    delete newMap[lang];
+                    if (Object.keys(newMap).length === 0) setShowTeacherVideo(false);
+                    return newMap;
+                });
+            }
+            if (track.kind === Track.Kind.Audio && trackName.startsWith('class-audio-')) {
+                const lang = trackName.split('-')[2];
+                setAudioTracks(prev => {
+                    const newMap = { ...prev };
+                    delete newMap[lang];
+                    return newMap;
+                });
             }
         };
 
@@ -118,7 +153,12 @@ export default function StudentVideoPanel({ isEmbedded = false }) {
         // Check for existing tracks (important for late joins)
         teacherParticipant.videoTrackPublications.forEach((pub) => {
             if (pub.isSubscribed && pub.track) {
-                handleTrackSubscribed(pub.track);
+                handleTrackSubscribed(pub.track, pub);
+            }
+        });
+        teacherParticipant.audioTrackPublications.forEach((pub) => {
+            if (pub.isSubscribed && pub.track) {
+                handleTrackSubscribed(pub.track, pub);
             }
         });
 
@@ -128,19 +168,28 @@ export default function StudentVideoPanel({ isEmbedded = false }) {
         };
     }, [teacherParticipant]);
 
-    /* ---------------- ATTACH VIDEO TRACK ---------------- */
+    /* ---------------- ATTACH VIDEO & AUDIO TRACK ---------------- */
     useEffect(() => {
         const videoEl = videoRef.current;
-        if (!videoEl || !videoTrack) return;
+        const audioEl = audioRef.current;
+        if (!showTeacherVideo) return;
 
-        console.log('🔗 Attaching teacher video track to element');
-        videoTrack.attach(videoEl);
+        // Fallback to English if selected lang doesn't exist yet, else take first available
+        const currentVideoTrack = videoTracks[selectedLang] || videoTracks['en'] || Object.values(videoTracks)[0];
+        const currentAudioTrack = audioTracks[selectedLang] || audioTracks['en'] || Object.values(audioTracks)[0];
+
+        if (videoEl && currentVideoTrack) {
+            currentVideoTrack.attach(videoEl);
+        }
+        if (audioEl && currentAudioTrack) {
+            currentAudioTrack.attach(audioEl);
+        }
 
         return () => {
-            console.log('🔓 Detaching teacher video track');
-            videoTrack.detach(videoEl);
+            if (videoEl && currentVideoTrack) currentVideoTrack.detach(videoEl);
+            if (audioEl && currentAudioTrack) currentAudioTrack.detach(audioEl);
         };
-    }, [videoTrack, showTeacherVideo]); // Re-run when videoTrack or showTeacherVideo changes
+    }, [videoTracks, audioTracks, selectedLang, showTeacherVideo]);
 
     /* ---------------- TIME UPDATE ---------------- */
     useEffect(() => {
@@ -169,10 +218,10 @@ export default function StudentVideoPanel({ isEmbedded = false }) {
                     setShowTeacherVideo(true);
                 }
 
-                // 🛑 Teacher cancelled/closed the video — hide the viewer on student side
                 if (msg.action === 'VIDEO_STOP') {
                     setShowTeacherVideo(false);
-                    setVideoTrack(null);
+                    setVideoTracks({});
+                    setAudioTracks({});
                 }
 
                 if (!video) return;
@@ -222,12 +271,13 @@ export default function StudentVideoPanel({ isEmbedded = false }) {
         }
     };
 
-    // const formatTime = s => {
-    //     if (!isFinite(s)) return '0:00';
-    //     const m = Math.floor(s / 60);
-    //     const sec = Math.floor(s % 60);
-    //     return `${m}:${sec.toString().padStart(2, '0')}`;
-    // };
+    const handleLanguageChange = (e) => {
+        const newLang = e.target.value;
+        setSelectedLang(newLang);
+        if (typeof window !== 'undefined') {
+            localStorage.setItem('preferredLanguage', newLang);
+        }
+    };
 
     if (!showTeacherVideo) {
         return null; // Don't show anything (PageClientImpl handles empty state)
@@ -254,7 +304,6 @@ export default function StudentVideoPanel({ isEmbedded = false }) {
                 width: '100vw',
                 height: '90vh',
                 background: 'transparent',
-                // zIndex: 1, // Slightly above base background
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -262,12 +311,11 @@ export default function StudentVideoPanel({ isEmbedded = false }) {
                 zIndex: 1
             }}
         >
-
             <video
                 ref={videoRef}
                 autoPlay
                 playsInline
-                muted
+                muted // Mute the video element because audio is played via a separate WebRTC track
                 controlsList={isStudent ? "nodownload" : undefined}
                 disablePictureInPicture={isStudent}
                 style={{
@@ -278,21 +326,7 @@ export default function StudentVideoPanel({ isEmbedded = false }) {
                 }}
                 onLoadedMetadata={() => console.log('🎬 Video metadata loaded')}
             />
-
-            {/* ⏱ Time overlay (Bottom Left, above control bar) */}
-            {/* <div style={{
-                position: 'absolute',
-                bottom: 4,
-                left: 20,
-                color: '#fff',
-                padding: '6px 12px',
-                fontFamily: 'monospace',
-                background: 'rgba(0,0,0,0.5)',
-                borderRadius: 4,
-                zIndex: 10,
-            }}>
-                {formatTime(currentTime)} / {formatTime(duration)}
-            </div> */}
+            <audio ref={audioRef} autoPlay playsInline />
         </div>
     );
 }

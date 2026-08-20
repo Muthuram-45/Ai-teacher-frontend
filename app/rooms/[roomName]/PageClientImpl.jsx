@@ -130,7 +130,7 @@ import ParticipantList from "./ParticipantList";
 import { speakText, stopSpeaking, initAudioContext } from "@/app/lib/aiTTS";
 import HistorySidebar from "./HistorySidebar";
 import AttendanceSidebar from "./AttendanceSidebar";
-import StudentAudioRouter from "./StudentAudioRouter";
+
 import VoiceDoubt from "./VoiceDoubt";
 import { useActivityMonitor } from "../../lib/useActivityMonitor";
 import StudentWarning from "./StudentWarning";
@@ -3741,7 +3741,7 @@ export function PageClientImpl({ token, url }) {
             }}
         >
             <NoiseFilterActivator />
-            <StudentAudioRouter />
+
             <RoomContent />
         </LiveKitRoom>
     );

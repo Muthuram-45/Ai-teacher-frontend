@@ -5,6 +5,7 @@ import { DataPacket_Kind } from 'livekit-client';
 import { useRoomContext } from '@livekit/components-react';
 import { TeacherVideoPublisher } from './TeacherVideoPublisher';
 import { speakText } from '@/app/lib/aiTTS';
+import { SUPPORTED_LANGUAGES } from '@/app/lib/config';
 import { MdUploadFile, MdOutlineCancel } from "react-icons/md";
 import { BsRecordCircle, BsStopCircle, BsFileText, BsPauseCircle, BsPlayCircle, BsCloudUpload } from "react-icons/bs";
 
@@ -35,24 +36,27 @@ export default function TeacherVideoController({
   const videoRef = useRef(null);
   const publisherRef = useRef(null);
   const publishedRef = useRef(false);
-  const fileInputRef = useRef(null);
 
-  const [videoFile, setVideoFile] = useState(null);
-  const [videoURL, setVideoURL] = useState(null);
+  // NEW: Multilingual Video State
+  const [videoFiles, setVideoFiles] = useState({});
+  const [videoURLs, setVideoURLs] = useState({});
+  const videoRefs = useRef({});
+  const videoInputRefs = useRef({});
   
-  // NEW: State and Refs for auxiliary audio tracks
-  const [audioFiles, setAudioFiles] = useState({ ta: null, hi: null, ml: null, kn: null, te: null });
-  const [audioURLs, setAudioURLs] = useState({ ta: null, hi: null, ml: null, kn: null, te: null });
-  
-  const audioRefs = {
-    ta: useRef(null), hi: useRef(null), ml: useRef(null), kn: useRef(null), te: useRef(null)
-  };
-  const audioInputRefs = {
-    ta: useRef(null), hi: useRef(null), ml: useRef(null), kn: useRef(null), te: useRef(null)
-  };
+  // Initialize refs for all supported languages
+  if (Object.keys(videoRefs.current).length === 0) {
+    SUPPORTED_LANGUAGES.forEach(lang => {
+      videoRefs.current[lang.code] = { current: null };
+      videoInputRefs.current[lang.code] = { current: null };
+    });
+  }
+
+  // Primary video (usually English) used for UI tracking and time sync
+  const primaryLang = 'en';
+  const primaryVideoURL = videoURLs[primaryLang]?.url;
 
   const [popupName, setPopupName] = useState(null);
-
+  const [showControlPanel, setShowControlPanel] = useState(false);
 
   // 🔒 Class control
   const [classStarted, setClassStarted] = useState(false);
@@ -86,53 +90,41 @@ export default function TeacherVideoController({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [room]);
 
-  /* ---------------- VIDEO FILE ---------------- */
+  /* ---------------- VIDEO FILES ---------------- */
   useEffect(() => {
-    if (!videoFile) return;
-
-    const url = URL.createObjectURL(videoFile);
-    setVideoURL(url);
-
-    // reset class state
-    setClassStarted(false);
-    setVideoEnded(false);
-    publishedRef.current = false;
-    setPopupName(null);
-
-    // ✅ reset doubt finish logic
-    doubtCountRef.current = 0;
-    announcedFinishRef.current = false;
-
-    // ✅ reset end announcement for new video
-    endedAnnouncedRef.current = false;
-
-    return () => URL.revokeObjectURL(url);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [videoFile]);
-
-  /* ---------------- AUDIO FILES ---------------- */
-  useEffect(() => {
-    const newURLs = { ...audioURLs };
+    const newURLs = { ...videoURLs };
     const urlsToRevoke = [];
+    let hasPrimary = false;
     
-    Object.keys(audioFiles).forEach(lang => {
-      if (audioFiles[lang] && (!audioURLs[lang] || audioURLs[lang].file !== audioFiles[lang])) {
-        if (audioURLs[lang]) urlsToRevoke.push(audioURLs[lang].url);
-        const url = URL.createObjectURL(audioFiles[lang]);
-        newURLs[lang] = { file: audioFiles[lang], url };
+    Object.keys(videoFiles).forEach(lang => {
+      if (videoFiles[lang] && (!videoURLs[lang] || videoURLs[lang].file !== videoFiles[lang])) {
+        if (videoURLs[lang]) urlsToRevoke.push(videoURLs[lang].url);
+        const url = URL.createObjectURL(videoFiles[lang]);
+        newURLs[lang] = { file: videoFiles[lang], url };
       }
+      if (videoFiles[lang]) hasPrimary = true;
     });
 
-    setAudioURLs(newURLs);
+    setVideoURLs(newURLs);
+
+    if (hasPrimary) {
+      setClassStarted(false);
+      setVideoEnded(false);
+      publishedRef.current = false;
+      setPopupName(null);
+      doubtCountRef.current = 0;
+      announcedFinishRef.current = false;
+      endedAnnouncedRef.current = false;
+    }
 
     return () => {
       urlsToRevoke.forEach(u => URL.revokeObjectURL(u));
     };
-  }, [audioFiles]);
+  }, [videoFiles]);
 
   // Handle video end (✅ UPDATED: speaks when video ends)
   useEffect(() => {
-    const video = videoRef.current;
+    const video = videoRefs.current[primaryLang]?.current || videoRef.current;
     if (!video) return;
 
     const handleEnded = async () => {
@@ -163,7 +155,7 @@ export default function TeacherVideoController({
 
     video.addEventListener('ended', handleEnded);
     return () => video.removeEventListener('ended', handleEnded);
-  }, [videoURL]);
+  }, [primaryVideoURL]);
 
   /* ---------------- TIME SYNC INTERVAL ---------------- */
   const timeSyncRef = useRef(null);
@@ -194,32 +186,62 @@ export default function TeacherVideoController({
 
   /* ---------------- START CLASS ---------------- */
   const startClass = async () => {
-    if (!videoRef.current || publishedRef.current) return;
+    const hasAnyVideo = Object.values(videoRefs.current).some(ref => ref.current);
+    if (!hasAnyVideo || publishedRef.current) return;
+
+    // Validate durations if multiple videos are uploaded
+    let durations = [];
+    Object.entries(videoRefs.current).forEach(([lang, ref]) => {
+      if (ref.current && isFinite(ref.current.duration)) {
+        durations.push({ lang, duration: ref.current.duration });
+      }
+    });
+
+    if (durations.length > 1) {
+      const minD = Math.min(...durations.map(d => d.duration));
+      const maxD = Math.max(...durations.map(d => d.duration));
+      if (maxD - minD > 1) {
+        if (!window.confirm(`Warning: Video durations differ by ${Math.round(maxD - minD)} seconds. They may lose sync. Do you still want to start the class?`)) {
+          return;
+        }
+      }
+    }
 
     const ok = window.confirm('Do you want to start the class now?');
     if (!ok) return;
 
     try {
-      // publish video track AND audio tracks
-      await publisherRef.current.publishVideo(videoRef.current, audioRefs);
+      // publish all language video tracks
+      await publisherRef.current.publishVideo(videoRefs.current);
       publishedRef.current = true;
 
-      await videoRef.current.play();
+      // play all video elements simultaneously
+      const playPromises = [];
+      Object.values(videoRefs.current).forEach(ref => {
+        if (ref.current) {
+          playPromises.push(ref.current.play().catch(e => console.error("Play failed:", e)));
+        }
+      });
+      await Promise.all(playPromises);
 
-      // ✅ Start broadcasting time updates to students every second
-      startTimeSync(videoRef.current);
+      const primaryVideo = videoRefs.current[primaryLang]?.current || Object.values(videoRefs.current).find(r => r.current)?.current;
 
-      // notify students (include real duration so timeline shows immediately)
-      const duration = videoRef.current.duration;
-      room.localParticipant.publishData(
-        new TextEncoder().encode(
-          JSON.stringify({
-            action: 'VIDEO_START',
-            duration: isFinite(duration) ? duration : 0,
-          })
-        ),
-        { reliable: true }
-      );
+      // ✅ Start broadcasting time updates to students every second based on primary video
+      if (primaryVideo) {
+        startTimeSync(primaryVideo);
+
+        // notify students
+        const duration = primaryVideo.duration;
+        room.localParticipant.publishData(
+          new TextEncoder().encode(
+            JSON.stringify({
+              action: 'VIDEO_START',
+              duration: isFinite(duration) ? duration : 0,
+            })
+          ),
+          { reliable: true }
+        );
+      }
 
       setClassStarted(true);
       setVideoEnded(false);
@@ -255,23 +277,20 @@ export default function TeacherVideoController({
         if (msg.action === 'HAND_RAISE' && msg.raised) {
           setPopupName(msg.name);
 
-          const isPlaying =
-            classStarted &&
-            videoRef.current &&
-            !videoRef.current.paused;
-
+          const primaryVideo = videoRefs.current[primaryLang]?.current || Object.values(videoRefs.current).find(r => r.current)?.current;
+          const isPlaying = classStarted && primaryVideo && !primaryVideo.paused;
 
           // auto pause class video
           if (isPlaying) {
             console.log('⏸ Pausing video due to hand raise');
-            videoRef.current.pause();
+            Object.values(videoRefs.current).forEach(ref => ref.current && ref.current.pause());
 
-            // Notify students to pause (purely additive, doesn't change local pause logic)
+            // Notify students to pause
             room.localParticipant.publishData(
               new TextEncoder().encode(
                 JSON.stringify({
                   action: 'VIDEO_PAUSE',
-                  currentTime: videoRef.current.currentTime
+                  currentTime: primaryVideo.currentTime
                 })
               ),
               { reliable: true }
@@ -283,20 +302,18 @@ export default function TeacherVideoController({
 
         /* 🎤 STUDENT MIC ON → auto-pause teacher video */
         if (msg.action === 'VOICE_DOUBT_START') {
-          const isPlaying =
-            classStarted &&
-            videoRef.current &&
-            !videoRef.current.paused;
+          const primaryVideo = videoRefs.current[primaryLang]?.current || Object.values(videoRefs.current).find(r => r.current)?.current;
+          const isPlaying = classStarted && primaryVideo && !primaryVideo.paused;
 
           if (isPlaying) {
             console.log('⏸ Pausing video: student mic ON by', msg.name);
-            videoRef.current.pause();
+            Object.values(videoRefs.current).forEach(ref => ref.current && ref.current.pause());
 
             room.localParticipant.publishData(
               new TextEncoder().encode(
                 JSON.stringify({
                   action: 'VIDEO_PAUSE',
-                  currentTime: videoRef.current.currentTime
+                  currentTime: primaryVideo.currentTime
                 })
               ),
               { reliable: true }
@@ -316,9 +333,11 @@ export default function TeacherVideoController({
             const next = prev + 1;
             if (next >= MAX_DOUBTS && !announcedFinishRef.current) {
               announcedFinishRef.current = true;
-              if (videoRef.current && !videoRef.current.paused) {
-                videoRef.current.pause();
-              }
+              Object.values(videoRefs.current).forEach(ref => {
+                if (ref.current && !ref.current.paused) {
+                  ref.current.pause();
+                }
+              });
             }
             return next;
           });
@@ -463,14 +482,7 @@ export default function TeacherVideoController({
           `}</style>
         </div>
       )}
-      {/* 🎥 Hidden file input */}
-      <input
-        type="file"
-        ref={fileInputRef}
-        accept="video/*"
-        onChange={(e) => setVideoFile(e.target.files?.[0] || null)}
-        style={{ display: 'none' }}
-      />
+
 
       {/* 🌐 Live Translation Control */}
       <button
@@ -660,7 +672,7 @@ export default function TeacherVideoController({
         </div>
 
         {/* 2. UPLOAD SECTION (Upload or Cancel) */}
-        {videoURL ? (
+        {primaryVideoURL ? (
           <button
             onClick={async () => {
               if (window.confirm("Are you sure you want to close the uploaded class video?")) {
@@ -674,23 +686,18 @@ export default function TeacherVideoController({
                   try { await publisherRef.current.stopPublishing(); } catch (e) { console.error('Failed to stop publishing', e); }
                 }
                 stopTimeSync();
-                if (videoRef.current) videoRef.current.pause();
-                setVideoURL(null);
-                setVideoFile(null);
+                Object.values(videoRefs.current).forEach(ref => ref.current && ref.current.pause());
+                setVideoURLs({});
+                setVideoFiles({});
                 setClassStarted(false);
                 if (onClassStatusChange) onClassStatusChange(false);
                 publishedRef.current = false;
                 doubtCountRef.current = 0;
                 announcedFinishRef.current = false;
                 endedAnnouncedRef.current = false;
+                setShowControlPanel(false);
                 // ✅ clear file input so same file can be selected again
-                if (fileInputRef.current) {
-                  fileInputRef.current.value = "";
-                }
-                Object.values(audioInputRefs).forEach(ref => {
-                  if (ref.current) ref.current.value = "";
-                });
-                setAudioFiles({ ta: null, hi: null, ml: null, kn: null, te: null });
+                Object.values(videoInputRefs.current).forEach(ref => { if (ref.current) ref.current.value = ""; });
               }
             }}
             title="Cancel Class"
@@ -715,15 +722,15 @@ export default function TeacherVideoController({
           </button>
         ) : (
           <button
-            onClick={() => fileInputRef.current?.click()}
-            title="Upload Video Class"
+            onClick={() => setShowControlPanel(!showControlPanel)}
+            title={showControlPanel ? "Close Upload Panel" : "Upload Video Class"}
             style={{
               width: 44,
               height: 44,
               borderRadius: '50%',
               background: '#222',
               border: '1px solid #444',
-              color: '#fff',
+              color: showControlPanel ? '#ee1d1dff' : '#fff',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -732,7 +739,7 @@ export default function TeacherVideoController({
               transition: 'background 0.2s',
             }}
           >
-            <MdUploadFile />
+            {showControlPanel ? <MdOutlineCancel size={28} /> : <MdUploadFile />}
           </button>
         )}
       </div>
@@ -751,7 +758,7 @@ export default function TeacherVideoController({
       `}</style>
 
       {/* 📺 Class Management Panel */}
-      {(videoURL || classStarted) && (
+      {(primaryVideoURL || showControlPanel || classStarted) && (
         <div
           style={classStarted ? { display: 'contents' } : {
             position: 'absolute',
@@ -804,11 +811,9 @@ export default function TeacherVideoController({
                   stopTimeSync();
 
                   // Pause the local video element
-                  if (videoRef.current) {
-                    videoRef.current.pause();
-                  }
+                  Object.values(videoRefs.current).forEach(ref => { if (ref.current) ref.current.pause(); });
 
-                  setVideoURL(null);
+                  setVideoURLs({});
                   setClassStarted(false);
                   if (onClassStatusChange) onClassStatusChange(false);
                   publishedRef.current = false;
@@ -820,13 +825,9 @@ export default function TeacherVideoController({
                   // ✅ reset end announcement
                   endedAnnouncedRef.current = false;
                   // ✅ clear file input so same file can be selected again
-                  if (fileInputRef.current) {
-                    fileInputRef.current.value = "";
-                  }
-                  Object.values(audioInputRefs).forEach(ref => {
-                    if (ref.current) ref.current.value = "";
-                  });
-                  setAudioFiles({ ta: null, hi: null, ml: null, kn: null, te: null });
+                  Object.values(videoInputRefs.current).forEach(ref => { if (ref.current) ref.current.value = ""; });
+                  
+                  
                 }}
                 style={{ background: 'none', border: 'none', color: '#666', cursor: 'pointer' }}
               >
@@ -836,75 +837,99 @@ export default function TeacherVideoController({
           )}
 
           {/* 🎥 Video preview */}
-          {videoURL && (
+          {primaryVideoURL && (
             <>
-              <video
-                ref={videoRef}
-                src={videoURL}
-                controls={true}
-                onPlay={(e) => {
-                  Object.values(audioRefs).forEach(ref => ref.current?.play().catch(() => {}));
-                }}
-                onPause={(e) => {
-                  Object.values(audioRefs).forEach(ref => ref.current?.pause());
-                }}
-                onSeeked={(e) => {
-                  const t = e.target.currentTime;
-                  Object.values(audioRefs).forEach(ref => {
-                    if (ref.current) ref.current.currentTime = t;
-                  });
-                }}
-                onWaiting={(e) => {
-                  Object.values(audioRefs).forEach(ref => ref.current?.pause());
-                }}
-                onPlaying={(e) => {
-                  Object.values(audioRefs).forEach(ref => ref.current?.play().catch(() => {}));
-                }}
-                className="teacher-main-video"
-                style={classStarted ? {
-                  position: 'fixed',
-                  top: 0,
-                  left: 0,
-                  width: '80vw',
-                  height: '90vh',
-                  background: '#000',
-                  zIndex: 9999,
-                  objectFit: 'contain',
-                } : {
-                  width: '100%',
-                  borderRadius: 8,
-                  maxHeight: 180,
-                  background: '#000',
-                }}
-              />
-              {Object.keys(audioURLs).map(lang => (
-                audioURLs[lang] && <audio key={lang} ref={audioRefs[lang]} src={audioURLs[lang].url} />
-              ))}
+              {SUPPORTED_LANGUAGES.map(lang => {
+                const urlObj = videoURLs[lang.code];
+                if (!urlObj) return null;
+                const isPrimary = lang.code === primaryLang;
+                return (
+                  <video
+                    key={lang.code}
+                    ref={videoRefs.current[lang.code]}
+                    src={urlObj.url}
+                    controls={isPrimary}
+                    muted={!isPrimary} // Only primary video plays sound locally for the teacher
+                    onPlay={(e) => {
+                      if (isPrimary) {
+                        Object.entries(videoRefs.current).forEach(([l, ref]) => {
+                          if (l !== primaryLang && ref.current) ref.current.play().catch(() => {});
+                        });
+                      }
+                    }}
+                    onPause={(e) => {
+                      if (isPrimary) {
+                        Object.entries(videoRefs.current).forEach(([l, ref]) => {
+                          if (l !== primaryLang && ref.current) ref.current.pause();
+                        });
+                      }
+                    }}
+                    onSeeked={(e) => {
+                      if (isPrimary) {
+                        const t = e.target.currentTime;
+                        Object.entries(videoRefs.current).forEach(([l, ref]) => {
+                          if (l !== primaryLang && ref.current) ref.current.currentTime = t;
+                        });
+                      }
+                    }}
+                    onWaiting={(e) => {
+                      if (isPrimary) {
+                        Object.entries(videoRefs.current).forEach(([l, ref]) => {
+                          if (l !== primaryLang && ref.current) ref.current.pause();
+                        });
+                      }
+                    }}
+                    onPlaying={(e) => {
+                      if (isPrimary) {
+                        Object.entries(videoRefs.current).forEach(([l, ref]) => {
+                          if (l !== primaryLang && ref.current) ref.current.play().catch(() => {});
+                        });
+                      }
+                    }}
+                    className={isPrimary ? "teacher-main-video" : ""}
+                    style={isPrimary ? (classStarted ? {
+                      position: 'fixed',
+                      top: 0,
+                      left: 0,
+                      width: '80vw',
+                      height: '90vh',
+                      background: '#000',
+                      zIndex: 9999,
+                      objectFit: 'contain',
+                    } : {
+                      width: '100%',
+                      borderRadius: 8,
+                      maxHeight: 180,
+                      background: '#000',
+                    }) : { display: 'none' }}
+                  />
+                );
+              })}
             </>
           )}
 
-          {/* 🎵 Audio Tracks Upload UI */}
-          {videoURL && !classStarted && (
+          {/* 🎵 Language Videos Upload UI */}
+          {!classStarted && (
             <div style={{ marginTop: '10px', padding: '10px', background: 'rgba(255,255,255,0.05)', borderRadius: '8px' }}>
-              <div style={{ fontSize: '12px', color: '#ccc', marginBottom: '8px' }}>Optional: Upload Audio Tracks</div>
+              <div style={{ fontSize: '12px', color: '#ccc', marginBottom: '8px' }}>Upload Video for each language</div>
               <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                {Object.keys(audioFiles).map(lang => (
-                  <div key={lang} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
+                {SUPPORTED_LANGUAGES.map(lang => (
+                  <div key={lang.code} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
                     <button
-                      onClick={() => audioInputRefs[lang].current?.click()}
+                      onClick={() => videoInputRefs.current[lang.code]?.current?.click()}
                       style={{
                         padding: '4px 8px', fontSize: '11px', borderRadius: '4px', cursor: 'pointer',
-                        background: audioFiles[lang] ? '#4CAF50' : '#444', color: '#fff', border: 'none'
+                        background: videoFiles[lang.code] ? '#4CAF50' : '#444', color: '#fff', border: 'none'
                       }}
                     >
-                      {lang.toUpperCase()}
+                      {lang.name}
                     </button>
                     <input
                       type="file"
-                      accept="audio/*"
-                      ref={audioInputRefs[lang]}
+                      accept="video/*"
+                      ref={videoInputRefs.current[lang.code]}
                       style={{ display: 'none' }}
-                      onChange={(e) => setAudioFiles(prev => ({ ...prev, [lang]: e.target.files?.[0] || null }))}
+                      onChange={(e) => setVideoFiles(prev => ({ ...prev, [lang.code]: e.target.files?.[0] || null }))}
                     />
                   </div>
                 ))}
@@ -916,7 +941,7 @@ export default function TeacherVideoController({
           {/* ▶ Start Class / 📝 Generate Quiz */}
           {!classStarted && (
             <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              {videoURL && !classStarted && (
+              {primaryVideoURL && !classStarted && (
                 <button
                   onClick={startClass}
                   style={{
