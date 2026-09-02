@@ -151,9 +151,9 @@ async function playRecordableChunk(text, audioContext, destinationNode, options 
             }
         }
 
-        if (activeVoice === 'reference_voice.wav' || preferredLanguage !== 'en') {
-            console.log("ℹ️ Default voice active or non-English - switching to Google TTS");
-            throw new Error("DEFAULT_VOICE_SELECTED_OR_NON_ENGLISH");
+        if (activeVoice === 'reference_voice.wav') {
+            console.log("ℹ️ Default voice active - switching to Google TTS");
+            throw new Error("DEFAULT_VOICE_SELECTED");
         }
 
         const response = await fetch(`${PYTHON_BACKEND_URL}/synthesize`, {

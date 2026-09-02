@@ -3457,7 +3457,7 @@ function HandRaiseAudioNotifier({ queue, role }) {
                             const lang = currentLead?.lang || new URLSearchParams(window.location.search).get('lang') || localStorage.getItem('preferredLanguage') || 'en';
                             let txt = `${currentName}, you raised your hand. Do you have any doubts? If so, please click the ‘Ask a Doubt’ button to submit your question.`;
                             if (lang === 'ta') {
-                                txt = `${currentName}, neenga hand raise pannirukkeenga. Edhavadhu doubt irukka? Iruntha, keezha irukka 'Ask a Doubt' button click panni question submit pannunga.`;
+                                txt = `${currentName}, neenga hand raise pannirukkeenga. Edhavadhu doubt irukka? Iruntha, keela irukka 'Ask a Doubt' button click panni question submit pannunga.`;
                             } else if (lang === 'te') {
                                 txt = `${currentName}, meeru hand raise chesaru. Meeku emaina doubt unda? Unte, dayachesi 'Ask a Doubt' button click chesi mi question submit cheyandi.`;
                             } else if (lang === 'hi') {
