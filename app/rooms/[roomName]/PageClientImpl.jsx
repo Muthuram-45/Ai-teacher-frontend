@@ -2317,10 +2317,22 @@ function RoomContent() {
                 }
 
                 // 📥 Receive New Doubt
-                if (msg.action === "STUDENT_DOUBT") {
-                    console.log("📥 Received STUDENT_DOUBT:", msg);
-                    const doubtId = msg.id || Date.now();
-                    const newDoubt = { ...msg, id: doubtId };
+                if (msg.action === "STUDENT_DOUBT" || msg.type === "student_question") {
+                    console.log("📥 Received STUDENT_DOUBT or student_question:", msg);
+                    const doubtId = msg.id || msg.questionId || Date.now();
+                    const studentName = msg.name || msg.studentName;
+                    const questionText = msg.text || msg.question;
+                    const prefLang = msg.preferredLanguage || msg.language;
+                    const isVoiceGenerated = msg.voiceGenerated || msg.type === "student_question";
+
+                    const newDoubt = { 
+                        action: "STUDENT_DOUBT", 
+                        id: doubtId,
+                        name: studentName,
+                        text: questionText,
+                        preferredLanguage: prefLang,
+                        voiceGenerated: isVoiceGenerated
+                    };
 
                     // Add to list for everyone
                     setDoubts((prev) => {
@@ -2332,7 +2344,7 @@ function RoomContent() {
                         if (prevAnswers.some((d) => d.id === doubtId)) return prevAnswers;
                         return [
                             ...prevAnswers,
-                            { id: doubtId, name: msg.name, text: msg.text, answer: null },
+                            { id: doubtId, name: studentName, text: questionText, answer: null },
                         ];
                     });
 
@@ -2341,7 +2353,7 @@ function RoomContent() {
                     // Teacher only: logic for auto-AI
                     if (role === "teacher") {
                         editFreezeRef.current[doubtId] = false;
-                        const delay = msg.voiceGenerated ? 1000 : 3000;
+                        const delay = isVoiceGenerated ? 1000 : 3000;
                         scheduleAutoAsk(newDoubt, delay);
                     }
                 }
@@ -2394,11 +2406,12 @@ function RoomContent() {
 
                     // 🔊 Play audio for both teacher AND student via the broadcast echo
                     if (msg.answer) {
-                        const audioString = `${msg.name} asked: ${msg.text}. ${msg.answer}`;
+                        const audioString = msg.isDirectResponse ? msg.answer : `${msg.name} asked: ${msg.text}. ${msg.answer}`;
                         speakText(audioString, {
                             audioContext: recordingAudioContext.current,
                             destinationNode: recordingDestNode.current,
                             skipTranslation: true,
+                            ...(msg.isDirectResponse && { forceLanguage: 'en' })
                         }).catch((err) => console.error("Broadcast TTS error:", err));
                     }
                 }
@@ -2467,6 +2480,13 @@ function RoomContent() {
 
         isProcessingDoubtRef.current = true;
 
+        if (room) {
+            room.localParticipant.publishData(
+                new TextEncoder().encode(JSON.stringify({ action: "AI_ANSWER_START" })),
+                { reliable: true }
+            );
+        }
+
         while (doubtQueueRef.current.length > 0) {
             const doubt = doubtQueueRef.current[0]; // Peek at first item
             console.log(`🔄 Processing doubt from queue: "${doubt?.text}" (${doubtQueueRef.current.length} in queue)`);
@@ -2481,6 +2501,13 @@ function RoomContent() {
         }
 
         isProcessingDoubtRef.current = false;
+
+        if (room) {
+            room.localParticipant.publishData(
+                new TextEncoder().encode(JSON.stringify({ action: "AI_ANSWER_FINISHED" })),
+                { reliable: true }
+            );
+        }
     };
 
     /* 👩‍🏫 Teacher Handlers (Centralized) */
@@ -2544,10 +2571,10 @@ function RoomContent() {
             const answer = data.answer || "No answer received.";
 
             setDoubts((prev) =>
-                prev.map((d) => (d.id === doubt.id ? { ...d, answer } : d)),
+                prev.map((d) => (d.id === doubt.id ? { ...d, answer, isDirectResponse: data.isDirectResponse } : d)),
             );
 
-            const answeredDoubt = { ...doubt, answer };
+            const answeredDoubt = { ...doubt, answer, isDirectResponse: data.isDirectResponse };
             // Wait briefly, then send + await TTS completion before moving to next
             await new Promise((r) => setTimeout(r, 500));
             await sendToStudent(answeredDoubt);
@@ -2591,6 +2618,7 @@ function RoomContent() {
                     text: doubt.text,
                     answer: doubt.answer,
                     name: doubt.name,
+                    isDirectResponse: doubt.isDirectResponse,
                 }),
             ),
             { reliable: true },
@@ -2598,12 +2626,13 @@ function RoomContent() {
         console.log("✅ sendToStudent: Published AI_ANSWER_BROADCAST");
 
         // Play locally for the Teacher — AWAIT completion before moving to next doubt
-        const audioString = `${doubt.name} asked: ${doubt.text}. ${doubt.answer}`;
+        const audioString = doubt.isDirectResponse ? doubt.answer : `${doubt.name} asked: ${doubt.text}. ${doubt.answer}`;
         try {
             await speakText(audioString, {
                 audioContext: recordingAudioContext.current,
                 destinationNode: recordingDestNode.current,
                 skipTranslation: true,
+                ...(doubt.isDirectResponse && { forceLanguage: 'en' })
             });
         } catch (err) {
             console.error("Teacher local TTS error:", err);

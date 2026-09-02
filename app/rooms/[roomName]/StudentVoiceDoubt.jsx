@@ -21,7 +21,12 @@ export default function StudentVoiceDoubt() {
     recognition.interimResults = false;
 
     recognition.onresult = (event) => {
-      const text = event.results[0][0].transcript;
+      const text = event.results[0][0].transcript.trim();
+
+      if (!text) {
+        speakText("Sorry, I couldn't understand that. Please ask your doubt again.", { skipTranslation: true, forceLanguage: 'en' });
+        return;
+      }
 
       room.localParticipant.publishData(
         new TextEncoder().encode(
@@ -40,8 +45,14 @@ export default function StudentVoiceDoubt() {
     recognition.onerror = (event) => {
       if (event.error === "network" || event.error === "not-allowed") {
         alert("Speech recognition failed due to browser network/security restrictions. Please use the text chat.");
+      } else if (event.error === "no-speech") {
+        speakText("Sorry, I couldn't understand that. Please ask your doubt again.", { skipTranslation: true, forceLanguage: 'en' });
       }
       console.warn('Speech recognition error:', event.error);
+    };
+
+    recognition.onnomatch = () => {
+      speakText("Sorry, I couldn't understand that. Please ask your doubt again.", { skipTranslation: true, forceLanguage: 'en' });
     };
 
     recognition.start();

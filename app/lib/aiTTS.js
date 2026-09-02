@@ -85,11 +85,11 @@ export async function speakText(text, options = {}) {
 
         return (async () => {
             try {
-                await playRecordableChunk(finalSpeechText, audioContext, destinationNode);
+                await playRecordableChunk(finalSpeechText, audioContext, destinationNode, options);
             } catch (err) {
                 if (!stopRequested) {
                     console.warn("⚠️ Text playback failed, falling back to browser synthesis:", err);
-                    await fallbackToBrowserTTS(finalSpeechText).catch(() => { });
+                    await fallbackToBrowserTTS(finalSpeechText, options).catch(() => { });
                 }
             }
         })();
@@ -125,7 +125,7 @@ export function initAudioContext() {
 /**
  * 🔊 Plays a single chunk with zero-latency streaming (Most Reliable for Continuity)
  */
-async function playRecordableChunk(text, audioContext, destinationNode) {
+async function playRecordableChunk(text, audioContext, destinationNode, options = {}) {
     if (stopRequested) return;
 
     const ctx = audioContext || getLocalContext();
@@ -134,7 +134,7 @@ async function playRecordableChunk(text, audioContext, destinationNode) {
     try {
         console.log("🚀 Starting Streamed Synthesis...");
 
-        const preferredLanguage = typeof window !== 'undefined' ? (new URLSearchParams(window.location.search).get('lang') || localStorage.getItem('preferredLanguage') || 'en') : 'en';
+        const preferredLanguage = options.forceLanguage || (typeof window !== 'undefined' ? (new URLSearchParams(window.location.search).get('lang') || localStorage.getItem('preferredLanguage') || 'en') : 'en');
 
         // 🔍 Check if we should use trained voice or default (Google TTS)
         let activeVoice = cachedActiveVoice;
@@ -275,11 +275,11 @@ async function playRecordableChunk(text, audioContext, destinationNode) {
 /**
  * Consolidate browser TTS into a reliable function
  */
-function fallbackToBrowserTTS(text) {
+function fallbackToBrowserTTS(text, options = {}) {
     return new Promise((resolve) => {
         if (typeof window === 'undefined' || !window.speechSynthesis) return resolve();
 
-        const preferredLanguage = new URLSearchParams(window.location.search).get('lang') || localStorage.getItem('preferredLanguage') || 'en';
+        const preferredLanguage = options.forceLanguage || new URLSearchParams(window.location.search).get('lang') || localStorage.getItem('preferredLanguage') || 'en';
 
         // Cancel any existing speech
         window.speechSynthesis.cancel();

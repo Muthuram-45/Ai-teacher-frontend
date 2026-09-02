@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState, useRef } from "react";
 import { useRoomContext, useLocalParticipant } from "@livekit/components-react";
+import { speakText, stopSpeaking, initAudioContext } from '@/app/lib/aiTTS';
 import { BACKEND_URL } from "../../lib/config";
 
 export default function VoiceDoubt() {
@@ -9,9 +10,22 @@ export default function VoiceDoubt() {
 
   const [transcript, setTranscript] = useState("");
   const recognitionRef = useRef(null);
-  const [isRecording, setIsRecording] = useState(false);
+  const isRecordingRef = useRef(false);
   const intentSentRef = useRef(false);
   const transcriptRef = useRef("");
+  const inactivityTimerRef = useRef(null);
+  const gracePeriodTimerRef = useRef(null);
+
+  const clearTimers = () => {
+    if (inactivityTimerRef.current) {
+      clearTimeout(inactivityTimerRef.current);
+      inactivityTimerRef.current = null;
+    }
+    if (gracePeriodTimerRef.current) {
+      clearTimeout(gracePeriodTimerRef.current);
+      gracePeriodTimerRef.current = null;
+    }
+  };
 
   useEffect(() => {
     const SpeechRecognition =
@@ -53,6 +67,10 @@ export default function VoiceDoubt() {
 
         for (let i = event.resultIndex; i < event.results.length; i++) {
           segmentText += event.results[i][0].transcript.toLowerCase();
+        }
+
+        if (segmentText.trim().length > 0) {
+          clearTimers();
         }
 
         const keywords = [
@@ -97,7 +115,7 @@ export default function VoiceDoubt() {
     };
 
     recognition.onend = () => {
-      if (isRecording) {
+      if (isRecordingRef.current) {
         try {
           recognition.start();
         } catch (err) {
@@ -122,12 +140,41 @@ export default function VoiceDoubt() {
     const handleMicChange = () => {
       const isMicOn = localParticipant.isMicrophoneEnabled;
 
-      if (isMicOn && !isRecording) {
-        setIsRecording(true);
+      if (isMicOn && !isRecordingRef.current) {
+        isRecordingRef.current = true;
 
         intentSentRef.current = false;
         setTranscript("");
         transcriptRef.current = "";
+
+        clearTimers();
+        inactivityTimerRef.current = setTimeout(async () => {
+          const studentName = localParticipant.identity || "Student";
+          const langCode = new URLSearchParams(window.location.search).get('lang') || localStorage.getItem('preferredLanguage') || 'en';
+          const reminderMessages = {
+            ta: `${studentName}, unga microphone on-la irukku. Ungalukku edhaavadhu doubt irundha, please unga question-a kelunga. Doubt illaina, unga microphone-a off pannunga.`,
+            hi: `${studentName}, aapka microphone on hai. Agar aapka koi doubt hai, toh please apna question poochiye. Agar doubt nahi hai, toh apna microphone off kar dijiye.`,
+            kn: `${studentName}, nimma microphone on ide. Nimge yavudadru doubt idre, dayavittu nimma question kelri. Doubt illandre, nimma microphone off maadi.`,
+            ml: `${studentName}, ningalude microphone on aanu. Ningalkku enthenkilum doubt undenkil, please ningalude question chodikkuka. Doubt illenkil, ningalude microphone off cheyyuka.`,
+            en: `${studentName}, your microphone is on. If you have a question, please ask it. If you don't have a doubt, please turn off your microphone.`
+          };
+          
+          const txt = reminderMessages[langCode] || reminderMessages.en;
+          
+          initAudioContext();
+          try {
+            await speakText(txt, { forceLanguage: langCode, skipTranslation: true });
+          } catch (err) {
+            console.error("TTS Reminder error:", err);
+          }
+          
+          gracePeriodTimerRef.current = setTimeout(() => {
+            if (localParticipant.isMicrophoneEnabled) {
+              console.log("🎙 Auto-muting microphone due to inactivity.");
+              localParticipant.setMicrophoneEnabled(false);
+            }
+          }, 5000);
+        }, 7000);
 
         localParticipant.publishData(
           new TextEncoder().encode(
@@ -142,9 +189,12 @@ export default function VoiceDoubt() {
         try {
           recognitionRef.current.start();
         } catch (e) {
-          console.error(e);
+          console.warn("Recognition already started or failed to start:", e);
         }
-      } else if (!isMicOn && isRecording) {
+      } else if (!isMicOn && isRecordingRef.current) {
+        clearTimers();
+        stopSpeaking(); // stop the inactivity reminder if playing
+
         localParticipant.publishData(
           new TextEncoder().encode(
             JSON.stringify({
@@ -155,9 +205,11 @@ export default function VoiceDoubt() {
           { reliable: true },
         );
 
-        setIsRecording(false);
+        isRecordingRef.current = false;
 
-        recognitionRef.current.stop();
+        try {
+          recognitionRef.current.stop();
+        } catch(e) {}
 
         setTimeout(() => {
           handleExtraction(transcriptRef.current || transcript);
@@ -172,115 +224,28 @@ export default function VoiceDoubt() {
       localParticipant.off("trackMuted", handleMicChange);
       localParticipant.off("trackUnmuted", handleMicChange);
     };
-  }, [localParticipant, isRecording, transcript]);
+  }, [localParticipant, transcript]);
 
   const handleExtraction = async (fullTranscript) => {
     if (!fullTranscript.trim()) return;
 
     console.log("🎤 Transcript:", fullTranscript);
+    const questionId = "q_" + Date.now() + "_" + Math.random().toString(36).substring(7);
 
-    // Send transcript to teacher UI
     localParticipant.publishData(
       new TextEncoder().encode(
         JSON.stringify({
-          action: "STUDENT_VOICE",
-          name: localParticipant.identity,
-          transcript: fullTranscript,
-        }),
+          type: "student_question",
+          questionId: questionId,
+          studentName: localParticipant.identity,
+          question: fullTranscript.trim(),
+          topic: new URLSearchParams(window.location.search).get('topic') || "General Class",
+          language: new URLSearchParams(window.location.search).get('lang') || localStorage.getItem('preferredLanguage') || 'en',
+          timestamp: new Date().toISOString()
+        })
       ),
-      { reliable: true },
+      { reliable: true }
     );
-
-    const lower = fullTranscript.toLowerCase().trim();
-
-    const greetings = [
-      "hi",
-      "hello",
-      "hey",
-      "good morning",
-      "good afternoon",
-      "good evening",
-    ];
-
-    const isGreeting = greetings.some(
-      (g) => lower === g || lower.startsWith(g + " "),
-    );
-
-    // Greeting → ONLY teacher side
-    if (isGreeting) {
-      console.log("👋 Greeting detected (teacher-only)");
-
-      localParticipant.publishData(
-        new TextEncoder().encode(
-          JSON.stringify({
-            action: "STUDENT_GREETING",
-            id: Date.now() + "-greeting",
-            text: fullTranscript,
-            name: localParticipant.identity,
-            voiceGenerated: true,
-          }),
-        ),
-        { reliable: true },
-      );
-
-      return;
-    }
-
-    try {
-      const res = await fetch(`${BACKEND_URL}/extract-question`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          transcript: fullTranscript,
-        }),
-      });
-
-      const data = await res.json();
-
-      let question = fullTranscript.trim();
-
-      // Use extracted question if available
-      if (
-        data.extractedQuestion &&
-        data.extractedQuestion.trim() &&
-        data.extractedQuestion.toUpperCase() !== "<NONE>"
-      ) {
-        question = data.extractedQuestion.trim();
-      }
-
-      console.log("🤖 Sending Question:", question);
-
-      localParticipant.publishData(
-        new TextEncoder().encode(
-          JSON.stringify({
-            action: "STUDENT_DOUBT",
-            id: Date.now() + "-" + Math.random().toString(36),
-            text: question,
-            name: localParticipant.identity,
-            voiceGenerated: true,
-          }),
-        ),
-        { reliable: true },
-      );
-    } catch (err) {
-      console.error("Extraction failed:", err);
-
-      // Fallback → send full transcript
-      localParticipant.publishData(
-        new TextEncoder().encode(
-          JSON.stringify({
-            action: "STUDENT_DOUBT",
-            id: Date.now() + "-" + Math.random().toString(36),
-            text: fullTranscript.trim(),
-            name: localParticipant.identity,
-            voiceGenerated: true,
-          }),
-        ),
-        { reliable: true },
-      );
-    }
   };
 
   return null;

@@ -73,6 +73,12 @@ export default function TeacherVideoController({
   // ✅ NEW: video end announcement (speak once)
   const endedAnnouncedRef = useRef(false);
 
+  // ✅ NEW: Auto-resume tracking logic
+  const activeMicsRef = useRef(new Set());
+  const activeHandsRef = useRef(new Set());
+  const isAIspeakingRef = useRef(false);
+  const resumeTimerRef = useRef(null);
+
   /* ---------------- INIT ---------------- */
   useEffect(() => {
     if (!room) return;
@@ -267,6 +273,38 @@ export default function TeacherVideoController({
   useEffect(() => {
     if (!room) return;
 
+    const checkAndResume = () => {
+      if (resumeTimerRef.current) clearTimeout(resumeTimerRef.current);
+      
+      if (activeMicsRef.current.size === 0 && activeHandsRef.current.size === 0 && !isAIspeakingRef.current) {
+        resumeTimerRef.current = setTimeout(() => {
+          // Verify again before actually resuming
+          if (activeMicsRef.current.size === 0 && activeHandsRef.current.size === 0 && !isAIspeakingRef.current) {
+            const primaryVideo = videoRefs.current[primaryLang]?.current || Object.values(videoRefs.current).find(r => r.current)?.current;
+            if (classStarted && primaryVideo && primaryVideo.paused) {
+              console.log('▶️ Auto-resuming video after 3s (all clear)');
+              
+              Object.values(videoRefs.current).forEach(ref => {
+                if (ref.current) {
+                  ref.current.play().catch(e => console.error("Auto-resume play failed:", e));
+                }
+              });
+
+              room.localParticipant.publishData(
+                new TextEncoder().encode(
+                  JSON.stringify({
+                    action: 'VIDEO_RESUME',
+                    currentTime: primaryVideo.currentTime
+                  })
+                ),
+                { reliable: true }
+              );
+            }
+          }
+        }, 3000);
+      }
+    };
+
     const handleData = async (payload, _participant, kind) => {
       if (kind !== DataPacket_Kind.RELIABLE) return;
 
@@ -275,6 +313,7 @@ export default function TeacherVideoController({
 
         /* ✋ HAND RAISE */
         if (msg.action === 'HAND_RAISE' && msg.raised) {
+          activeHandsRef.current.add(msg.name);
           setPopupName(msg.name);
 
           const primaryVideo = videoRefs.current[primaryLang]?.current || Object.values(videoRefs.current).find(r => r.current)?.current;
@@ -298,10 +337,13 @@ export default function TeacherVideoController({
           }
         } else if (msg.action === 'HAND_RAISE') {
           console.log('✋ Hand lowered by:', msg.name);
+          activeHandsRef.current.delete(msg.name);
+          checkAndResume();
         }
 
         /* 🎤 STUDENT MIC ON → auto-pause teacher video */
         if (msg.action === 'VOICE_DOUBT_START') {
+          activeMicsRef.current.add(msg.name);
           const primaryVideo = videoRefs.current[primaryLang]?.current || Object.values(videoRefs.current).find(r => r.current)?.current;
           const isPlaying = classStarted && primaryVideo && !primaryVideo.paused;
 
@@ -319,6 +361,41 @@ export default function TeacherVideoController({
               { reliable: true }
             );
           }
+        }
+
+        /* 🎤 STUDENT MIC OFF → auto-resume teacher video */
+        if (msg.action === 'VOICE_DOUBT_END') {
+          console.log('🎤 Student mic turned off by:', msg.name);
+          activeMicsRef.current.delete(msg.name);
+          checkAndResume();
+        }
+
+        /* 🤖 AI ANSWER SYNC */
+        if (msg.action === 'AI_ANSWER_START') {
+          isAIspeakingRef.current = true;
+          const primaryVideo = videoRefs.current[primaryLang]?.current || Object.values(videoRefs.current).find(r => r.current)?.current;
+          const isPlaying = classStarted && primaryVideo && !primaryVideo.paused;
+
+          if (isPlaying) {
+            console.log('⏸ Pausing video: AI starts speaking');
+            Object.values(videoRefs.current).forEach(ref => ref.current && ref.current.pause());
+
+            room.localParticipant.publishData(
+              new TextEncoder().encode(
+                JSON.stringify({
+                  action: 'VIDEO_PAUSE',
+                  currentTime: primaryVideo.currentTime
+                })
+              ),
+              { reliable: true }
+            );
+          }
+        }
+
+        if (msg.action === 'AI_ANSWER_FINISHED') {
+          console.log('🤖 AI finished speaking');
+          isAIspeakingRef.current = false;
+          checkAndResume();
         }
 
         // auto hide popup
