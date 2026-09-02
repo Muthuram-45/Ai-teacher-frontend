@@ -21,7 +21,7 @@ export default function StudentTextDoubt() {
                     id: Date.now() + '-' + Math.random().toString(36).substring(7),
                     text: text.trim(),
                     name: room.localParticipant.identity,
-                    preferredLanguage: localStorage.getItem('preferredLanguage') || 'en'
+                    preferredLanguage: new URLSearchParams(window.location.search).get('lang') || localStorage.getItem('preferredLanguage') || 'en'
                 })
             ),
             { reliable: true }

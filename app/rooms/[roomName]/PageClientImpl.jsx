@@ -3345,6 +3345,7 @@ function HandRaiseAudioNotifier({ queue, role }) {
     const notificationTimeoutRef = useRef(null);
     const activeTimeoutLeadRef = useRef(null);
     const hasSpokenBatchMsg = useRef(false);
+    const [trigger, setTrigger] = useState(0);
 
     useEffect(() => {
         if (role !== "teacher") return;
@@ -3377,10 +3378,19 @@ function HandRaiseAudioNotifier({ queue, role }) {
         // ⭐ Special Case: 5+ Students (Batch Announcement)
         if (queue.length >= 5 && !hasSpokenBatchMsg.current) {
             hasSpokenBatchMsg.current = true;
-            const lang = localStorage.getItem('preferredLanguage') || 'en';
-            const txt = lang === 'ta'
-                ? "Niraiya students hand raise pannirukkeenga, so na ippo session conclude pannittu unga questions ellathukkum answer pandren."
-                : "As several students have raised doubts, I will now conclude the session and proceed to clarify each of your questions.";
+            const lang = new URLSearchParams(window.location.search).get('lang') || localStorage.getItem('preferredLanguage') || 'en';
+            let txt = "As several students have raised doubts, I will now conclude the session and proceed to clarify each of your questions.";
+            if (lang === 'ta') {
+                txt = "Niraiya students hand raise pannirukkeenga, so na ippo session conclude pannittu unga questions ellathukkum answer pandren.";
+            } else if (lang === 'te') {
+                txt = "Chala mandi students hand raise chesaru, kabatti nenu ippudu session conclude chesi mi questions annitikii answer isthanu.";
+            } else if (lang === 'hi') {
+                txt = "Kayi students ne hand raise kiya hai, isliye main ab session conclude karke aapke questions ka answer dunga.";
+            } else if (lang === 'ml') {
+                txt = "Orupaadu students hand raise cheythittund, athukond njan ippo session conclude cheythitt ningalude questions ellathinnum answer cheyyam.";
+            } else if (lang === 'kn') {
+                txt = "Tumba jana students hand raise madiddare, addekke nanu iga session conclude madi nimma questions ellakke answer maduttene.";
+            }
             speakText(txt).catch((err) => console.error("TTS Error:", err));
             if (room) {
                 room.localParticipant.publishData(
@@ -3395,11 +3405,14 @@ function HandRaiseAudioNotifier({ queue, role }) {
 
         // Regular individual notifications (Sequential)
         if (queue.length > 0 && queue.length < 5) {
-            const currentLead = queue[0];
-            const currentName = currentLead?.name || currentLead; // Handle both object and string formats
+            const currentLead = queue.find(item => {
+                const name = item?.name || item;
+                return !notifiedIdentities.current.has(name);
+            });
 
-            // Only notify if we haven't notified this person in this "session"
-            if (currentName && !notifiedIdentities.current.has(currentName)) {
+            if (currentLead) {
+                const currentName = currentLead?.name || currentLead; // Handle both object and string formats
+
                 // If there's already a timeout running for a DIFFERENT lead, clear it
                 if (activeTimeoutLeadRef.current !== currentName && notificationTimeoutRef.current) {
                     clearTimeout(notificationTimeoutRef.current);
@@ -3412,10 +3425,19 @@ function HandRaiseAudioNotifier({ queue, role }) {
                     notificationTimeoutRef.current = setTimeout(() => {
                         if (!notifiedIdentities.current.has(currentName)) {
                             notifiedIdentities.current.add(currentName);
-                            const lang = currentLead?.lang || localStorage.getItem('preferredLanguage') || 'en';
-                            const txt = lang === 'ta'
-                                ? `${currentName}, neenga hand raise pannirukkeenga. Edhavadhu doubt irukka? Iruntha, keezha irukka 'Ask a Doubt' button click panni question submit pannunga.`
-                                : `${currentName}, you raised your hand. Do you have any doubts? If so, please click the ‘Ask a Doubt’ button to submit your question.`;
+                            const lang = currentLead?.lang || new URLSearchParams(window.location.search).get('lang') || localStorage.getItem('preferredLanguage') || 'en';
+                            let txt = `${currentName}, you raised your hand. Do you have any doubts? If so, please click the ‘Ask a Doubt’ button to submit your question.`;
+                            if (lang === 'ta') {
+                                txt = `${currentName}, neenga hand raise pannirukkeenga. Edhavadhu doubt irukka? Iruntha, keezha irukka 'Ask a Doubt' button click panni question submit pannunga.`;
+                            } else if (lang === 'te') {
+                                txt = `${currentName}, meeru hand raise chesaru. Meeku emaina doubt unda? Unte, dayachesi 'Ask a Doubt' button click chesi mi question submit cheyandi.`;
+                            } else if (lang === 'hi') {
+                                txt = `${currentName}, aapne hand raise kiya hai. Kya aapko koi doubt hai? Agar haan, toh kripaya 'Ask a Doubt' button par click karke apna question submit karein.`;
+                            } else if (lang === 'ml') {
+                                txt = `${currentName}, ningal hand raise cheythittund. Ningalkk enthenkilum doubt undo? Undenkil, dayavayi 'Ask a Doubt' button click cheyth ningalude question submit cheyyuka.`;
+                            } else if (lang === 'kn') {
+                                txt = `${currentName}, nivu hand raise madiddira. Nimage enadaru doubt idedya? Iddare, dayavittu 'Ask a Doubt' button click madi nimma question submit madi.`;
+                            }
 
                             speakText(txt, { skipTranslation: true }).catch((err) => console.error("TTS Error:", err));
                             if (room) {
@@ -3429,7 +3451,8 @@ function HandRaiseAudioNotifier({ queue, role }) {
                         }
                         notificationTimeoutRef.current = null;
                         activeTimeoutLeadRef.current = null;
-                    }, 2000);
+                        setTrigger(t => t + 1);
+                    }, 3000);
                 }
             }
         }
@@ -3439,7 +3462,7 @@ function HandRaiseAudioNotifier({ queue, role }) {
             // because that might delay notifications indefinitely if many people join.
             // But we SHOULD clear on unmount.
         };
-    }, [queue, role, room]);
+    }, [queue, role, room, trigger]);
 
     // Unmount cleanup
     useEffect(() => {

@@ -49,7 +49,7 @@ function splitIntoChunks(text, maxLen = 200) {
 export async function speakText(text, options = {}) {
     if (!text) return;
 
-    const preferredLanguage = typeof window !== 'undefined' ? localStorage.getItem('preferredLanguage') || 'en' : 'en';
+    const preferredLanguage = typeof window !== 'undefined' ? (new URLSearchParams(window.location.search).get('lang') || localStorage.getItem('preferredLanguage') || 'en') : 'en';
 
     // 🌐 Automatically translate hardcoded UI text to the user's preferred language before speaking
     let finalSpeechText = text;
@@ -134,7 +134,7 @@ async function playRecordableChunk(text, audioContext, destinationNode) {
     try {
         console.log("🚀 Starting Streamed Synthesis...");
 
-        const preferredLanguage = typeof window !== 'undefined' ? localStorage.getItem('preferredLanguage') || 'en' : 'en';
+        const preferredLanguage = typeof window !== 'undefined' ? (new URLSearchParams(window.location.search).get('lang') || localStorage.getItem('preferredLanguage') || 'en') : 'en';
 
         // 🔍 Check if we should use trained voice or default (Google TTS)
         let activeVoice = cachedActiveVoice;
@@ -235,7 +235,7 @@ async function playRecordableChunk(text, audioContext, destinationNode) {
         const chunks = splitIntoChunks(text, 200);
         console.log(`🔊 Google TTS fallback: speaking ${chunks.length} chunk(s)`);
 
-        const preferredLanguage = typeof window !== 'undefined' ? localStorage.getItem('preferredLanguage') || 'en' : 'en';
+        const preferredLanguage = typeof window !== 'undefined' ? (new URLSearchParams(window.location.search).get('lang') || localStorage.getItem('preferredLanguage') || 'en') : 'en';
 
         let successCount = 0;
         for (const chunk of chunks) {
@@ -279,7 +279,7 @@ function fallbackToBrowserTTS(text) {
     return new Promise((resolve) => {
         if (typeof window === 'undefined' || !window.speechSynthesis) return resolve();
 
-        const preferredLanguage = localStorage.getItem('preferredLanguage') || 'en';
+        const preferredLanguage = new URLSearchParams(window.location.search).get('lang') || localStorage.getItem('preferredLanguage') || 'en';
 
         // Cancel any existing speech
         window.speechSynthesis.cancel();

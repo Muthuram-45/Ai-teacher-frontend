@@ -29,7 +29,7 @@ export default function StudentVoiceDoubt() {
             action: 'STUDENT_DOUBT',
             text,
             name: room.localParticipant.identity,
-            preferredLanguage: localStorage.getItem('preferredLanguage') || 'en'
+            preferredLanguage: new URLSearchParams(window.location.search).get('lang') || localStorage.getItem('preferredLanguage') || 'en'
           })
         ),
         { reliable: true }
