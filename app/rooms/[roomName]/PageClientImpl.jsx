@@ -1790,6 +1790,26 @@ function RoomContent() {
     }
     role = (typeof role === 'string' ? role.toLowerCase() : "");
 
+    // 📺 Late Joiner Video Sync (Student Side)
+    useEffect(() => {
+        if (role !== "student") return;
+        const teacher = participants.find((p) => {
+            try { return JSON.parse(p.metadata || "{}").role === "teacher"; }
+            catch { return false; }
+        });
+        if (teacher) {
+            let hasVideo = false;
+            teacher.videoTrackPublications.forEach((pub) => {
+                if (pub.trackName && pub.trackName.startsWith('class-video-')) {
+                    hasVideo = true;
+                }
+            });
+            if (hasVideo) {
+                setTeacherClassStarted(true);
+            }
+        }
+    }, [participants, role]);
+
     // Polling for Waiting Students (Teacher Only)
     useEffect(() => {
         if (role !== "teacher" || !room?.name) return;
