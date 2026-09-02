@@ -70,7 +70,25 @@ export default function StudentQuizView({
   const [showSubmitConfirm, setShowSubmitConfirm] = useState(false);
   const lastViolationTimeRef = useRef(0);
 
-  const questions = quiz.questions || [];
+  const getDisplayQuestions = () => {
+    const rawQuestions = quiz.questions || [];
+    let lang = 'en';
+    if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search);
+      lang = urlParams.get('lang') || localStorage.getItem('preferredLanguage') || 'en';
+    }
+    
+    return rawQuestions.map(q => {
+      if (lang === 'en' || !q.translations || !q.translations[lang]) return q;
+      return {
+        ...q,
+        question: q.translations[lang].question || q.question,
+        options: q.translations[lang].options || q.options
+      };
+    });
+  };
+
+  const questions = getDisplayQuestions();
   const isLastQuestion = currentIndex === questions.length - 1;
 
   // ─── Phase 1: Fullscreen Control ───
@@ -1582,7 +1600,10 @@ export default function StudentQuizView({
               </h2>
               {questions.map((q, idx) => {
                 const studentAnsIdx = results.studentAnswers[idx];
-                const isCorrect = studentAnsIdx === q.correctAnswer;
+                const serverResult = results.results ? results.results[idx] : null;
+                const correctAnsIdx = serverResult ? serverResult.correctAnswer : q.correctAnswer;
+                const isCorrect = studentAnsIdx === correctAnsIdx;
+                
                 return (
                   <div key={idx} className="glass-card" style={{
                     padding: "24px",
@@ -1598,7 +1619,7 @@ export default function StudentQuizView({
                         let bgColor = "transparent";
                         let icon = null;
 
-                        if (optIdx === q.correctAnswer) {
+                        if (optIdx === correctAnsIdx) {
                           borderColor = "#10b981";
                           bgColor = "rgba(16, 185, 129, 0.1)";
                           icon = "✅";

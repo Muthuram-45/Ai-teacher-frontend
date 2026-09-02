@@ -261,11 +261,16 @@ export default function TeacherVideoController({
   /* ---------------- QUIZ GENERATION ---------------- */
   const handleQuizRequest = async () => {
     setQuizLoading(true);
-    setShowQuizPopup(false);
-    if (onGenerateQuiz) {
-      await onGenerateQuiz();
+    try {
+      if (onGenerateQuiz) {
+        await onGenerateQuiz();
+      }
+      setShowQuizPopup(false);
+    } catch (e) {
+      console.error("Failed to generate quiz", e);
+    } finally {
+      setQuizLoading(false);
     }
-    setQuizLoading(false);
   };
 
   /* ---------------- LIVEKIT DATA ---------------- */
@@ -1039,22 +1044,28 @@ export default function TeacherVideoController({
               {classStarted && videoEnded && (
                 <button
                   onClick={handleQuizRequest}
+                  disabled={quizLoading}
                   style={{
                     width: '100%',
                     padding: '10px',
                     fontWeight: 'bold',
-                    background: '#2196F3',
+                    background: quizLoading ? '#4CAF50' : '#2196F3',
                     color: '#fff',
                     borderRadius: 8,
                     border: 'none',
-                    cursor: 'pointer',
+                    cursor: quizLoading ? 'not-allowed' : 'pointer',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
                     gap: '8px',
+                    opacity: quizLoading ? 0.7 : 1
                   }}
                 >
-                  📝 Generate AI Quiz
+                  {quizLoading ? (
+                    <><span style={{ animation: 'tqSpin 1s linear infinite' }}>⏳</span> Generating Quiz...</>
+                  ) : (
+                    "📝 Generate AI Quiz"
+                  )}
                 </button>
               )}
             </div>
