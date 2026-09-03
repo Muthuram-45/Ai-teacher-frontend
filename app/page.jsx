@@ -31,14 +31,14 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [isClient, setIsClient] = useState(false);
   const [availableVoices, setAvailableVoices] = useState([]);
-  const [selectedVoice, setSelectedVoice] = useState('reference_voice.wav');
+  const [selectedVoice, setSelectedVoice] = useState('Female');
   const [showRejoinPopup, setShowRejoinPopup] = useState(false);
 
   // Video Generation State
   const [videoLanguages, setVideoLanguages] = useState(['ta', 'hi', 'ml', 'te', 'kn']);
   const [videoDuration, setVideoDuration] = useState(5);
   const [videoVoices, setVideoVoices] = useState([]);
-  const [selectedVideoVoice, setSelectedVideoVoice] = useState('');
+  const [selectedVideoVoice, setSelectedVideoVoice] = useState('Female');
   const [isGeneratingVideo, setIsGeneratingVideo] = useState(false);
   const [videoProgress, setVideoProgress] = useState(0);
   const [generatedVideo, setGeneratedVideo] = useState(null);
@@ -586,9 +586,8 @@ export default function Home() {
                         className="inputTight"
                         disabled={isGeneratingVideo}
                       >
-                        <option value="reference_voice.wav">Default Voice</option>
+                        <option value="" disabled>Select Voice</option>
                         {availableVoices
-                          .filter(v => v !== 'reference_voice.wav')
                           .map(v => (
                             <option key={v} value={v}>
                               {v.replace('.wav', '').replace(/_/g, ' ')}
@@ -679,12 +678,8 @@ export default function Home() {
                           className="inputTight"
                           disabled={isGeneratingVideo}
                         >
-                          <option value="">Default Voice</option>
-                          {videoVoices.map(v => (
-                            <option key={v.voiceId} value={v.voiceId}>
-                              {v.name || v.voiceId}
-                            </option>
-                          ))}
+                          <option value="Female">Female</option>
+                          <option value="Male">Male</option>
                         </select>
                       </div>
                     </div>
