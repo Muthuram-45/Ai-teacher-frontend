@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 
 import { TbBrandZoom } from "react-icons/tb";
 import { MdContentCopy } from "react-icons/md";
-import { BACKEND_URL } from './lib/config';
+import { BACKEND_URL, VIDEOGEN_URL } from './lib/config';
 import '../styles/Page.css'
 
 export default function Home() {
@@ -34,6 +34,101 @@ export default function Home() {
   const [selectedVoice, setSelectedVoice] = useState('reference_voice.wav');
   const [showRejoinPopup, setShowRejoinPopup] = useState(false);
 
+  // Video Generation State
+  const [videoLanguages, setVideoLanguages] = useState(['ta', 'hi', 'ml', 'te', 'kn']);
+  const [videoDuration, setVideoDuration] = useState(5);
+  const [videoVoices, setVideoVoices] = useState([]);
+  const [selectedVideoVoice, setSelectedVideoVoice] = useState('');
+  const [isGeneratingVideo, setIsGeneratingVideo] = useState(false);
+  const [videoProgress, setVideoProgress] = useState(0);
+  const [generatedVideo, setGeneratedVideo] = useState(null);
+  const [videoError, setVideoError] = useState(null);
+
+  // Fetch video voices from videogenerator
+  const fetchVideoVoices = async () => {
+    try {
+      const resp = await fetch(`${BACKEND_URL}/api/video-voices`);
+      const data = await resp.json();
+      if (data.success && data.voices) setVideoVoices(data.voices);
+    } catch (e) {
+      console.error("Failed to fetch video voices:", e);
+    }
+  };
+
+  // Generate Teaching Video (one-shot)
+  const handleGenerateVideo = async () => {
+    if (!className.trim() || !topic.trim()) {
+      alert('Please enter both Class Name and Topic before generating a video.');
+      return;
+    }
+
+    setIsGeneratingVideo(true);
+    setVideoProgress(0);
+    setGeneratedVideo(null);
+    setVideoError(null);
+
+    // Simulate progress (the actual generation is a single long request)
+    const progressInterval = setInterval(() => {
+      setVideoProgress(prev => {
+        if (prev >= 95) return prev;
+        return prev + 1;
+      });
+    }, 2000);
+
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/generate-video`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          topic: className.trim(),
+          subTopic: topic.trim(),
+          durationMinutes: videoDuration,
+          languages: videoLanguages,
+          voiceId: selectedVideoVoice
+        })
+      });
+
+      clearInterval(progressInterval);
+      setVideoProgress(100);
+
+      const data = await response.json();
+
+      if (data.success) {
+        setGeneratedVideo(data.data);
+      } else {
+        setVideoError(data.message || data.error || 'Video generation failed');
+      }
+    } catch (err) {
+      clearInterval(progressInterval);
+      console.error('Video generation error:', err);
+      setVideoError('Failed to connect to video generation service. Make sure it is running.');
+    } finally {
+      setTimeout(() => {
+        setIsGeneratingVideo(false);
+        setVideoProgress(0);
+      }, 500);
+    }
+  };
+
+  // Force file download directly to gallery/downloads folder
+  const downloadFile = async (fileUrl, fileName) => {
+    try {
+      const response = await fetch(fileUrl);
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = fileName || 'teaching_video.mp4';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('Download error:', err);
+      window.location.href = fileUrl;
+    }
+  };
+
   useEffect(() => {
     setIsClient(true);
     // Fetch voices
@@ -51,6 +146,7 @@ export default function Home() {
       }
     };
     fetchVoices();
+    fetchVideoVoices();
   }, []);
 
   const handleVoiceChange = async (e) => {
@@ -436,64 +532,285 @@ export default function Home() {
           </button>
         </header>
 
-        <div className="panel">
+        <div className="panel" style={{ maxWidth: '960px' }}>
           {!createdRoom ? (
             <>
-              <h2 className="panelTitle" style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#fff' }}>
-                <span style={{ color: 'var(--blue)', fontSize: '24px' }}>+</span> Create a New Session
+              <h2 className="panelTitle" style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#fff', marginBottom: '20px' }}>
+                <span style={{ color: 'var(--blue)', fontSize: '24px' }}>+</span> Create & Configure Session
               </h2>
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', marginTop: '20px' }}>
-                <div className="inputGroup">
-                  <label className="inputLabel">Class Name</label>
-                  <div className="inputWrapper">
-                    <input
-                      placeholder="Eg: Python"
-                      value={className}
-                      onChange={(e) => setClassName(e.target.value)}
-                      className="inputTight"
-                    />
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))',
+                gap: '28px',
+                alignItems: 'start'
+              }}>
+                {/* Left Column: Session Info */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                  <h3 style={{ color: '#818cf8', fontSize: '14px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                    1. Session Details
+                  </h3>
+
+                  <div className="inputGroup">
+                    <label className="inputLabel">Class Name</label>
+                    <div className="inputWrapper">
+                      <input
+                        placeholder="Eg: Python"
+                        value={className}
+                        onChange={(e) => setClassName(e.target.value)}
+                        className="inputTight"
+                        disabled={isGeneratingVideo}
+                      />
+                    </div>
                   </div>
+
+                  <div className="inputGroup">
+                    <label className="inputLabel">Topic Name</label>
+                    <div className="inputWrapper">
+                      <input
+                        placeholder="Introduction to python"
+                        value={topic}
+                        onChange={(e) => setTopic(e.target.value)}
+                        className="inputTight"
+                        disabled={isGeneratingVideo}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="inputGroup">
+                    <label className="inputLabel">AI Voice (Tone)</label>
+                    <div className="inputWrapper">
+                      <select
+                        value={selectedVoice}
+                        onChange={handleVoiceChange}
+                        className="inputTight"
+                        disabled={isGeneratingVideo}
+                      >
+                        <option value="reference_voice.wav">Default Voice</option>
+                        {availableVoices
+                          .filter(v => v !== 'reference_voice.wav')
+                          .map(v => (
+                            <option key={v} value={v}>
+                              {v.replace('.wav', '').replace(/_/g, ' ')}
+                            </option>
+                          ))
+                        }
+                      </select>
+                    </div>
+                  </div>
+
+                  <button onClick={createMeeting} className="successBtn" type="button" style={{ height: '48px', marginTop: '12px', background: '#4f46e5', fontSize: '15px' }}>
+                    Create Session
+                  </button>
                 </div>
 
-                <div className="inputGroup">
-                  <label className="inputLabel">Topic Name</label>
-                  <div className="inputWrapper">
-                    <input
-                      placeholder="Introduction to python"
-                      value={topic}
-                      onChange={(e) => setTopic(e.target.value)}
-                      className="inputTight"
-                    />
+                {/* Right Column: AI Video Generation */}
+                <div style={{
+                  display: 'flex', flexDirection: 'column', gap: '16px',
+                  background: 'rgba(30, 41, 59, 0.35)', padding: '20px', borderRadius: '16px',
+                  border: '1px solid rgba(255, 255, 255, 0.08)'
+                }}>
+                  <h3 style={{ color: '#818cf8', fontSize: '14px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    🎬 2. AI Video Generation (Optional)
+                  </h3>
+
+                  {/* Additional Languages */}
+                  <div className="inputGroup">
+                    <label className="inputLabel">Additional Languages</label>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '4px' }}>
+                      {[
+                        { code: 'ta', name: 'Tamil' },
+                        { code: 'hi', name: 'Hindi' },
+                        { code: 'ml', name: 'Malayalam' },
+                        { code: 'te', name: 'Telugu' },
+                        { code: 'kn', name: 'Kannada' }
+                      ].map(lang => (
+                        <label key={lang.code} style={{
+                          display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer',
+                          background: videoLanguages.includes(lang.code) ? 'rgba(99,102,241,0.2)' : 'rgba(15,23,42,0.6)',
+                          border: videoLanguages.includes(lang.code) ? '1px solid rgba(99,102,241,0.6)' : '1px solid rgba(255,255,255,0.08)',
+                          padding: '5px 10px', borderRadius: '8px', fontSize: '12px', color: '#cbd5e1'
+                        }}>
+                          <input
+                            type="checkbox"
+                            checked={videoLanguages.includes(lang.code)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setVideoLanguages([...videoLanguages, lang.code]);
+                              } else {
+                                setVideoLanguages(videoLanguages.filter(c => c !== lang.code));
+                              }
+                            }}
+                            disabled={isGeneratingVideo}
+                            style={{ accentColor: '#6366f1' }}
+                          />
+                          {lang.name}
+                        </label>
+                      ))}
+                    </div>
                   </div>
-                </div>
 
-                <div className="inputGroup">
-                  <label className="inputLabel">AI Voice (Tone)</label>
-                  <div className="inputWrapper">
-                    <select
-                      value={selectedVoice}
-                      onChange={handleVoiceChange}
-                      className="inputTight"
+                  {/* Duration + Voice */}
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                    <div className="inputGroup">
+                      <label className="inputLabel">Duration</label>
+                      <div className="inputWrapper">
+                        <select
+                          value={videoDuration}
+                          onChange={(e) => setVideoDuration(Number(e.target.value))}
+                          className="inputTight"
+                          disabled={isGeneratingVideo}
+                        >
+                          <option value={5}>5 Mins</option>
+                          <option value={15}>15 Mins</option>
+                          <option value={30}>30 Mins</option>
+                          <option value={40}>40 Mins</option>
+                          <option value={60}>60 Mins</option>
+                        </select>
+                      </div>
+                    </div>
 
-                    >
-                      <option value="reference_voice.wav">Default Voice</option>
-                      {availableVoices
-                        .filter(v => v !== 'reference_voice.wav')
-                        .map(v => (
-                          <option key={v} value={v}>
-                            {v.replace('.wav', '').replace(/_/g, ' ')}
-                          </option>
-                        ))
-                      }
-                    </select>
-
+                    <div className="inputGroup">
+                      <label className="inputLabel">Teacher Voice</label>
+                      <div className="inputWrapper">
+                        <select
+                          value={selectedVideoVoice}
+                          onChange={(e) => setSelectedVideoVoice(e.target.value)}
+                          className="inputTight"
+                          disabled={isGeneratingVideo}
+                        >
+                          <option value="">Default Voice</option>
+                          {videoVoices.map(v => (
+                            <option key={v.voiceId} value={v.voiceId}>
+                              {v.name || v.voiceId}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
                   </div>
-                </div>
 
-                <button onClick={createMeeting} className="successBtn" type="button" style={{ height: '52px', marginTop: '10px', background: '#4f46e5' }}>
-                  Create Session
-                </button>
+                  {/* Generate Video Button */}
+                  <button
+                    onClick={handleGenerateVideo}
+                    type="button"
+                    disabled={isGeneratingVideo || !className.trim() || !topic.trim()}
+                    style={{
+                      width: '100%', height: '44px', border: 'none', borderRadius: '12px',
+                      background: isGeneratingVideo
+                        ? 'linear-gradient(135deg, #4338ca, #6366f1)'
+                        : 'linear-gradient(135deg, #7c3aed, #6366f1)',
+                      color: '#fff', fontWeight: '700', fontSize: '13px', cursor: 'pointer',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+                      opacity: (!className.trim() || !topic.trim()) ? 0.5 : 1
+                    }}
+                  >
+                    {isGeneratingVideo ? (
+                      <>
+                        <span style={{
+                          width: '16px', height: '16px', border: '2px solid rgba(255,255,255,0.3)',
+                          borderTopColor: '#fff', borderRadius: '50%',
+                          animation: 'spin 1s linear infinite', display: 'inline-block'
+                        }} />
+                        Generating Video... ({videoProgress}%)
+                      </>
+                    ) : (
+                      <>
+                        🎬 Generate Video
+                      </>
+                    )}
+                  </button>
+
+                  {/* Progress Bar */}
+                  {isGeneratingVideo && (
+                    <div style={{
+                      width: '100%', height: '4px', background: 'rgba(255,255,255,0.08)',
+                      borderRadius: '4px', overflow: 'hidden'
+                    }}>
+                      <div style={{
+                        width: `${videoProgress}%`, height: '100%',
+                        background: 'linear-gradient(90deg, #6366f1, #818cf8)',
+                        transition: 'width 0.5s ease', borderRadius: '4px'
+                      }} />
+                    </div>
+                  )}
+
+                  {/* Error */}
+                  {videoError && (
+                    <div style={{
+                      padding: '10px 14px', borderRadius: '8px',
+                      background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)',
+                      color: '#fca5a5', fontSize: '12px'
+                    }}>
+                      ❌ {videoError}
+                    </div>
+                  )}
+
+                  {/* Generated Video Result */}
+                  {generatedVideo && (
+                    <div style={{
+                      padding: '14px', borderRadius: '14px',
+                      background: 'rgba(16,185,129,0.06)', border: '1px solid rgba(16,185,129,0.3)',
+                      marginTop: '4px'
+                    }}>
+                      <div style={{
+                        color: '#34d399', fontSize: '13px', fontWeight: '700', marginBottom: '8px',
+                        display: 'flex', alignItems: 'center', justifyContent: 'space-between'
+                      }}>
+                        <span>✅ Video Generated Successfully!</span>
+                      </div>
+
+                      {/* Video Player */}
+                      <video
+                        controls
+                        style={{ width: '100%', borderRadius: '10px', marginBottom: '10px', background: '#000' }}
+                        src={`${VIDEOGEN_URL}${generatedVideo.videoUrl}`}
+                      />
+
+                      {/* Main Download Video Button */}
+                      <button
+                        onClick={() => downloadFile(`${VIDEOGEN_URL}${generatedVideo.videoUrl}`, `${className || 'teaching'}_video.mp4`)}
+                        type="button"
+                        style={{
+                          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+                          width: '100%', padding: '10px 16px', borderRadius: '10px',
+                          background: 'linear-gradient(135deg, #10b981, #059669)',
+                          color: '#ffffff', fontWeight: '700', fontSize: '13px',
+                          border: 'none', cursor: 'pointer', marginBottom: '10px',
+                          boxShadow: '0 4px 14px rgba(16,185,129,0.3)', transition: 'all 0.2s ease'
+                        }}
+                      >
+                        📥 Download Main Video (MP4)
+                      </button>
+
+                      {/* Multi-Language Download Options */}
+                      {generatedVideo.videos && Object.keys(generatedVideo.videos).length > 1 && (
+                        <div>
+                          <span style={{ fontSize: '11px', color: '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '6px' }}>
+                            Other Language MP4 Downloads:
+                          </span>
+                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                            {Object.entries(generatedVideo.videos).map(([code, video]) => (
+                              <button
+                                key={code}
+                                onClick={() => downloadFile(`${VIDEOGEN_URL}${video.url}`, `${className || 'teaching'}_${code}.mp4`)}
+                                type="button"
+                                style={{
+                                  padding: '5px 12px', borderRadius: '6px', fontSize: '11px', fontWeight: '600',
+                                  background: code === 'en' ? 'rgba(99,102,241,0.3)' : 'rgba(30,41,59,0.8)',
+                                  border: '1px solid rgba(255,255,255,0.15)', color: '#e2e8f0',
+                                  cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '4px'
+                                }}
+                              >
+                                📥 {video.language}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
               </div>
             </>
           ) : (
