@@ -428,10 +428,44 @@ export default function TeacherVideoController({
         console.error('Invalid data message', e);
       }
     };
+    const handleLocalAIStart = () => {
+      isAIspeakingRef.current = true;
+      const primaryVideo = videoRefs.current[primaryLang]?.current || Object.values(videoRefs.current).find(r => r.current)?.current;
+      const isPlaying = classStarted && primaryVideo && !primaryVideo.paused;
+
+      if (isPlaying) {
+        console.log('⏸ Pausing video: AI starts speaking (local event)');
+        Object.values(videoRefs.current).forEach(ref => ref.current && ref.current.pause());
+
+        room.localParticipant.publishData(
+          new TextEncoder().encode(
+            JSON.stringify({
+              action: 'VIDEO_PAUSE',
+              currentTime: primaryVideo.currentTime
+            })
+          ),
+          { reliable: true }
+        );
+      }
+    };
+
+    const handleLocalAIFinish = () => {
+      console.log('🤖 AI finished speaking (local event)');
+      isAIspeakingRef.current = false;
+      checkAndResume();
+    };
+
+    window.addEventListener('LOCAL_AI_ANSWER_START', handleLocalAIStart);
+    window.addEventListener('LOCAL_AI_ANSWER_FINISHED', handleLocalAIFinish);
 
     room.on('dataReceived', handleData);
-    return () => room.off('dataReceived', handleData);
-  }, [room, classStarted, recordingAudioContext, recordingDestNode]);
+    return () => {
+      room.off('dataReceived', handleData);
+      window.removeEventListener('LOCAL_AI_ANSWER_START', handleLocalAIStart);
+      window.removeEventListener('LOCAL_AI_ANSWER_FINISHED', handleLocalAIFinish);
+      if (resumeTimerRef.current) clearTimeout(resumeTimerRef.current);
+    };
+  }, [room, classStarted, recordingAudioContext, recordingDestNode, primaryLang]);
 
 
 

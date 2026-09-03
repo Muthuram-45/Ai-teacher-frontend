@@ -152,10 +152,11 @@ export default function VoiceDoubt() {
           const studentName = localParticipant.identity || "Student";
           const langCode = new URLSearchParams(window.location.search).get('lang') || localStorage.getItem('preferredLanguage') || 'en';
           const reminderMessages = {
-            ta: `${studentName}, unga microphone on-la irukku. Ungalukku edhaavadhu doubt irundha, please unga question-a kelunga. Doubt illaina, unga microphone-a off pannunga.`,
-            hi: `${studentName}, aapka microphone on hai. Agar aapka koi doubt hai, toh please apna question poochiye. Agar doubt nahi hai, toh apna microphone off kar dijiye.`,
-            kn: `${studentName}, nimma microphone on ide. Nimge yavudadru doubt idre, dayavittu nimma question kelri. Doubt illandre, nimma microphone off maadi.`,
-            ml: `${studentName}, ningalude microphone on aanu. Ningalkku enthenkilum doubt undenkil, please ningalude question chodikkuka. Doubt illenkil, ningalude microphone off cheyyuka.`,
+            ta: `${studentName}, உங்க microphone on-ல இருக்கு. உங்களுக்கு ஏதாவது doubt இருந்தா, please உங்க question-அ கேளுங்க. Doubt இல்லைனா, உங்க microphone-அ off பண்ணுங்க.`,
+            te: `${studentName}, మీ microphone on లో ఉంది. మీకు ఏదైనా doubt ఉంటే, please మీ question అడగండి. Doubt లేకపోతే, మీ microphone off చేయండి.`,
+            hi: `${studentName}, आपका microphone on है. अगर आपका कोई doubt है, तो please अपना question पूछिए. अगर doubt नहीं है, तो अपना microphone off कर दीजिए.`,
+            kn: `${studentName}, ನಿಮ್ಮ microphone on ಇದೆ. ನಿಮಗೆ ಯಾವುದಾದರು doubt ಇದ್ರೆ, ದಯವಿಟ್ಟು ನಿಮ್ಮ question ಕೇಳ್ರಿ. Doubt ಇಲ್ಲಾಂದ್ರೆ, ನಿಮ್ಮ microphone off ಮಾಡಿ.`,
+            ml: `${studentName}, നിങ്ങളുടെ microphone on ആണ്. നിങ്ങൾക്ക് എന്തെങ്കിലും doubt ഉണ്ടെങ്കിൽ, please നിങ്ങളുടെ question ചോദിക്കുക. Doubt ഇല്ലെങ്കിൽ, നിങ്ങളുടെ microphone off ചെയ്യുക.`,
             en: `${studentName}, your microphone is on. If you have a question, please ask it. If you don't have a doubt, please turn off your microphone.`
           };
           

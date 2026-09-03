@@ -2505,6 +2505,7 @@ function RoomContent() {
                 new TextEncoder().encode(JSON.stringify({ action: "AI_ANSWER_START" })),
                 { reliable: true }
             );
+            window.dispatchEvent(new CustomEvent('LOCAL_AI_ANSWER_START'));
         }
 
         while (doubtQueueRef.current.length > 0) {
@@ -2527,6 +2528,7 @@ function RoomContent() {
                 new TextEncoder().encode(JSON.stringify({ action: "AI_ANSWER_FINISHED" })),
                 { reliable: true }
             );
+            window.dispatchEvent(new CustomEvent('LOCAL_AI_ANSWER_FINISHED'));
         }
     };
 
@@ -3395,9 +3397,33 @@ function HandRaiseAudioNotifier({ queue, role }) {
     const activeTimeoutLeadRef = useRef(null);
     const hasSpokenBatchMsg = useRef(false);
     const [trigger, setTrigger] = useState(0);
+    const isAIspeakingLocalRef = useRef(false);
+
+    useEffect(() => {
+        const handleStart = () => { isAIspeakingLocalRef.current = true; };
+        const handleEnd = () => { 
+            isAIspeakingLocalRef.current = false; 
+            setTrigger(t => t + 1); 
+        };
+        window.addEventListener('LOCAL_AI_ANSWER_START', handleStart);
+        window.addEventListener('LOCAL_AI_ANSWER_FINISHED', handleEnd);
+        return () => {
+            window.removeEventListener('LOCAL_AI_ANSWER_START', handleStart);
+            window.removeEventListener('LOCAL_AI_ANSWER_FINISHED', handleEnd);
+        };
+    }, []);
 
     useEffect(() => {
         if (role !== "teacher") return;
+        if (isAIspeakingLocalRef.current) return;
+
+        // Clean up notifiedIdentities for students who lowered their hands (not in queue anymore)
+        const currentQueueNames = new Set(queue.map(item => item?.name || item));
+        for (const name of notifiedIdentities.current) {
+            if (!currentQueueNames.has(name)) {
+                notifiedIdentities.current.delete(name);
+            }
+        }
 
         // Cleanup: If queue is empty, we don't clear the 'notified' set immediately
         // to prevent repeats if someone spam clicks. We only clear it if the queue stays empty
@@ -3430,15 +3456,15 @@ function HandRaiseAudioNotifier({ queue, role }) {
             const lang = new URLSearchParams(window.location.search).get('lang') || localStorage.getItem('preferredLanguage') || 'en';
             let txt = "As several students have raised doubts, I will now conclude the session and proceed to clarify each of your questions.";
             if (lang === 'ta') {
-                txt = "Niraiya students hand raise pannirukkeenga, so na ippo session conclude pannittu unga questions ellathukkum answer pandren.";
+                txt = "நிறைய students hand raise பண்ணிருக்கீங்க, so நான் இப்போ session conclude பண்ணிட்டு உங்க questions எல்லாத்துக்கும் answer பண்றேன்.";
             } else if (lang === 'te') {
-                txt = "Chala mandi students hand raise chesaru, kabatti nenu ippudu session conclude chesi mi questions annitikii answer isthanu.";
+                txt = "చాలా మంది students hand raise చేసారు, కాబట్టి నేను ఇప్పుడు session conclude చేసి మీ questions అన్నిటికీ answer ఇస్తాను.";
             } else if (lang === 'hi') {
-                txt = "Kayi students ne hand raise kiya hai, isliye main ab session conclude karke aapke questions ka answer dunga.";
+                txt = "कई students ने hand raise किया है, इसलिए मैं अब session conclude करके आपके questions का answer दूंगा.";
             } else if (lang === 'ml') {
-                txt = "Orupaadu students hand raise cheythittund, athukond njan ippo session conclude cheythitt ningalude questions ellathinnum answer cheyyam.";
+                txt = "ഒരുപാട് students hand raise ചെയ്തിട്ടുണ്ട്, അതുകൊണ്ട് ഞാൻ ഇപ്പോൾ session conclude ചെയ്തിട്ട് നിങ്ങളുടെ questions എല്ലാത്തിനും answer ചെയ്യാം.";
             } else if (lang === 'kn') {
-                txt = "Tumba jana students hand raise madiddare, addekke nanu iga session conclude madi nimma questions ellakke answer maduttene.";
+                txt = "ತುಂಬಾ ಜನ students hand raise ಮಾಡಿದ್ದಾರೆ, ಅದಕ್ಕೆ ನಾನು ಈಗ session conclude ಮಾಡಿ ನಿಮ್ಮ questions ಎಲ್ಲದಕ್ಕೂ answer ಮಾಡುತ್ತೇನೆ.";
             }
             speakText(txt).catch((err) => console.error("TTS Error:", err));
             if (room) {
@@ -3454,14 +3480,10 @@ function HandRaiseAudioNotifier({ queue, role }) {
 
         // Regular individual notifications (Sequential)
         if (queue.length > 0 && queue.length < 5) {
-            const currentLead = queue.find(item => {
-                const name = item?.name || item;
-                return !notifiedIdentities.current.has(name);
-            });
+            const currentLead = queue[0]; // Strictly only process the first person in line
+            const currentName = currentLead?.name || currentLead; // Handle both object and string formats
 
-            if (currentLead) {
-                const currentName = currentLead?.name || currentLead; // Handle both object and string formats
-
+            if (!notifiedIdentities.current.has(currentName)) {
                 // If there's already a timeout running for a DIFFERENT lead, clear it
                 if (activeTimeoutLeadRef.current !== currentName && notificationTimeoutRef.current) {
                     clearTimeout(notificationTimeoutRef.current);
@@ -3477,15 +3499,15 @@ function HandRaiseAudioNotifier({ queue, role }) {
                             const lang = currentLead?.lang || new URLSearchParams(window.location.search).get('lang') || localStorage.getItem('preferredLanguage') || 'en';
                             let txt = `${currentName}, you raised your hand. Do you have any doubts? If so, please click the ‘Ask a Doubt’ button to submit your question.`;
                             if (lang === 'ta') {
-                                txt = `${currentName}, neenga hand raise pannirukkeenga. Edhavadhu doubt irukka? Iruntha, keela irukka 'Ask a Doubt' button click panni question submit pannunga.`;
+                                txt = `${currentName}, நீங்க hand raise பண்ணிருக்கீங்க. ஏதாவது doubt இருக்கா? இருந்தா, கீழ இருக்க 'Ask a Doubt' button click பண்ணி question submit பண்ணுங்க.`;
                             } else if (lang === 'te') {
-                                txt = `${currentName}, meeru hand raise chesaru. Meeku emaina doubt unda? Unte, dayachesi 'Ask a Doubt' button click chesi mi question submit cheyandi.`;
+                                txt = `${currentName}, మీరు hand raise చేసారు. మీకు ఏమైనా doubt ఉందా? ఉంటే, దయచేసి 'Ask a Doubt' button click చేసి మీ question submit చేయండి.`;
                             } else if (lang === 'hi') {
-                                txt = `${currentName}, aapne hand raise kiya hai. Kya aapko koi doubt hai? Agar haan, toh kripaya 'Ask a Doubt' button par click karke apna question submit karein.`;
+                                txt = `${currentName}, आपने hand raise किया है. क्या आपको कोई doubt है? अगर हाँ, तो कृपया 'Ask a Doubt' button पर click करके अपना question submit करें.`;
                             } else if (lang === 'ml') {
-                                txt = `${currentName}, ningal hand raise cheythittund. Ningalkk enthenkilum doubt undo? Undenkil, dayavayi 'Ask a Doubt' button click cheyth ningalude question submit cheyyuka.`;
+                                txt = `${currentName}, നിങ്ങൾ hand raise ചെയ്തിട്ടുണ്ട്. നിങ്ങൾക്ക് എന്തെങ്കിലും doubt ഉണ്ടോ? ഉണ്ടെങ്കിൽ, ദയവായി 'Ask a Doubt' button click ചെയ്ത് നിങ്ങളുടെ question submit ചെയ്യുക.`;
                             } else if (lang === 'kn') {
-                                txt = `${currentName}, nivu hand raise madiddira. Nimage enadaru doubt idedya? Iddare, dayavittu 'Ask a Doubt' button click madi nimma question submit madi.`;
+                                txt = `${currentName}, ನೀವು hand raise ಮಾಡಿದ್ದೀರಾ. ನಿಮಗೆ ಏನಾದರೂ doubt ಇದೆಯಾ? ಇದ್ದರೆ, ದಯವಿಟ್ಟು 'Ask a Doubt' button click ಮಾಡಿ ನಿಮ್ಮ question submit ಮಾಡಿ.`;
                             }
 
                             speakText(txt, { skipTranslation: true }).catch((err) => console.error("TTS Error:", err));

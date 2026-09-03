@@ -84,12 +84,16 @@ export async function speakText(text, options = {}) {
         console.log(`🎙️ AI Voice Processing (queued): "${finalSpeechText.substring(0, 50)}${finalSpeechText.length > 50 ? '...' : ''}"`);
 
         return (async () => {
-            try {
-                await playRecordableChunk(finalSpeechText, audioContext, destinationNode, options);
-            } catch (err) {
-                if (!stopRequested) {
-                    console.warn("⚠️ Text playback failed, falling back to browser synthesis:", err);
-                    await fallbackToBrowserTTS(finalSpeechText, options).catch(() => { });
+            const chunks = splitIntoChunks(finalSpeechText, 200);
+            for (const chunk of chunks) {
+                if (stopRequested) break;
+                try {
+                    await playRecordableChunk(chunk, audioContext, destinationNode, options);
+                } catch (err) {
+                    if (!stopRequested) {
+                        console.warn("⚠️ Text playback failed, falling back to browser synthesis:", err);
+                        await fallbackToBrowserTTS(chunk, options).catch(() => { });
+                    }
                 }
             }
         })();
@@ -132,143 +136,38 @@ async function playRecordableChunk(text, audioContext, destinationNode, options 
     if (ctx.state === 'suspended') await ctx.resume();
 
     try {
-        console.log("🚀 Starting Streamed Synthesis...");
-
-        const preferredLanguage = options.forceLanguage || (typeof window !== 'undefined' ? (new URLSearchParams(window.location.search).get('lang') || localStorage.getItem('preferredLanguage') || 'en') : 'en');
-
-        // 🔍 Check if we should use trained voice or default (Google TTS)
-        let activeVoice = cachedActiveVoice;
-        if (!activeVoice || (Date.now() - lastVoiceCheckTime > 5000)) {
-            try {
-                const activeResp = await fetch(`${BACKEND_URL}/active-voice`);
-                const activeData = await activeResp.json();
-                activeVoice = activeData.activeVoice;
-                cachedActiveVoice = activeVoice;
-                lastVoiceCheckTime = Date.now();
-            } catch (e) {
-                console.warn("⚠️ Failed to fetch active voice, assuming default:", e);
-                activeVoice = 'reference_voice.wav';
-            }
-        }
-
-        if (activeVoice === 'reference_voice.wav') {
-            console.log("ℹ️ Default voice active - switching to Google TTS");
-            throw new Error("DEFAULT_VOICE_SELECTED");
-        }
-
-        const response = await fetch(`${PYTHON_BACKEND_URL}/synthesize`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ text })
-        });
-
-        if (!response.ok) throw new Error("Synthesis failed");
-
-        const reader = response.body.getReader();
-        let nextStartTime = ctx.currentTime + 0.1; // Small buffer to start
-
-        // Internal PCM buffer
-        let leftover = new Uint8Array(0);
-        let lastEndPromise = Promise.resolve();
-
-        while (true) {
-            if (stopRequested) {
-                reader.cancel();
-                break;
-            }
-
-            const { done, value } = await reader.read();
-            if (done) break;
-
-            // Combine with leftovers from previous read
-            const combined = new Uint8Array(leftover.length + value.length);
-            combined.set(leftover);
-            combined.set(value, leftover.length);
-
-            // We need 16-bit PCM (2 bytes per sample)
-            const numSamples = Math.floor(combined.length / 2);
-            const pcmData = new Int16Array(combined.buffer, 0, numSamples);
-
-            // Save any trailing odd byte
-            leftover = combined.slice(numSamples * 2);
-
-            if (pcmData.length === 0) continue;
-
-            // Convert to Float32
-            const floatData = new Float32Array(pcmData.length);
-            for (let i = 0; i < pcmData.length; i++) {
-                floatData[i] = pcmData[i] / 32768.0;
-            }
-
-            // Create and play buffer immediately
-            const audioBuffer = ctx.createBuffer(1, floatData.length, 24000);
-            audioBuffer.getChannelData(0).set(floatData);
-
-            const source = ctx.createBufferSource();
-            source.buffer = audioBuffer;
-            activeSource = source;
-
-            if (audioContext && destinationNode) {
-                source.connect(destinationNode);
-            }
-            source.connect(ctx.destination);
-
-            // Schedule precision timing for gapless playback
-            const startTime = Math.max(ctx.currentTime, nextStartTime);
-            source.start(startTime);
-            nextStartTime = startTime + audioBuffer.duration;
-
-            lastEndPromise = new Promise(resolve => {
-                source.onended = resolve;
-            });
-        }
-
-        if (!stopRequested) {
-            await lastEndPromise;
-        }
-
-        console.log("✅ Streaming finished");
-    } catch (err) {
-        console.warn("⚠️ Streaming failed, falling back to Google TTS:", err);
-
-        // Split text into sentence chunks ≤200 chars so Google TTS doesn't truncate
-        const chunks = splitIntoChunks(text, 200);
-        console.log(`🔊 Google TTS fallback: speaking ${chunks.length} chunk(s)`);
+        console.log(`🔊 Playing full response via Google Cloud TTS`);
 
         const preferredLanguage = typeof window !== 'undefined' ? (new URLSearchParams(window.location.search).get('lang') || localStorage.getItem('preferredLanguage') || 'en') : 'en';
 
-        let successCount = 0;
-        for (const chunk of chunks) {
-            if (stopRequested) break;
-            try {
-                // For Thanglish (Latin script), 'en-IN' sounds much more natural than 'ta' trying to read English chars
-                const ttsLang = preferredLanguage === 'ta' ? 'en-IN' : preferredLanguage;
-                const url = `${BACKEND_URL}/api/tts?text=${encodeURIComponent(chunk)}&lang=${ttsLang}`;
-                const response = await fetch(url);
-                if (!response.ok) {
-                    throw new Error(`Google TTS failed with status ${response.status}`);
-                }
-                const arrayBuffer = await response.arrayBuffer();
-                const audioBuffer = await ctx.decodeAudioData(arrayBuffer);
-
-                await new Promise((resolve) => {
-                    const source = ctx.createBufferSource();
-                    source.buffer = audioBuffer;
-                    if (audioContext && destinationNode) source.connect(destinationNode);
-                    source.connect(ctx.destination);
-                    source.onended = resolve;
-                    activeSource = source;
-                    source.start(0);
-                });
-                successCount++;
-            } catch (chunkErr) {
-                console.warn("⚠️ Chunk TTS failed:", chunkErr);
-            }
+        const ttsLang = preferredLanguage;
+        const url = `${BACKEND_URL}/api/tts`;
+        
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ text, lang: ttsLang })
+        });
+        
+        if (!response.ok) {
+            throw new Error(`Google Cloud TTS failed with status ${response.status}`);
         }
+        
+        const arrayBuffer = await response.arrayBuffer();
+        const audioBuffer = await ctx.decodeAudioData(arrayBuffer);
 
-        if (successCount === 0 && chunks.length > 0 && !stopRequested) {
-            throw new Error("All TTS proxy chunks failed");
-        }
+        await new Promise((resolve) => {
+            const source = ctx.createBufferSource();
+            source.buffer = audioBuffer;
+            if (audioContext && destinationNode) source.connect(destinationNode);
+            source.connect(ctx.destination);
+            source.onended = resolve;
+            activeSource = source;
+            source.start(0);
+        });
+
+    } catch (err) {
+        console.error("❌ Google Cloud TTS failed completely:", err);
     }
 }
 
