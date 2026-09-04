@@ -699,13 +699,13 @@ export default function Home() {
                   <button
                     onClick={handleGenerateVideo}
                     type="button"
-                    disabled={isGeneratingVideo || !className.trim() || !topic.trim()}
+                    disabled={isGeneratingVideo || !!videoInfoMessage || !className.trim() || !topic.trim()}
                     style={{
                       width: '100%', height: '44px', border: 'none', borderRadius: '12px',
-                      background: isGeneratingVideo
+                      background: isGeneratingVideo || videoInfoMessage
                         ? 'linear-gradient(135deg, #4338ca, #6366f1)'
                         : 'linear-gradient(135deg, #7c3aed, #6366f1)',
-                      color: '#fff', fontWeight: '700', fontSize: '13px', cursor: 'pointer',
+                      color: '#fff', fontWeight: '700', fontSize: '13px', cursor: (isGeneratingVideo || videoInfoMessage) ? 'not-allowed' : 'pointer',
                       display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
                       opacity: (!className.trim() || !topic.trim()) ? 0.5 : 1
                     }}
@@ -718,6 +718,10 @@ export default function Home() {
                           animation: 'spin 1s linear infinite', display: 'inline-block'
                         }} />
                         Generating Video... ({videoProgress}%)
+                      </>
+                    ) : videoInfoMessage ? (
+                      <>
+                        ⏳ Processing in Background...
                       </>
                     ) : (
                       <>
