@@ -27,7 +27,7 @@ export default function ParticipantList({ onClose, studentActivities = {} }) {
             padding: '20px',
             color: '#fff',
             boxShadow: '0 12px 40px rgba(0,0,0,0.6)',
-            zIndex: 1000,
+            zIndex: 9999,
             fontFamily: 'Inter, sans-serif'
         }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
@@ -56,7 +56,7 @@ export default function ParticipantList({ onClose, studentActivities = {} }) {
                             onMouseOver={(e) => { e.currentTarget.style.background = 'rgba(33, 150, 243, 0.4)'; }}
                             onMouseOut={(e) => { e.currentTarget.style.background = 'rgba(33, 150, 243, 0.2)'; }}
                         >
-                            ⬇ CSV Report
+                            ⬇  Report
                         </button>
                     )}
                 </div>

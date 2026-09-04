@@ -599,23 +599,6 @@ export default function TeacherVideoController({
         </div>
       )}
 
-
-      {/* 🌐 Live Translation Control */}
-      <button
-        onClick={() => {
-          alert('Live Translation feature is implemented. See Student Language Router for details.');
-        }}
-        style={{
-          position: 'absolute', right: '150px', top: '-50px',
-          padding: '8px 12px', background: 'rgba(33, 150, 243, 0.4)',
-          border: '1px solid rgba(33, 150, 243, 0.8)', color: '#fff',
-          borderRadius: '8px', cursor: 'pointer',
-          zIndex: 1000
-        }}
-      >
-        🌐 Enable Live Translation
-      </button>
-
       {/* 🎥 Buttons Container */}
       <div style={{ display: 'flex', gap: '8px', alignItems: 'center', justifyContent: 'flex-end', width: 'max-content' }}>
 
@@ -636,7 +619,7 @@ export default function TeacherVideoController({
                 gap: "4px",
                 width: "180px",
                 boxShadow: "0 8px 24px rgba(0,0,0,0.5)",
-                zIndex: 1000,
+                zIndex: 9999,
               }}
             >
               <button
