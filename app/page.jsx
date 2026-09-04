@@ -43,6 +43,7 @@ export default function Home() {
   const [videoProgress, setVideoProgress] = useState(0);
   const [generatedVideo, setGeneratedVideo] = useState(null);
   const [videoError, setVideoError] = useState(null);
+  const [videoInfoMessage, setVideoInfoMessage] = useState(null);
 
   // Fetch video voices from videogenerator
   const fetchVideoVoices = async () => {
@@ -66,6 +67,7 @@ export default function Home() {
     setVideoProgress(0);
     setGeneratedVideo(null);
     setVideoError(null);
+    setVideoInfoMessage(null);
 
     // Simulate progress (the actual generation is a single long request)
     const progressInterval = setInterval(() => {
@@ -95,7 +97,7 @@ export default function Home() {
 
       if (data.success) {
         if (data.data?.processing) {
-          setVideoError(`🎬 ${data.message || 'Video generation is processing in the background on the server.'}`);
+          setVideoInfoMessage(data.message || 'Video generation started. The server is processing in the background. Please check the video list in a few minutes.');
         } else {
           setGeneratedVideo(data.data);
         }
@@ -106,7 +108,7 @@ export default function Home() {
       clearInterval(progressInterval);
       console.error('Video generation error:', err);
       if (videoDuration >= 3 || videoLanguages.length > 2) {
-        setVideoError(`Your ${videoDuration}-minute video is rendering in the background on the cloud server. Please check the video list in a couple minutes.`);
+        setVideoInfoMessage(`Your ${videoDuration}-minute video is rendering in the background on the cloud server. Please check back in a few minutes.`);
       } else {
         setVideoError('Video generation request timed out or network disconnected. The server may still be processing your video.');
       }
@@ -735,6 +737,18 @@ export default function Home() {
                         background: 'linear-gradient(90deg, #6366f1, #818cf8)',
                         transition: 'width 0.5s ease', borderRadius: '4px'
                       }} />
+                    </div>
+                  )}
+
+                  {/* Background processing info */}
+                  {videoInfoMessage && (
+                    <div style={{
+                      padding: '12px 14px', borderRadius: '8px',
+                      background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.3)',
+                      color: '#34d399', fontSize: '12px', lineHeight: '1.5'
+                    }}>
+                      🎬 <strong>Video Generation Started!</strong><br />
+                      {videoInfoMessage}
                     </div>
                   )}
 
