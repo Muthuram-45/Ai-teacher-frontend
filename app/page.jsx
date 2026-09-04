@@ -94,7 +94,11 @@ export default function Home() {
       const data = await response.json();
 
       if (data.success) {
-        setGeneratedVideo(data.data);
+        if (data.data?.processing) {
+          setVideoError(`🎬 ${data.message || 'Video generation is processing in the background on the server.'}`);
+        } else {
+          setGeneratedVideo(data.data);
+        }
       } else {
         setVideoError(data.message || data.error || 'Video generation failed');
       }
