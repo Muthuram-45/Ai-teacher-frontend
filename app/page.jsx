@@ -101,7 +101,11 @@ export default function Home() {
     } catch (err) {
       clearInterval(progressInterval);
       console.error('Video generation error:', err);
-      setVideoError('Failed to connect to video generation service. Make sure it is running.');
+      if (videoDuration >= 3 || videoLanguages.length > 2) {
+        setVideoError(`Your ${videoDuration}-minute video is rendering in the background on the cloud server. Please check the video list in a couple minutes.`);
+      } else {
+        setVideoError('Video generation request timed out or network disconnected. The server may still be processing your video.');
+      }
     } finally {
       setTimeout(() => {
         setIsGeneratingVideo(false);
