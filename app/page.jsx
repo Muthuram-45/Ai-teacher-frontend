@@ -781,54 +781,68 @@ export default function Home() {
                         <span>✅ Video Generated Successfully!</span>
                       </div>
 
-                      {/* Video Player */}
-                      <video
-                        controls
-                        style={{ width: '100%', borderRadius: '10px', marginBottom: '10px', background: '#000' }}
-                        src={`${VIDEOGEN_URL}${generatedVideo.videoUrl}`}
-                      />
+                      {/* Helper to form valid absolute video URL */}
+                      {(() => {
+                        const getFullVideoUrl = (url) => {
+                          if (!url) return '';
+                          if (url.startsWith('http://') || url.startsWith('https://')) return url;
+                          const baseUrl = (VIDEOGEN_URL || 'https://videogenerator-backend-ws81.onrender.com').replace(/\/+$/, '');
+                          return `${baseUrl}${url.startsWith('/') ? '' : '/'}${url}`;
+                        };
 
-                      {/* Main Download Video Button */}
-                      <button
-                        onClick={() => downloadFile(`${VIDEOGEN_URL}${generatedVideo.videoUrl}`, `${className || 'teaching'}_video.mp4`)}
-                        type="button"
-                        style={{
-                          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-                          width: '100%', padding: '10px 16px', borderRadius: '10px',
-                          background: 'linear-gradient(135deg, #10b981, #059669)',
-                          color: '#ffffff', fontWeight: '700', fontSize: '13px',
-                          border: 'none', cursor: 'pointer', marginBottom: '10px',
-                          boxShadow: '0 4px 14px rgba(16,185,129,0.3)', transition: 'all 0.2s ease'
-                        }}
-                      >
-                        📥 Download Main Video (MP4)
-                      </button>
+                        return (
+                          <>
+                            {/* Video Player */}
+                            <video
+                              controls
+                              style={{ width: '100%', borderRadius: '10px', marginBottom: '10px', background: '#000' }}
+                              src={getFullVideoUrl(generatedVideo.videoUrl)}
+                            />
 
-                      {/* Multi-Language Download Options */}
-                      {generatedVideo.videos && Object.keys(generatedVideo.videos).length > 1 && (
-                        <div>
-                          <span style={{ fontSize: '11px', color: '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '6px' }}>
-                            Other Language MP4 Downloads:
-                          </span>
-                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                            {Object.entries(generatedVideo.videos).map(([code, video]) => (
-                              <button
-                                key={code}
-                                onClick={() => downloadFile(`${VIDEOGEN_URL}${video.url}`, `${className || 'teaching'}_${code}.mp4`)}
-                                type="button"
-                                style={{
-                                  padding: '5px 12px', borderRadius: '6px', fontSize: '11px', fontWeight: '600',
-                                  background: code === 'en' ? 'rgba(99,102,241,0.3)' : 'rgba(30,41,59,0.8)',
-                                  border: '1px solid rgba(255,255,255,0.15)', color: '#e2e8f0',
-                                  cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '4px'
-                                }}
-                              >
-                                📥 {video.language}
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                      )}
+                            {/* Main Download Video Button */}
+                            <button
+                              onClick={() => downloadFile(getFullVideoUrl(generatedVideo.videoUrl), `${className || 'teaching'}_video.mp4`)}
+                              type="button"
+                              style={{
+                                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+                                width: '100%', padding: '10px 16px', borderRadius: '10px',
+                                background: 'linear-gradient(135deg, #10b981, #059669)',
+                                color: '#ffffff', fontWeight: '700', fontSize: '13px',
+                                border: 'none', cursor: 'pointer', marginBottom: '10px',
+                                boxShadow: '0 4px 14px rgba(16,185,129,0.3)', transition: 'all 0.2s ease'
+                              }}
+                            >
+                              📥 Download Main Video (MP4)
+                            </button>
+
+                            {/* Multi-Language Download Options */}
+                            {generatedVideo.videos && Object.keys(generatedVideo.videos).length > 1 && (
+                              <div>
+                                <span style={{ fontSize: '11px', color: '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '6px' }}>
+                                  Other Language MP4 Downloads:
+                                </span>
+                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                                  {Object.entries(generatedVideo.videos).map(([code, video]) => (
+                                    <button
+                                      key={code}
+                                      onClick={() => downloadFile(getFullVideoUrl(video.url), `${className || 'teaching'}_${code}.mp4`)}
+                                      type="button"
+                                      style={{
+                                        padding: '5px 12px', borderRadius: '6px', fontSize: '11px', fontWeight: '600',
+                                        background: code === 'en' ? 'rgba(99,102,241,0.3)' : 'rgba(30,41,59,0.8)',
+                                        border: '1px solid rgba(255,255,255,0.15)', color: '#e2e8f0',
+                                        cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '4px'
+                                      }}
+                                    >
+                                      📥 {video.language}
+                                    </button>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                          </>
+                        );
+                      })()}
                     </div>
                   )}
                 </div>
