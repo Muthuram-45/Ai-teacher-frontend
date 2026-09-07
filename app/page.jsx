@@ -97,7 +97,33 @@ export default function Home() {
 
       if (data.success) {
         if (data.data?.processing) {
-          setVideoInfoMessage(data.message || 'Video generation started. The server is processing in the background. Please check the video list in a few minutes.');
+          setVideoInfoMessage(data.message || 'Video generation started. The server is processing in the background. Please wait...');
+          
+          // Poll for completion
+          if (data.data.jobId) {
+            const jobId = data.data.jobId;
+            const pollInterval = setInterval(async () => {
+              try {
+                const statusResp = await fetch(`${BACKEND_URL}/api/generate-video/status/${jobId}`);
+                const statusData = await statusResp.json();
+                
+                if (statusData.status === 'completed' || statusData.status === 'partial') {
+                  clearInterval(pollInterval);
+                  setVideoInfoMessage(null);
+                  if (statusData.data) {
+                    setGeneratedVideo(statusData.data);
+                  }
+                } else if (statusData.status === 'failed') {
+                  clearInterval(pollInterval);
+                  setVideoInfoMessage(null);
+                  setVideoError(statusData.error || 'Video generation failed in background');
+                }
+                // If processing, do nothing and keep polling
+              } catch (pollErr) {
+                console.error('Polling error:', pollErr);
+              }
+            }, 3000);
+          }
         } else {
           setGeneratedVideo(data.data);
         }
