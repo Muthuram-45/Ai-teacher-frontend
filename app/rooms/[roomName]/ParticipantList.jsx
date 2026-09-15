@@ -4,29 +4,27 @@ import { useParticipants, useLocalParticipant } from '@livekit/components-react'
 import { FaMicrophone, FaMicrophoneSlash, FaVideo, FaVideoSlash } from 'react-icons/fa';
 import { BACKEND_URL } from "../../lib/config";
 
-export default function ParticipantList({ onClose, studentActivities = {} }) {
+export default function ParticipantList({ onClose, studentActivities = {}, className, topic }) {
     const participants = useParticipants();
     const { localParticipant } = useLocalParticipant();
-
-    let myRole = 'Student';
-    try {
-        const metadata = JSON.parse(localParticipant?.metadata || '{}');
-        myRole = metadata.role || 'Student';
-    } catch (e) { }
+    
+    // Check if the current user is a teacher
+    const metadata = localParticipant?.metadata ? JSON.parse(localParticipant.metadata) : {};
+    const myRole = metadata.role || 'student';
 
     return (
         <div style={{
             position: 'absolute',
-            bottom: 80,
-            right: 20,
+            top: 20,
+            left: 20,
             width: 380,
-            background: 'rgba(17, 17, 17, 0.95)',
-            backdropFilter: 'blur(12px)',
-            border: '1px solid rgba(255, 255, 255, 0.1)',
-            borderRadius: 16,
-            padding: '20px',
-            color: '#fff',
-            boxShadow: '0 12px 40px rgba(0,0,0,0.6)',
+            background: 'rgba(15, 23, 42, 0.95)',
+            backdropFilter: 'blur(10px)',
+            border: '1px solid rgba(255,255,255,0.1)',
+            borderRadius: '16px',
+            padding: '24px',
+            color: 'white',
+            boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
             zIndex: 9999,
             fontFamily: 'Inter, sans-serif'
         }}>
@@ -37,7 +35,7 @@ export default function ParticipantList({ onClose, studentActivities = {} }) {
                         <button
                             onClick={() => {
                                 const roomName = window.location.pathname.split("/").pop();
-                                window.open(`${BACKEND_URL}/api/activity-history/${roomName}`, '_blank');
+                                window.open(`${BACKEND_URL}/api/activity-history/${roomName}?className=${encodeURIComponent(className || '')}&topic=${encodeURIComponent(topic || '')}`, '_blank');
                             }}
                             title="Download Activity Report"
                             style={{

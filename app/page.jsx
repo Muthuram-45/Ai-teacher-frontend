@@ -27,6 +27,7 @@ export default function Home() {
   const [createdRoom, setCreatedRoom] = useState(null);
   const [className, setClassName] = useState('');
   const [topic, setTopic] = useState('');
+  const [subTopic, setSubTopic] = useState('');
 
   const [loading, setLoading] = useState(false);
   const [isClient, setIsClient] = useState(false);
@@ -360,7 +361,8 @@ export default function Home() {
           room: createdRoom,
           role: 'teacher',
           className: className.trim(),
-          topic: topic.trim()
+          topic: topic.trim(),
+          subTopic: subTopic.trim()
         }),
       });
 
@@ -391,6 +393,7 @@ export default function Home() {
     setCreatedRoom(null);
     setClassName('');
     setTopic('');
+    setSubTopic('');
     setLoading(false);
     setActiveTab('create');
     setAuthMode('login');
@@ -402,23 +405,26 @@ export default function Home() {
     const r = localStorage.getItem("lastMeetingRoom");
     const c = localStorage.getItem("lastMeetingClassName") || "";
     const t = localStorage.getItem("lastMeetingTopic") || "";
+    const s = localStorage.getItem("lastMeetingSubTopic") || "";
     const m = localStorage.getItem("lastMeetingMeetingName") || `${c}-${t}`;
 
     setCreatedRoom(r);
     setClassName(c);
     setTopic(t);
-    relaunchMeeting(r, c, t, m);
+    setSubTopic(s);
+    relaunchMeeting(r, c, t, s, m);
   };
 
   const handleRejoinNo = () => {
     localStorage.removeItem("lastMeetingRoom");
     localStorage.removeItem("lastMeetingClassName");
     localStorage.removeItem("lastMeetingTopic");
+    localStorage.removeItem("lastMeetingSubTopic");
     localStorage.removeItem("lastMeetingMeetingName");
     setShowRejoinPopup(false);
   };
 
-  async function relaunchMeeting(r, c, t, m) {
+  async function relaunchMeeting(r, c, t, s, m) {
     setShowRejoinPopup(false);
     setLoading(true);
     try {
@@ -430,7 +436,8 @@ export default function Home() {
           room: r,
           role: 'teacher',
           className: c,
-          topic: t
+          topic: t,
+          subTopic: s
         }),
       });
 
@@ -612,6 +619,7 @@ export default function Home() {
                       />
                     </div>
                   </div>
+
 
                   <div className="inputGroup">
                     <label className="inputLabel">AI Voice (Tone)</label>

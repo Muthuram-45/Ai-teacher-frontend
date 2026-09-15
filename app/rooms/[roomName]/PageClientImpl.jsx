@@ -1776,14 +1776,16 @@ function RoomContent() {
 
     let role = "";
     let meetingTopic = "";
+    let meetingClassName = "";
     try {
         const metadata = localParticipant?.metadata
             ? JSON.parse(localParticipant.metadata)
             : {};
         role = metadata.role || "";
         meetingTopic = metadata.topic || "";
+        meetingClassName = metadata.className || "";
         console.log(
-            `👤 RoomContent: identity="${localParticipant?.identity}" role="${role}" topic="${meetingTopic}"`,
+            `👤 RoomContent: identity="${localParticipant?.identity}" role="${role}" topic="${meetingTopic}" className="${meetingClassName}"`,
         );
     } catch {
         role = localParticipant?.metadata || "";
@@ -2905,7 +2907,9 @@ function RoomContent() {
             {role === "teacher" && showParticipants && (
                 <ParticipantList 
                     onClose={() => setShowParticipants(false)} 
-                    studentActivities={studentActivities} 
+                    studentActivities={studentActivities}
+                    className={meetingClassName}
+                    topic={meetingTopic}
                 />
             )}
 
@@ -2981,7 +2985,8 @@ function RoomContent() {
                     attendance={attendance}
                     doubtsWithAnswers={doubtsWithAnswers}
                     classSummary={classSummary}
-                    topic={meetingTopic}
+                    topic={meetingClassName}
+                    subTopic={meetingTopic}
                     onClose={() => setShowAttendance(false)}
                     right={showHistory || showAI ? 380 : 0}
                 />
@@ -2991,7 +2996,8 @@ function RoomContent() {
             {role === "teacher" && showQuizResults && activeQuiz && (
                 <QuizSidebar
                     quizId={activeQuiz.id || activeQuiz.quizId}
-                    topic={activeQuiz.topic}
+                    topic={meetingClassName}
+                    subTopic={meetingTopic}
                     onClose={() => setShowQuizResults(false)}
                     right={showHistory || showAI || showAttendance ? 380 : 0}
                 />

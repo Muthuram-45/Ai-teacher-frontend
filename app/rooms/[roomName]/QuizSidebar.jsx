@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import * as XLSX from 'xlsx-js-style';
 import { BACKEND_URL } from "../../lib/config";
 
-export default function QuizSidebar({ quizId, topic, onClose, right = 0 }) {
+export default function QuizSidebar({ quizId, topic, subTopic, onClose, right = 0 }) {
     const [results, setResults] = useState(null);
     const [loading, setLoading] = useState(true);
 
@@ -49,6 +49,8 @@ export default function QuizSidebar({ quizId, topic, onClose, right = 0 }) {
         const rows = [
             [{ v: `QUIZ REPORT: ${topic || 'General'}`, s: titleStyle }, ...Array(totalCols - 1).fill('')],
             [{ v: `Date: ${dateStr}`, s: { font: { italic: true, bold: true } } }],
+            [{ v: `Topic: ${topic || 'General'}`, s: { font: { bold: true } } }],
+            [{ v: `Sub Topic: ${subTopic || 'General'}`, s: { font: { bold: true } } }],
             [],
             // Statistics Section
             [{ v: 'QUIZ STATISTICS', s: sectionStyle }, ...Array(totalCols - 1).fill('')],

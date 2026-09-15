@@ -4,7 +4,7 @@ import * as XLSX from 'xlsx-js-style';
 import { FaMobileAlt, FaTabletAlt } from "react-icons/fa";
 import { IoDesktopOutline } from "react-icons/io5";
 
-export default function AttendanceSidebar({ attendance, doubtsWithAnswers = [], classSummary, topic, onClose, right = 0 }) {
+export default function AttendanceSidebar({ attendance = {}, doubtsWithAnswers = [], classSummary, topic, subTopic, onClose, right = 0 }) {
     const studentAttendance = Object.values(attendance).filter(a => a.role === 'student');
     const totalStudents = studentAttendance.length;
 
@@ -43,7 +43,8 @@ export default function AttendanceSidebar({ attendance, doubtsWithAnswers = [], 
             [{ v: 'CLASS DETAILS', s: studentDetailsStyle }, '', '', '', '', '', ''],
             // Metadata
             [{ v: 'Date:', s: headerStyle }, { v: dateStr, s: headerStyle }],
-            [{ v: 'Topic:', s: headerStyle }, { v: topic || 'Python', s: headerStyle }],
+            [{ v: 'Topic:', s: headerStyle }, { v: topic || 'General', s: headerStyle }],
+            [{ v: 'Sub Topic:', s: headerStyle }, { v: subTopic || 'General', s: headerStyle }],
             [{ v: 'CLASS SUMMARY:', s: headerStyle }, { v: classSummary || 'No summary available.' }],
             [], // SPACE AFTER SUMMARY
             [{ v: 'STUDENT DETAILS', s: studentDetailsStyle }, '', '', '', '', '', '', ''], // Will be merged
