@@ -2291,6 +2291,19 @@ function RoomContent() {
         };
     }, [room, role]);
 
+    // 🌐 Announce Student Preferred Language to Backend
+    useEffect(() => {
+        if (room && role === "student") {
+            const lang = new URLSearchParams(window.location.search).get('lang') || localStorage.getItem('preferredLanguage') || 'en';
+            const studentId = localParticipant?.identity || `student-${Date.now()}`;
+            fetch(`${BACKEND_URL}/api/multilingual/set-language`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ roomName: room.name || roomName, studentId, language: lang })
+            }).catch((err) => console.warn("Language announcement error:", err));
+        }
+    }, [room, role, localParticipant]);
+
     // 🎧 Main Data Handler (Unified)
     useEffect(() => {
         if (!room) return;
@@ -2406,11 +2419,14 @@ function RoomContent() {
 
                 // 📢 AI General Speak Broadcast (Student Side & Other Teachers)
                 if (msg.action === "AI_SPEAK_BROADCAST" && msg.text) {
-                    speakText(msg.text, {
+                    const ttsOpts = {
                         audioContext: recordingAudioContext.current,
                         destinationNode: recordingDestNode.current,
-                        skipTranslation: true,
-                    }).catch((err) => console.error("Broadcast TTS error:", err));
+                    };
+                    if (role === "teacher") {
+                        ttsOpts.skipTranslation = true;
+                    }
+                    speakText(msg.text, ttsOpts).catch((err) => console.error("Broadcast TTS error:", err));
                 }
 
                 // 🤖 AI Answer Broadcast (Student Side & Other Teachers)
@@ -2426,15 +2442,34 @@ function RoomContent() {
 
                     if (role === "teacher") setShowAI(true);
 
-                    // 🔊 Play audio for both teacher AND student via the broadcast echo
+                    // 🔊 Play synchronized audio for receiver
                     if (msg.answer) {
-                        const audioString = msg.isDirectResponse ? msg.answer : `${msg.name} asked: ${msg.text}. ${msg.answer}`;
-                        speakText(audioString, {
+                        const prefLang = typeof window !== 'undefined'
+                            ? (new URLSearchParams(window.location.search).get('lang') || localStorage.getItem('preferredLanguage') || 'en')
+                            : 'en';
+                        
+                        let speechText = msg.isDirectResponse ? msg.answer : `${msg.name} asked: ${msg.text}. ${msg.answer}`;
+                        let skipTrans = (role === "teacher");
+
+                        if (msg.tracks) {
+                            const track = msg.tracks[prefLang] || msg.tracks['en'];
+                            if (track && track.error) {
+                                console.warn(`⚠️ Multilingual track error for lang '${prefLang}'. Skipping playback to avoid wrong language fallback.`);
+                                return;
+                            }
+                            if (track && track.text) {
+                                speechText = track.text;
+                                skipTrans = true; // Pre-translated concurrently by backend orchestrator!
+                            }
+                        }
+
+                        const ttsOpts = {
                             audioContext: recordingAudioContext.current,
                             destinationNode: recordingDestNode.current,
-                            skipTranslation: true,
-                            ...(msg.isDirectResponse && { forceLanguage: 'en' })
-                        }).catch((err) => console.error("Broadcast TTS error:", err));
+                            skipTranslation: skipTrans,
+                            startAt: msg.startAt
+                        };
+                        speakText(speechText, ttsOpts).catch((err) => console.error("Broadcast TTS error:", err));
                     }
                 }
 
@@ -2634,20 +2669,43 @@ function RoomContent() {
 
         clearAutoAskTimer(doubt.id);
 
-        room.localParticipant.publishData(
-            new TextEncoder().encode(
-                JSON.stringify({
-                    action: "AI_ANSWER_BROADCAST",
-                    id: doubt.id,
-                    text: doubt.text,
-                    answer: doubt.answer,
-                    name: doubt.name,
+        let broadcastPayload = {
+            action: "AI_ANSWER_BROADCAST",
+            id: doubt.id,
+            text: doubt.text,
+            answer: doubt.answer,
+            name: doubt.name,
+            isDirectResponse: doubt.isDirectResponse,
+        };
+
+        // 🌐 Prepare Multilingual Package with synchronized startAt timestamp
+        try {
+            const pkgRes = await fetch(`${BACKEND_URL}/api/multilingual/prepare-package`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    roomName: room.name || roomName,
+                    answerId: doubt.id,
+                    canonicalAnswer: doubt.answer,
                     isDirectResponse: doubt.isDirectResponse,
-                }),
-            ),
+                    speakerName: doubt.name,
+                    questionText: doubt.text,
+                    bufferMs: 2500
+                })
+            });
+            if (pkgRes.ok) {
+                const pkgData = await pkgRes.json();
+                broadcastPayload = { ...broadcastPayload, ...pkgData };
+            }
+        } catch (pkgErr) {
+            console.warn("⚠️ Multilingual package prep error, falling back to basic payload:", pkgErr);
+        }
+
+        room.localParticipant.publishData(
+            new TextEncoder().encode(JSON.stringify(broadcastPayload)),
             { reliable: true },
         );
-        console.log("✅ sendToStudent: Published AI_ANSWER_BROADCAST");
+        console.log("✅ sendToStudent: Published AI_ANSWER_BROADCAST with payload:", broadcastPayload);
 
         // Play locally for the Teacher — AWAIT completion before moving to next doubt
         const audioString = doubt.isDirectResponse ? doubt.answer : `${doubt.name} asked: ${doubt.text}. ${doubt.answer}`;

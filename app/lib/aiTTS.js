@@ -1,4 +1,5 @@
 import { BACKEND_URL, PYTHON_BACKEND_URL } from './config';
+import { sanitizeTextForTTS } from './aiTTSSanitizer';
 
 // 🔌 Global trackers for stopping audio
 let localContext = null;
@@ -84,6 +85,13 @@ export async function speakText(text, options = {}) {
         console.log(`🎙️ AI Voice Processing (queued): "${finalSpeechText.substring(0, 50)}${finalSpeechText.length > 50 ? '...' : ''}"`);
 
         return (async () => {
+            if (options.startAt) {
+                const waitMs = options.startAt - Date.now();
+                if (waitMs > 0) {
+                    console.log(`⏰ [Synchronized Playback] Waiting ${waitMs}ms until startAt (${new Date(options.startAt).toISOString()})...`);
+                    await new Promise((r) => setTimeout(r, waitMs));
+                }
+            }
             const chunks = splitIntoChunks(finalSpeechText, 200);
             for (const chunk of chunks) {
                 if (stopRequested) break;
@@ -150,7 +158,8 @@ async function playRecordableChunk(text, audioContext, destinationNode, options 
         });
         
         if (!response.ok) {
-            throw new Error(`Google Cloud TTS failed with status ${response.status}`);
+            console.warn(`⚠️ Backend TTS returned ${response.status}. Falling back to Browser SpeechSynthesis...`);
+            return await fallbackToBrowserTTS(text, { forceLanguage: ttsLang });
         }
         
         const arrayBuffer = await response.arrayBuffer();
@@ -167,7 +176,8 @@ async function playRecordableChunk(text, audioContext, destinationNode, options 
         });
 
     } catch (err) {
-        console.error("❌ Google Cloud TTS failed completely:", err);
+        console.error("❌ Google Cloud TTS failed, falling back to browser speech synthesis:", err);
+        await fallbackToBrowserTTS(text, options);
     }
 }
 
@@ -183,7 +193,8 @@ function fallbackToBrowserTTS(text, options = {}) {
         // Cancel any existing speech
         window.speechSynthesis.cancel();
 
-        const utterance = new SpeechSynthesisUtterance(text);
+        const sanitizedSpeechText = sanitizeTextForTTS(text, preferredLanguage);
+        const utterance = new SpeechSynthesisUtterance(sanitizedSpeechText);
         utterance.lang = preferredLanguage; // Help browser pick the right voice automatically
 
         // Find specific voice based on preferredLanguage
@@ -215,7 +226,8 @@ function fallbackToBrowserTTS(text, options = {}) {
             resolve();
         };
         utterance.onerror = (e) => {
-            console.error("❌ Browser TTS Error:", e);
+            if (e.error === 'interrupted' || e.error === 'canceled') return resolve();
+            console.warn("⚠️ Browser TTS notice:", e.error || e);
             resolve();
         };
 
