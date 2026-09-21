@@ -26,13 +26,33 @@ export class TeacherVideoPublisher {
             // small delay so frames exist
             await new Promise(r => setTimeout(r, 200));
 
-            const mediaStream = videoElement.captureStream();
+            // Capture stream with explicit 30 FPS target
+            const mediaStream = typeof videoElement.captureStream === 'function'
+                ? videoElement.captureStream(30)
+                : (typeof videoElement.mozCaptureStream === 'function' ? videoElement.mozCaptureStream(30) : null);
+
+            if (!mediaStream) continue;
 
             const videoMediaTrack = mediaStream.getVideoTracks()[0];
             const audioMediaTrack = mediaStream.getAudioTracks()[0];
 
             if (videoMediaTrack) {
-                const pub = await this.room.localParticipant.publishTrack(videoMediaTrack, { name: `class-video-${lang}` });
+                const width = videoElement.videoWidth || 1920;
+                const height = videoElement.videoHeight || 1080;
+                const maxBitrate = width >= 1920 ? 4_500_000 : (width >= 1280 ? 3_000_000 : 1_500_000);
+
+                console.log(`🎥 Publishing video track (${lang}): ${width}x${height} @ maxBitrate ${maxBitrate} bps`);
+
+                const pub = await this.room.localParticipant.publishTrack(videoMediaTrack, {
+                    name: `class-video-${lang}`,
+                    simulcast: true,
+                    videoCodec: 'h264',
+                    videoEncoding: {
+                        maxBitrate: maxBitrate,
+                        maxFramerate: 30,
+                    },
+                    degradationPreference: 'maintain-resolution',
+                });
                 this.publishedTracks.push(pub.track);
             }
 

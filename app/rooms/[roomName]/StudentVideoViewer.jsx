@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { useRoomContext, useRemoteParticipants, useLocalParticipant } from '@livekit/components-react';
-import { Track } from 'livekit-client';
+import { Track, VideoQuality } from 'livekit-client';
 import { SUPPORTED_LANGUAGES } from '@/app/lib/config';
 
 /* ---- Mini thumbnail that attaches a participant's video track ---- */
@@ -12,6 +12,8 @@ function ParticipantThumb({ participant, label }) {
         const attach = () => {
             participant.videoTrackPublications.forEach((pub) => {
                 if (pub.isSubscribed && pub.track && thumbRef.current) {
+                    if (pub.setSubscribedQuality) pub.setSubscribedQuality(VideoQuality.HIGH);
+                    if (pub.setPriority) pub.setPriority(Track.Priority.HIGH);
                     pub.track.attach(thumbRef.current);
                 }
             });
@@ -64,6 +66,7 @@ export default function StudentVideoPanel({ isEmbedded = false }) {
     const [duration, setDuration] = useState(0);
     const [isFullscreen, setIsFullscreen] = useState(false);
     const [showTeacherVideo, setShowTeacherVideo] = useState(false);
+    const [videoResolution, setVideoResolution] = useState({ width: 0, height: 0 });
     
     // Multi-lingual tracks
     const [selectedLang, setSelectedLang] = useState(() => {
@@ -115,6 +118,13 @@ export default function StudentVideoPanel({ isEmbedded = false }) {
         const handleTrackSubscribed = (track, pub) => {
             const trackName = pub?.trackName || track?.name || '';
             console.log('👀 Track subscribed on student:', track.kind, trackName);
+
+            // Request highest quality rendition & priority for class video
+            if (pub) {
+                if (pub.setSubscribedQuality) pub.setSubscribedQuality(VideoQuality.HIGH);
+                if (pub.setPriority) pub.setPriority(Track.Priority.HIGH);
+            }
+
             if (track.kind === Track.Kind.Video && trackName.startsWith('class-video-')) {
                 const lang = trackName.split('-')[2];
                 setVideoTracks(prev => ({ ...prev, [lang]: track }));
@@ -193,6 +203,7 @@ export default function StudentVideoPanel({ isEmbedded = false }) {
 
         if (videoEl && currentVideoTrack) {
             currentVideoTrack.attach(videoEl);
+            setVideoResolution({ width: videoEl.videoWidth || 0, height: videoEl.videoHeight || 0 });
         }
         if (audioEl && currentAudioTrack) {
             // UNMUTE THE SELECTED AUDIO TRACK
@@ -224,6 +235,9 @@ export default function StudentVideoPanel({ isEmbedded = false }) {
         const update = () => {
             setCurrentTime(video.currentTime);
             setDuration(video.duration || 0);
+            if (video.videoWidth && video.videoHeight) {
+                setVideoResolution({ width: video.videoWidth, height: video.videoHeight });
+            }
         };
 
         video.addEventListener('timeupdate', update);
@@ -308,6 +322,8 @@ export default function StudentVideoPanel({ isEmbedded = false }) {
         return null; // Don't show anything (PageClientImpl handles empty state)
     }
 
+    const showDebug = typeof window !== 'undefined' && (new URLSearchParams(window.location.search).get('debug') === 'true');
+
     return (
         <div
             ref={containerRef}
@@ -349,8 +365,29 @@ export default function StudentVideoPanel({ isEmbedded = false }) {
                     objectFit: 'contain',
                     background: '#000'
                 }}
-                onLoadedMetadata={() => console.log('🎬 Video metadata loaded')}
+                onLoadedMetadata={(e) => {
+                    console.log('🎬 Video metadata loaded');
+                    if (e.target.videoWidth && e.target.videoHeight) {
+                        setVideoResolution({ width: e.target.videoWidth, height: e.target.videoHeight });
+                    }
+                }}
             />
+            {showDebug && videoResolution.width > 0 && (
+                <div style={{
+                    position: 'absolute',
+                    top: 10,
+                    left: 10,
+                    background: 'rgba(0,0,0,0.75)',
+                    color: '#00ffcc',
+                    padding: '4px 8px',
+                    borderRadius: 4,
+                    fontSize: '11px',
+                    fontFamily: 'monospace',
+                    zIndex: 99
+                }}>
+                    Stream: {videoResolution.width}×{videoResolution.height} | Track: {selectedLang}
+                </div>
+            )}
             <audio ref={audioRef} autoPlay playsInline />
         </div>
     );
