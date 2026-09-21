@@ -204,6 +204,15 @@ export default function StudentVideoPanel({ isEmbedded = false }) {
         if (videoEl && currentVideoTrack) {
             currentVideoTrack.attach(videoEl);
             setVideoResolution({ width: videoEl.videoWidth || 0, height: videoEl.videoHeight || 0 });
+            if (teacherParticipant) {
+                teacherParticipant.videoTrackPublications.forEach(pub => {
+                    if (pub.track === currentVideoTrack || pub.trackName?.includes(selectedLang)) {
+                        if (pub.setSubscribedQuality) pub.setSubscribedQuality(VideoQuality.HIGH);
+                        if (pub.setPriority) pub.setPriority(Track.Priority.HIGH);
+                    }
+                });
+            }
+            console.log(`👀 [Student Subscriber Diagnostics] Attached video track: ${videoEl.videoWidth}x${videoEl.videoHeight}`);
         }
         if (audioEl && currentAudioTrack) {
             // UNMUTE THE SELECTED AUDIO TRACK

@@ -3896,6 +3896,10 @@ export function PageClientImpl({ token, url }) {
             token={token}
             serverUrl={url}
             connect={true}
+            options={{
+                adaptiveStream: { pixelDensity: 'screen' },
+                dynacast: true,
+            }}
             video={{ enabled: true }}
             audio={{
                 enabled: true,

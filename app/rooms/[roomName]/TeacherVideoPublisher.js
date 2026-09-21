@@ -41,12 +41,14 @@ export class TeacherVideoPublisher {
                 const height = videoElement.videoHeight || 1080;
                 const maxBitrate = width >= 1920 ? 4_500_000 : (width >= 1280 ? 3_000_000 : 1_500_000);
 
-                console.log(`🎥 Publishing video track (${lang}): ${width}x${height} @ maxBitrate ${maxBitrate} bps`);
+                const trackSettings = videoMediaTrack.getSettings ? videoMediaTrack.getSettings() : {};
+                console.log(`🎥 [Publisher Diagnostics] Source Video: ${width}x${height} | Capture Track: ${trackSettings.width || width}x${trackSettings.height || height} @ ${trackSettings.frameRate || 30}fps`);
+                console.log(`🎥 [Publisher Diagnostics] Publishing track (${lang}): maxBitrate=${maxBitrate}bps, codec=vp8, degradationPreference=maintain-resolution`);
 
                 const pub = await this.room.localParticipant.publishTrack(videoMediaTrack, {
                     name: `class-video-${lang}`,
                     simulcast: true,
-                    videoCodec: 'h264',
+                    videoCodec: 'vp8',
                     videoEncoding: {
                         maxBitrate: maxBitrate,
                         maxFramerate: 30,
