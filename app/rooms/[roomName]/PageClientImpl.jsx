@@ -2301,6 +2301,14 @@ function RoomContent() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ roomName: room.name || roomName, studentId, language: lang })
             }).catch((err) => console.warn("Language announcement error:", err));
+
+            return () => {
+                fetch(`${BACKEND_URL}/api/multilingual/remove-student`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ roomName: room.name || roomName, studentId })
+                }).catch(() => {});
+            };
         }
     }, [room, role, localParticipant]);
 
@@ -2431,23 +2439,27 @@ function RoomContent() {
 
                 // 🤖 AI Answer Broadcast (Student Side & Other Teachers)
                 if (msg.action === "AI_ANSWER_BROADCAST") {
+                    const prefLang = typeof window !== 'undefined'
+                        ? (new URLSearchParams(window.location.search).get('lang') || localStorage.getItem('preferredLanguage') || 'en')
+                        : 'en';
+
+                    const localizedAnswer = (msg.tracks && msg.tracks[prefLang] && msg.tracks[prefLang].translatedAnswer)
+                        ? msg.tracks[prefLang].translatedAnswer
+                        : msg.answer;
+
                     setDoubtsWithAnswers((prev) => {
                         const exists = prev.find((d) => d.id === msg.id);
                         if (exists)
                             return prev.map((d) =>
-                                d.id === msg.id ? { ...d, answer: msg.answer } : d,
+                                d.id === msg.id ? { ...d, answer: localizedAnswer } : d,
                             );
-                        return [...prev, msg];
+                        return [...prev, { ...msg, answer: localizedAnswer }];
                     });
 
                     if (role === "teacher") setShowAI(true);
 
                     // 🔊 Play synchronized audio for receiver
                     if (msg.answer) {
-                        const prefLang = typeof window !== 'undefined'
-                            ? (new URLSearchParams(window.location.search).get('lang') || localStorage.getItem('preferredLanguage') || 'en')
-                            : 'en';
-                        
                         let speechText = msg.isDirectResponse ? msg.answer : `${msg.name} asked: ${msg.text}. ${msg.answer}`;
                         let skipTrans = (role === "teacher");
 
