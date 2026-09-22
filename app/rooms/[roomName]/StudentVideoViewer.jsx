@@ -375,9 +375,15 @@ export default function StudentVideoPanel({ isEmbedded = false }) {
                     background: '#000'
                 }}
                 onLoadedMetadata={(e) => {
-                    console.log('🎬 Video metadata loaded');
-                    if (e.target.videoWidth && e.target.videoHeight) {
-                        setVideoResolution({ width: e.target.videoWidth, height: e.target.videoHeight });
+                    const video = e.target;
+                    console.log('🎬 STUDENT RECEIVED VIDEO:', {
+                        videoWidth: video.videoWidth,
+                        videoHeight: video.videoHeight,
+                        clientWidth: video.clientWidth,
+                        clientHeight: video.clientHeight
+                    });
+                    if (video.videoWidth && video.videoHeight) {
+                        setVideoResolution({ width: video.videoWidth, height: video.videoHeight });
                     }
                 }}
             />

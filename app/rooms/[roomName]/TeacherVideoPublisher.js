@@ -45,12 +45,17 @@ export class TeacherVideoPublisher {
                 console.log(`🎥 [Publisher Diagnostics] Source Video: ${width}x${height} | Capture Track: ${trackSettings.width || width}x${trackSettings.height || height} @ ${trackSettings.frameRate || 30}fps`);
                 console.log(`🎥 [Publisher Diagnostics] Publishing track (${lang}): maxBitrate=${maxBitrate}bps, codec=vp8, degradationPreference=maintain-resolution`);
 
+                if ('contentHint' in videoMediaTrack) {
+                    videoMediaTrack.contentHint = 'text';
+                }
+
                 const pub = await this.room.localParticipant.publishTrack(videoMediaTrack, {
                     name: `class-video-${lang}`,
-                    simulcast: true,
+                    source: 'screen_share',
+                    simulcast: false,
                     videoCodec: 'vp8',
-                    videoEncoding: {
-                        maxBitrate: maxBitrate,
+                    screenShareEncoding: {
+                        maxBitrate: 8_000_000,
                         maxFramerate: 30,
                     },
                     degradationPreference: 'maintain-resolution',
