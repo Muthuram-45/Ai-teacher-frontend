@@ -221,3 +221,73 @@ body {
     font-size: 12px !important;
   }
 }
+
+/* ========================= */
+/* 📱 RESPONSIVE CLASSROOM & SIDEBARS */
+/* ========================= */
+
+@media (max-width: 768px) {
+  /* Force fixed sidebars to occupy 100vw drawer on small screens */
+  div[style*="z-index: 2000"],
+  div[style*="zIndex: 2000"],
+  div[style*="z-index: 9999"],
+  div[style*="zIndex: 9999"] {
+    max-width: 100vw !important;
+  }
+
+  /* Control bar responsiveness */
+  .lk-control-bar {
+    padding: 6px 8px !important;
+    gap: 4px !important;
+    max-width: 100vw !important;
+    overflow-x: auto !important;
+    justify-content: center !important;
+    flex-wrap: nowrap !important;
+  }
+
+  .lk-control-bar .lk-button {
+    min-width: 36px !important;
+    height: 38px !important;
+    padding: 4px 6px !important;
+    font-size: 11px !important;
+    border-radius: 8px !important;
+  }
+
+  .lk-control-bar .lk-button svg {
+    width: 16px !important;
+    height: 16px !important;
+  }
+
+  /* Classroom video layout on mobile */
+  .class-video-layout {
+    flex-direction: column !important;
+    height: calc(100vh - 64px) !important;
+  }
+
+  .video-main-panel {
+    width: 100% !important;
+    height: 68% !important;
+  }
+
+  .video-side-panel {
+    width: 100% !important;
+    height: 32% !important;
+    border-left: none !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.1) !important;
+    flex-direction: row !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    padding: 8px !important;
+    gap: 10px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .lk-control-bar .lk-button {
+    min-width: 32px !important;
+    height: 34px !important;
+    padding: 2px 4px !important;
+    font-size: 10px !important;
+  }
+}
+

@@ -112,33 +112,22 @@ export default function AnalyticsDashboard() {
   };
 
   return (
-    <div style={{ display: 'flex', height: '100vh', overflow: 'hidden', background: 'linear-gradient(140deg, #f0f4f8 0%, #e2e8f0 100%)' }}>
+    <div className={styles.analyticsLayout}>
       
-      {/* Side Navbar */}
-      <nav style={{ width: '250px', background: '#0f172a', color: 'white', padding: '2rem 1rem', display: 'flex', flexDirection: 'column', position: 'fixed', top: 0, bottom: 0, left: 0, overflowY: 'auto' }}>
-        <div style={{ marginBottom: '3rem', padding: '0 1rem' }}>
-          <h1 style={{ fontSize: '1.8rem', fontWeight: 800, margin: 0 }}>SKYMEET</h1>
-          <span style={{ fontWeight: 300, fontSize: '0.9rem', color: '#cbd5e1' }}>Learning Analytics</span>
+      {/* Responsive Side / Top Navbar */}
+      <nav className={styles.sideNav}>
+        <div className={styles.navHeader}>
+          <h1 style={{ fontSize: '1.6rem', fontWeight: 800, margin: 0 }}>SKYMEET</h1>
+          <span style={{ fontWeight: 300, fontSize: '0.85rem', color: '#cbd5e1' }}>Learning Analytics</span>
         </div>
         
         {topics.length > 0 && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+          <div className={styles.tabsContainer}>
             {tabs.map(nav => (
               <button 
                 key={nav} 
                 onClick={() => setActiveTab(nav)} 
-                style={{ 
-                  background: activeTab === nav ? 'rgba(255,255,255,0.15)' : 'transparent', 
-                  border: 'none', 
-                  color: activeTab === nav ? '#ffffff' : '#cbd5e1', 
-                  padding: '1rem', 
-                  textAlign: 'left', 
-                  fontWeight: activeTab === nav ? 700 : 500, 
-                  borderRadius: '8px', 
-                  cursor: 'pointer', 
-                  transition: 'all 0.2s',
-                  borderLeft: activeTab === nav ? '3px solid #3b82f6' : '3px solid transparent'
-                }}
+                className={`${styles.tabBtn} ${activeTab === nav ? styles.activeTabBtn : ''}`}
               >
                 {nav}
               </button>
@@ -148,12 +137,12 @@ export default function AnalyticsDashboard() {
       </nav>
 
       {/* Main Content Area */}
-      <div style={{ flex: 1, marginLeft: '250px', display: 'flex', flexDirection: 'column', height: '100vh', overflowY: 'auto' }}>
+      <div className={styles.mainArea}>
         
-        {/* Fixed Top Header (Filters & Export) */}
-        <div style={{ position: 'sticky', top: 0, zIndex: 100, background: 'rgba(255,255,255,0.9)', backdropFilter: 'blur(10px)', padding: '1rem 2rem', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        {/* Fixed / Sticky Top Header (Filters & Export) */}
+        <div className={styles.topHeader}>
           {topics.length > 0 ? (
-            <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'flex-end', flexWrap: 'wrap' }}>
+            <div className={styles.filterRow}>
               
               <div className={styles.filterGroup}>
                 <label>Topic</label>
@@ -175,14 +164,14 @@ export default function AnalyticsDashboard() {
           )}
           
           {topics.length > 0 && (
-            <button onClick={handleExport} style={{ background: '#3b82f6', color: 'white', border: 'none', padding: '0.7rem 1.5rem', borderRadius: '8px', cursor: 'pointer', fontWeight: 600 }}>
+            <button onClick={handleExport} className={styles.exportBtn}>
               Export Report
             </button>
           )}
         </div>
 
-        {/* Scrollable Dashboard */}
-        <div style={{ padding: '2rem 3rem' }}>
+        {/* Scrollable Dashboard Container */}
+        <div className={styles.contentPadding}>
           <section className={styles.uploadSection}>
             <FileUpload onSuccess={handleUploadSuccess} />
           </section>

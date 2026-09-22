@@ -1141,73 +1141,114 @@
 
 
 
- /* Mobile */
+/* Mobile & Tablet Responsive Rules for Landing & Dashboard */
 
- @media (max-width: 720px) {
-
-   .dashHeader {
-
-     flex-direction: row;
-
-     justify-content: space-between;
-
-     gap: 16px;
-
-   }
-
-   .panel {
-     padding: 24px 20px;
-   }
-
-
-
-   .row {
-
-     flex-direction: column;
-
-     align-items: stretch;
-
-
-   }
-
-
-
-   .successBtn,
-
-   .primaryBtnXL,
-
-   .outlineBtn {
-
-     width: 100%;
-
-
-   }
-
-
-
-   .shareRow {
-
-     flex-direction: column;
-
-     align-items: stretch;
-
-
-   }
-
-
-
-   .shareCode {
-     white-space: normal;
-     word-break: break-all;
-   }
- }
-
-  /* Spinner animation for video generation */
-  @keyframes spin {
-    to { transform: rotate(360deg); }
+@media (max-width: 1024px) {
+  .topbar {
+    padding: 0 24px;
   }
+  .landingMain {
+    grid-template-columns: 1fr;
+    gap: 32px;
+    padding: 0 32px 36px;
+  }
+  .hero {
+    text-align: center;
+    max-width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  .dashHeader {
+    gap: 20px;
+  }
+}
 
-  /* Wider panel for video generation fields */
+@media (max-width: 768px) {
+  .topbar {
+    padding: 0 16px;
+    height: 56px;
+  }
+  .brandName {
+    font-size: 20px;
+  }
+  .landingMain {
+    padding: 0 16px 24px;
+    grid-gap: 24px;
+    gap: 24px;
+  }
+  .heroTitle {
+    font-size: clamp(28px, 6vw, 42px);
+  }
+  .heroSub {
+    font-size: 15px;
+    line-height: 1.6;
+  }
+  .cardInner {
+    padding: 24px 18px;
+    border-radius: 20px;
+  }
+  .dashPage {
+    padding: 16px 12px 30px;
+  }
+  .dashHeader {
+    flex-direction: row;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
   .panel {
-    max-width: 580px;
+    padding: 20px 16px;
+    border-radius: 18px;
+    max-height: none;
   }
+  .input {
+    padding: 14px 16px;
+    font-size: 15px;
+  }
+  .ctaBtn {
+    height: 50px;
+    font-size: 15px;
+  }
+  .shareRow {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+  .shareCode {
+    white-space: normal;
+    word-break: break-all;
+    font-size: 12px;
+  }
+  .linkBtn {
+    width: 100%;
+    justify-content: center;
+  }
+  .row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+  .primaryBtnXL,
+  .outlineBtn,
+  .successBtn {
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .cardInner {
+    padding: 20px 14px;
+  }
+  .dashPage {
+    padding: 12px 8px 24px;
+  }
+  .panel {
+    padding: 16px 12px;
+  }
+}
+
+/* Spinner animation for video generation */
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}

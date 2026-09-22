@@ -1,3 +1,112 @@
+/* Responsive Analytics Layout */
+.analyticsLayout {
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
+  background: linear-gradient(140deg, #f0f4f8 0%, #e2e8f0 100%);
+}
+
+.sideNav {
+  width: 250px;
+  background: #0f172a;
+  color: white;
+  padding: 2rem 1rem;
+  display: flex;
+  flex-direction: column;
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  overflow-y: auto;
+  z-index: 200;
+  transition: all 0.3s ease;
+}
+
+.navHeader {
+  margin-bottom: 2.5rem;
+  padding: 0 0.5rem;
+}
+
+.tabsContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.tabBtn {
+  background: transparent;
+  border: none;
+  color: #cbd5e1;
+  padding: 0.85rem 1rem;
+  text-align: left;
+  font-weight: 500;
+  font-size: 0.95rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border-left: 3px solid transparent;
+  white-space: nowrap;
+}
+
+.activeTabBtn {
+  background: rgba(255, 255, 255, 0.15) !important;
+  color: #ffffff !important;
+  font-weight: 700 !important;
+  border-left: 3px solid #3b82f6 !important;
+}
+
+.mainArea {
+  flex: 1;
+  margin-left: 250px;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow-y: auto;
+  transition: all 0.3s ease;
+}
+
+.topHeader {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(10px);
+  padding: 1rem 2rem;
+  border-bottom: 1px solid #e2e8f0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.filterRow {
+  display: flex;
+  gap: 1.25rem;
+  align-items: flex-end;
+  flex-wrap: wrap;
+}
+
+.exportBtn {
+  background: #3b82f6;
+  color: white;
+  border: none;
+  padding: 0.7rem 1.5rem;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: background-color 0.2s;
+  white-space: nowrap;
+}
+
+.exportBtn:hover {
+  background: #2563eb;
+}
+
+.contentPadding {
+  padding: 2rem;
+}
+
 .dashboardContainer {
   padding: 3rem 5%;
   width: 100%;
@@ -42,6 +151,7 @@
   margin-bottom: 3rem;
   align-items: flex-end;
   border: 1px solid rgba(255,255,255,0.4);
+  flex-wrap: wrap;
 }
 
 .filterGroup {
@@ -64,7 +174,8 @@
   border-radius: 10px;
   font-size: 0.95rem;
   font-weight: 500;
-  min-width: 220px;
+  min-width: 180px;
+  max-width: 100%;
   outline: none;
   background-color: #ffffff;
   color: #334155;
@@ -105,7 +216,7 @@
 /* KPI Board */
 .kpiGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   gap: 1.25rem;
 }
 
@@ -143,7 +254,7 @@
 /* Charts */
 .chartsGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 1.5rem;
 }
 
@@ -156,6 +267,8 @@
   transition: box-shadow 0.2s ease;
   display: flex;
   flex-direction: column;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .chartContainer:hover {
@@ -188,14 +301,16 @@
   background: #ffffff;
   border-radius: 12px;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
-  overflow: hidden;
+  overflow-x: auto;
   border: 1px solid #e2e8f0;
+  max-width: 100%;
 }
 
 .dataTable {
   width: 100%;
   border-collapse: separate;
   border-spacing: 0;
+  min-width: 500px;
 }
 
 .dataTable th, .dataTable td {
@@ -306,4 +421,82 @@
 
 .aiContent p {
   margin-bottom: 1.2rem;
+}
+
+/* Media Queries for Mobile & Tablet */
+@media (max-width: 900px) {
+  .analyticsLayout {
+    flex-direction: column;
+    height: auto;
+    min-height: 100vh;
+    overflow-y: auto;
+  }
+  .sideNav {
+    position: relative;
+    width: 100%;
+    padding: 1rem 1.25rem;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    overflow-x: auto;
+  }
+  .navHeader {
+    margin-bottom: 0;
+  }
+  .tabsContainer {
+    flex-direction: row;
+    overflow-x: auto;
+    padding-bottom: 4px;
+  }
+  .tabBtn {
+    padding: 0.5rem 0.85rem;
+    font-size: 0.85rem;
+    border-left: none;
+    border-bottom: 3px solid transparent;
+  }
+  .activeTabBtn {
+    border-left: none !important;
+    border-bottom: 3px solid #3b82f6 !important;
+  }
+  .mainArea {
+    margin-left: 0;
+    height: auto;
+  }
+  .topHeader {
+    padding: 0.85rem 1.25rem;
+  }
+  .contentPadding {
+    padding: 1rem;
+  }
+  .filtersSection {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 1rem;
+    padding: 1rem;
+  }
+  .filterGroup select {
+    min-width: 100%;
+    width: 100%;
+  }
+  .aiContainer {
+    padding: 1.5rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .sideNav {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+  .tabsContainer {
+    width: 100%;
+  }
+  .topHeader {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .exportBtn {
+    width: 100%;
+  }
 }

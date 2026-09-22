@@ -205,3 +205,30 @@
     opacity: 1;
   }
 }
+
+@media (max-width: 480px) {
+  .joinWrap {
+    padding: 16px 12px;
+  }
+  .joinCard {
+    padding: 24px 16px;
+    border-radius: 18px;
+  }
+  .joinTitle {
+    font-size: 22px;
+  }
+  .joinRoom {
+    margin-bottom: 20px;
+    font-size: 13px;
+  }
+  .joinInput {
+    padding: 12px 14px;
+    font-size: 15px;
+    border-radius: 12px;
+  }
+  .joinBtn {
+    height: 48px;
+    font-size: 15px;
+    border-radius: 12px;
+  }
+}
