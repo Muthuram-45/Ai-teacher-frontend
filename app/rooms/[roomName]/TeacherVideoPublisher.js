@@ -51,7 +51,7 @@ export class TeacherVideoPublisher {
 
                 const pub = await this.room.localParticipant.publishTrack(videoMediaTrack, {
                     name: `class-video-${lang}`,
-                    source: 'screen_share',
+                    source: 'unknown',
                     simulcast: false,
                     videoCodec: 'vp8',
                     screenShareEncoding: {

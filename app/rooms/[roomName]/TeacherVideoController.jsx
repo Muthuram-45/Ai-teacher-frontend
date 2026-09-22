@@ -925,10 +925,8 @@ export default function TeacherVideoController({
                   endedAnnouncedRef.current = false;
                   // ✅ clear file input so same file can be selected again
                   Object.values(videoInputRefs.current).forEach(ref => { if (ref.current) ref.current.value = ""; });
-                  
-                  
                 }}
-                style={{ background: 'none', border: 'none', color: '#666', cursor: 'pointer' }}
+                style={{ background: 'none', border: 'none', color: '#666', cursor: 'pointer', fontSize: '1.1rem' }}
               >
                 ✕
               </button>

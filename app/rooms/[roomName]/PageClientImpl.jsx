@@ -3140,7 +3140,7 @@ function RoomContent() {
                             controls={role === 'teacher' ? {
                                 microphone: true,
                                 camera: true,
-                                screenShare: true,
+                                screenShare: false,
                                 chat: false,
                                 leave: false,
                             } : {
