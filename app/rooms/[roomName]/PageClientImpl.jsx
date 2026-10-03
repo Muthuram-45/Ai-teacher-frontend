@@ -3217,7 +3217,6 @@ function StudentVideoThumbs({ participants, onShowFullGrid }) {
     const tracks = useTracks(
         [
             { source: Track.Source.Camera, withPlaceholder: true },
-            { source: Track.Source.ScreenShare, withPlaceholder: false },
         ],
         { onlySubscribed: false },
     );
@@ -3695,7 +3694,6 @@ function FullStudentGridOverlay({ participants, onClose }) {
     const tracks = useTracks(
         [
             { source: Track.Source.Camera, withPlaceholder: true },
-            { source: Track.Source.ScreenShare, withPlaceholder: false },
         ],
         { onlySubscribed: false },
     );

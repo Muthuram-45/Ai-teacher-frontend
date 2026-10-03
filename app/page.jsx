@@ -884,7 +884,7 @@ export default function Home() {
             </>
           ) : (
             <div className="stack">
-              <div className="shareBox" style={{ background: 'rgba(30, 41, 59, 0.3)', border: '1px solid var(--border)' }}>
+              <div className="shareBox" style={{ background: 'rgba(30, 41, 59, 0.3)', border: '1px solid var(--border)', marginBottom: '16px' }}>
                 <div className="shareHint" style={{ color: 'var(--muted)', fontWeight: '500' }}>Student Invite Link</div>
 
                 <div className="shareRow" style={{ background: '#050814', border: '1px solid var(--border)', padding: '16px' }}>
@@ -895,6 +895,35 @@ export default function Home() {
 
                   <button onClick={onCopyLink} className="linkBtn" type="button" style={{
                     background: 'var(--blue)',
+                    color: 'white',
+                    border: 'none',
+                    padding: '8px 20px',
+                    borderRadius: '8px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px'
+                  }}>
+                    <MdContentCopy />
+                  </button>
+                </div>
+              </div>
+
+              <div className="shareBox" style={{ background: 'rgba(30, 41, 59, 0.3)', border: '1px solid var(--border)' }}>
+                <div className="shareHint" style={{ color: 'var(--muted)', fontWeight: '500' }}>Meeting Code (For Mobile App)</div>
+
+                <div className="shareRow" style={{ background: '#050814', border: '1px solid var(--border)', padding: '16px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1, overflow: 'hidden' }}>
+                    <span style={{ color: '#10b981', fontSize: '18px' }}>#</span>
+                    <code className="shareCode" style={{ color: '#34d399', fontSize: '16px', fontWeight: 'bold' }}>{createdRoom}</code>
+                  </div>
+
+                  <button 
+                    onClick={() => {
+                      navigator.clipboard.writeText(createdRoom);
+                      alert('Meeting code copied to clipboard!');
+                    }} 
+                    className="linkBtn" type="button" style={{
+                    background: '#10b981',
                     color: 'white',
                     border: 'none',
                     padding: '8px 20px',
