@@ -268,3 +268,68 @@ export function stopSpeaking() {
         console.log("⏹ Browser Synthesis cancelled");
     }
 }
+
+/**
+ * 🔊 Plays hand-raise notification audio tailored to the receiver's preferred language
+ */
+let lastHandRaiseAudioStudent = null;
+let lastHandRaiseAudioTime = 0;
+
+export async function playHandRaiseAudioForStudent(studentName, options = {}) {
+    const now = Date.now();
+    if (lastHandRaiseAudioStudent === studentName && (now - lastHandRaiseAudioTime) < 3000) {
+        console.log(`[HAND RAISE AUDIO] Skipping duplicate playback for ${studentName} within 3s`);
+        return;
+    }
+    lastHandRaiseAudioStudent = studentName;
+    lastHandRaiseAudioTime = now;
+
+    const preferredLanguage = typeof window !== 'undefined'
+        ? (new URLSearchParams(window.location.search).get('lang') || localStorage.getItem('preferredLanguage') || 'en')
+        : 'en';
+
+    console.log(`[HAND RAISE AUDIO REQUEST] Student: ${studentName}, Receiver Lang: ${preferredLanguage}`);
+
+    try {
+        const res = await fetch(`${BACKEND_URL}/api/multilingual/hand-raise-audio`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                studentName: studentName || 'Student',
+                lang: preferredLanguage
+            })
+        });
+
+        if (res.ok) {
+            const arrayBuffer = await res.arrayBuffer();
+            const ctx = options.audioContext || getLocalContext();
+            if (ctx.state === 'suspended') await ctx.resume();
+            const audioBuffer = await ctx.decodeAudioData(arrayBuffer);
+
+            await new Promise((resolve) => {
+                const source = ctx.createBufferSource();
+                source.buffer = audioBuffer;
+                if (options.destinationNode) source.connect(options.destinationNode);
+                source.connect(ctx.destination);
+                source.onended = resolve;
+                activeSource = source;
+                source.start(0);
+            });
+            console.log(`[HAND RAISE AUDIO] Successfully played ${preferredLanguage} audio for ${studentName}`);
+            return;
+        }
+    } catch (e) {
+        console.warn(`⚠️ [HAND RAISE AUDIO] Custom fetch failed for ${preferredLanguage}, using speakText fallback:`, e);
+    }
+
+    const promptMap = {
+        'ta': `${studentName}, உங்களுக்கு ஏதாவது doubt இருக்கா? அப்படி இருந்தா Ask Doubt button click பண்ணி உங்க doubt கேளுங்க.`,
+        'ml': `${studentName}, നിങ്ങൾക്ക് എന്തെങ്കിലും doubt ഉണ്ടോ? ഉണ്ടെങ്കിൽ Ask Doubt button ക്ലിക്ക് ചെയ്ത് നിങ്ങളുടെ doubt ചോദിക്കുക.`,
+        'hi': `${studentName}, क्या आपका कोई doubt है? अगर है तो Ask Doubt button पर click करके अपना doubt पूछें.`,
+        'te': `${studentName}, మీకు ఏదైనా doubt ఉందా? ఉంటే Ask Doubt button పై click చేసి మీ doubt అడగండి.`,
+        'kn': `${studentName}, ನಿಮಗೆ ಯಾವುದಾದರೂ doubt ಇದೆಯಾ? ಇದ್ದರೆ Ask Doubt button ಕ್ಲಿಕ್ ಮಾಡಿ ನಿಮ್ಮ doubt ಕೇಳಿ.`,
+        'en': `${studentName}, do you have any doubt? If so, click the Ask Doubt button and ask your doubt.`
+    };
+    const text = promptMap[preferredLanguage] || promptMap['en'];
+    return speakText(text, { ...options, skipTranslation: true });
+}

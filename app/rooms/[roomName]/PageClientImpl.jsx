@@ -127,7 +127,7 @@ import StudentVideoViewer from "./StudentVideoViewer";
 import AISidebar from "./AISidebar";
 import { GiNotebook } from "react-icons/gi";
 import ParticipantList from "./ParticipantList";
-import { speakText, stopSpeaking, initAudioContext } from "@/app/lib/aiTTS";
+import { speakText, stopSpeaking, initAudioContext, playHandRaiseAudioForStudent } from "@/app/lib/aiTTS";
 import HistorySidebar from "./HistorySidebar";
 import AttendanceSidebar from "./AttendanceSidebar";
 
@@ -2401,28 +2401,34 @@ function RoomContent() {
                     }
                 }
 
-                // ✋ Hand Raise (Teacher Processing)
-                if (msg.action === "HAND_RAISE" && role === "teacher") {
-                    setHandRaiseQueue((prev) => {
-                        let nextQueue = [...prev];
-                        if (msg.raised) {
-                            if (!nextQueue.find(item => (item.name || item) === msg.name)) {
-                                nextQueue.push({ name: msg.name, lang: msg.preferredLanguage || 'en' });
+                // ✋ Hand Raise (Queue & State Management & Multilingual Audio)
+                if (msg.action === "HAND_RAISE") {
+                    if (role === "teacher") {
+                        setHandRaiseQueue((prev) => {
+                            let nextQueue = [...prev];
+                            if (msg.raised) {
+                                if (!nextQueue.find(item => (item.name || item) === msg.name)) {
+                                    nextQueue.push({ name: msg.name, lang: msg.preferredLanguage || 'en' });
+                                }
+                            } else {
+                                nextQueue = nextQueue.filter((item) => (item.name || item) !== msg.name);
                             }
-                        } else {
-                            nextQueue = nextQueue.filter((item) => (item.name || item) !== msg.name);
-                        }
-                        return nextQueue;
-                    });
-                }
+                            return nextQueue;
+                        });
+                    }
 
-                // ✋ Hand Raise (Student Side Reaction)
-                if (
-                    msg.action === "HAND_RAISE" &&
-                    role === "student" &&
-                    msg.name === localParticipant?.identity
-                ) {
-                    setIsHandRaised(msg.raised);
+                    if (role === "student" && msg.name === localParticipant?.identity) {
+                        setIsHandRaised(msg.raised);
+                    }
+
+                    // 🔊 Play hand-raise notification audio tailored to receiver's preferred language
+                    if (msg.raised) {
+                        const studentName = msg.name || "Student";
+                        playHandRaiseAudioForStudent(studentName, {
+                            audioContext: recordingAudioContext.current,
+                            destinationNode: recordingDestNode.current,
+                        }).catch((err) => console.error("Hand Raise Audio Error:", err));
+                    }
                 }
 
                 // 📢 AI General Speak Broadcast (Student Side & Other Teachers)
@@ -2591,33 +2597,39 @@ function RoomContent() {
         setLoadingAI(doubt.id);
 
         try {
-            // 🌟 1. Fetch & Speak Encouragement First (Only for English students)
-            if (!doubt.preferredLanguage || doubt.preferredLanguage === 'en') {
-                try {
-                    const encRes = await fetch(`${BACKEND_URL}/encourage-student`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ name: doubt.name, question: doubt.text }),
+            // 🌟 1. Fetch & Speak Encouragement First (in Student's Selected Language)
+            try {
+                const encRes = await fetch(`${BACKEND_URL}/encourage-student`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        name: doubt.name, 
+                        question: doubt.text,
+                        preferredLanguage: doubt.preferredLanguage || 'en'
+                    }),
+                });
+                const encData = await encRes.json();
+                if (encData.encouragement) {
+                    await speakText(encData.encouragement, {
+                        audioContext: recordingAudioContext.current,
+                        destinationNode: recordingDestNode.current,
+                        skipTranslation: true,
                     });
-                    const encData = await encRes.json();
-                    if (encData.encouragement) {
-                        await speakText(encData.encouragement, {
-                            audioContext: recordingAudioContext.current,
-                            destinationNode: recordingDestNode.current,
-                            skipTranslation: true,
-                        });
-                        if (room) {
-                            room.localParticipant.publishData(
-                                new TextEncoder().encode(JSON.stringify({ action: "AI_SPEAK_BROADCAST", text: encData.encouragement })),
-                                { reliable: true }
-                            );
-                        }
-                        // Wait a bit after encouragement finishes before the answer starts
-                        await new Promise(r => setTimeout(r, 500));
+                    if (room) {
+                        room.localParticipant.publishData(
+                            new TextEncoder().encode(JSON.stringify({ 
+                                action: "AI_SPEAK_BROADCAST", 
+                                text: encData.encouragement,
+                                preferredLanguage: doubt.preferredLanguage || 'en'
+                            })),
+                            { reliable: true }
+                        );
                     }
-                } catch (err) {
-                    console.error('Failed to get encouragement in processDoubt', err);
+                    // Wait a bit after encouragement finishes before the answer starts
+                    await new Promise(r => setTimeout(r, 500));
                 }
+            } catch (err) {
+                console.error('Failed to get encouragement in processDoubt', err);
             }
 
             // 🤖 2. Fetch AI Answer
