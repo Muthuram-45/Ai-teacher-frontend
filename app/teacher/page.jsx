@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation';
 
 import { TbBrandZoom } from "react-icons/tb";
 import { MdContentCopy } from "react-icons/md";
+import { FaMicrophone, FaChalkboardTeacher } from "react-icons/fa";
+import VoiceReplicationStudio from "./VoiceReplicationStudio";
 import { BACKEND_URL, VIDEOGEN_URL } from '../lib/config';
 import '../../styles/Page.css';
 
@@ -31,15 +33,16 @@ export default function TeacherPage() {
 
   const [loading, setLoading] = useState(false);
   const [isClient, setIsClient] = useState(false);
-  const [availableVoices, setAvailableVoices] = useState([]);
-  const [selectedVoice, setSelectedVoice] = useState('Female');
+  const [availableVoices, setAvailableVoices] = useState(['Mohan']);
+  const [selectedVoice, setSelectedVoice] = useState('Mohan');
   const [showRejoinPopup, setShowRejoinPopup] = useState(false);
+  const [dashboardTab, setDashboardTab] = useState('session'); // 'session' | 'voiceStudio'
 
   // Video Generation State
   const [videoLanguages, setVideoLanguages] = useState(['ta', 'hi', 'ml', 'te', 'kn']);
   const [videoDuration, setVideoDuration] = useState(5);
   const [videoVoices, setVideoVoices] = useState([]);
-  const [selectedVideoVoice, setSelectedVideoVoice] = useState('Female');
+  const [selectedVideoVoice, setSelectedVideoVoice] = useState('Mohan');
   const [isGeneratingVideo, setIsGeneratingVideo] = useState(false);
   const [videoProgress, setVideoProgress] = useState(0);
   const [generatedVideo, setGeneratedVideo] = useState(null);
@@ -584,12 +587,78 @@ export default function TeacherPage() {
           </div>
         </header>
 
-        <div className="panel" style={{ maxWidth: '960px' }}>
-          {!createdRoom ? (
-            <>
-              <h2 className="panelTitle" style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#fff', marginBottom: '20px' }}>
-                <span style={{ color: 'var(--blue)', fontSize: '24px' }}>+</span> Create & Configure Session
-              </h2>
+        {/* Tab Navigation: Classroom vs Voice Studio */}
+        <div style={{ display: 'flex', gap: '12px', marginBottom: '16px', maxWidth: '960px' }}>
+          <button
+            type="button"
+            onClick={() => setDashboardTab('session')}
+            style={{
+              padding: '10px 20px',
+              borderRadius: '10px',
+              border: dashboardTab === 'session' ? '1px solid #6366f1' : '1px solid rgba(255, 255, 255, 0.1)',
+              background: dashboardTab === 'session' ? 'rgba(99, 102, 241, 0.25)' : 'rgba(15, 23, 42, 0.6)',
+              color: dashboardTab === 'session' ? '#ffffff' : '#94a3b8',
+              fontWeight: '700',
+              fontSize: '13px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              cursor: 'pointer',
+              transition: 'all 0.2s ease'
+            }}
+          >
+            <FaChalkboardTeacher /> Live Classroom & Video
+          </button>
+          <button
+            type="button"
+            onClick={() => setDashboardTab('voiceStudio')}
+            style={{
+              padding: '10px 20px',
+              borderRadius: '10px',
+              border: dashboardTab === 'voiceStudio' ? '1px solid #6366f1' : '1px solid rgba(255, 255, 255, 0.1)',
+              background: dashboardTab === 'voiceStudio' ? 'rgba(99, 102, 241, 0.25)' : 'rgba(15, 23, 42, 0.6)',
+              color: dashboardTab === 'voiceStudio' ? '#ffffff' : '#94a3b8',
+              fontWeight: '700',
+              fontSize: '13px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              cursor: 'pointer',
+              transition: 'all 0.2s ease'
+            }}
+          >
+            <FaMicrophone /> 🎙️ Voice Replication Studio (Gemini 3.8 Flash)
+          </button>
+        </div>
+
+        {dashboardTab === 'voiceStudio' ? (
+          <div className="panel" style={{ maxWidth: '960px' }}>
+            <VoiceReplicationStudio
+              teacherEmail={username}
+              teacherName={teacherName}
+              activeVoice={selectedVoice}
+              onVoiceChanged={(newVoice) => {
+                setSelectedVoice(newVoice);
+                const fetchVoices = async () => {
+                  try {
+                    const resp = await fetch(`${BACKEND_URL}/list-voices`);
+                    const data = await resp.json();
+                    if (data.voices) setAvailableVoices(data.voices);
+                  } catch (e) {
+                    console.error("Failed to fetch voices:", e);
+                  }
+                };
+                fetchVoices();
+              }}
+            />
+          </div>
+        ) : (
+          <div className="panel" style={{ maxWidth: '960px' }}>
+            {!createdRoom ? (
+              <>
+                <h2 className="panelTitle" style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#fff', marginBottom: '20px' }}>
+                  <span style={{ color: 'var(--blue)', fontSize: '24px' }}>+</span> Create & Configure Session
+                </h2>
 
               <div style={{
                 display: 'grid',
@@ -638,14 +707,7 @@ export default function TeacherPage() {
                         className="inputTight"
                         disabled={isGeneratingVideo}
                       >
-                        <option value="" disabled>Select Voice</option>
-                        {availableVoices
-                          .map(v => (
-                            <option key={v} value={v}>
-                              {v.replace('.wav', '').replace(/_/g, ' ')}
-                            </option>
-                          ))
-                        }
+                        <option value="Mohan">Mohan</option>
                       </select>
                     </div>
                   </div>
@@ -728,8 +790,7 @@ export default function TeacherPage() {
                           className="inputTight"
                           disabled={isGeneratingVideo}
                         >
-                          <option value="Female">Female</option>
-                          <option value="Male">Male</option>
+                          <option value="Mohan">Mohan</option>
                         </select>
                       </div>
                     </div>
@@ -953,6 +1014,7 @@ export default function TeacherPage() {
             </div>
           )}
         </div>
+        )}
       </div>
     </div>
   );

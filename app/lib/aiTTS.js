@@ -50,11 +50,11 @@ function splitIntoChunks(text, maxLen = 200) {
 export async function speakText(text, options = {}) {
     if (!text) return;
 
-    const preferredLanguage = typeof window !== 'undefined' ? (new URLSearchParams(window.location.search).get('lang') || localStorage.getItem('preferredLanguage') || 'en') : 'en';
+    const preferredLanguage = options.forceLanguage || (typeof window !== 'undefined' ? (new URLSearchParams(window.location.search).get('lang') || localStorage.getItem('preferredLanguage')) : null) || 'auto';
 
-    // 🌐 Automatically translate hardcoded UI text to the user's preferred language before speaking
+    // 🌐 Automatically translate hardcoded UI text to target language before speaking
     let finalSpeechText = text;
-    if (preferredLanguage !== 'en' && !options.skipTranslation) {
+    if (preferredLanguage && preferredLanguage !== 'en' && preferredLanguage !== 'auto' && !options.skipTranslation) {
         try {
             const res = await fetch(`${BACKEND_URL}/api/multilingual/translate-text`, {
                 method: 'POST',
@@ -99,8 +99,7 @@ export async function speakText(text, options = {}) {
                     await playRecordableChunk(chunk, audioContext, destinationNode, options);
                 } catch (err) {
                     if (!stopRequested) {
-                        console.warn("⚠️ Text playback failed, falling back to browser synthesis:", err);
-                        await fallbackToBrowserTTS(chunk, options).catch(() => { });
+                        console.warn("⚠️ Gemini 3.8 Flash TTS chunk playback error:", err);
                     }
                 }
             }
@@ -125,13 +124,6 @@ export function initAudioContext() {
     if (ctx.state === 'suspended') {
         ctx.resume().catch(() => { });
     }
-
-    // Also unlock browser's native speech synthesis (required for fallback on Safari/iOS/Chrome)
-    if (typeof window !== 'undefined' && window.speechSynthesis) {
-        const unlockUtterance = new SpeechSynthesisUtterance(" ");
-        unlockUtterance.volume = 0; // silent
-        window.speechSynthesis.speak(unlockUtterance);
-    }
 }
 
 /**
@@ -144,9 +136,9 @@ async function playRecordableChunk(text, audioContext, destinationNode, options 
     if (ctx.state === 'suspended') await ctx.resume();
 
     try {
-        console.log(`🔊 Playing full response via Google Cloud TTS`);
+        console.log(`🔊 Playing response via Gemini 3.8 Flash TTS (Mohan)`);
 
-        const preferredLanguage = typeof window !== 'undefined' ? (new URLSearchParams(window.location.search).get('lang') || localStorage.getItem('preferredLanguage') || 'en') : 'en';
+        const preferredLanguage = options.forceLanguage || (typeof window !== 'undefined' ? (new URLSearchParams(window.location.search).get('lang') || localStorage.getItem('preferredLanguage')) : null) || 'auto';
 
         const ttsLang = preferredLanguage;
         const url = `${BACKEND_URL}/api/tts`;
@@ -154,12 +146,18 @@ async function playRecordableChunk(text, audioContext, destinationNode, options 
         const response = await fetch(url, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ text, lang: ttsLang })
+            body: JSON.stringify({
+                text,
+                lang: ttsLang,
+                roomName: options.roomName,
+                role: options.role,
+                voiceId: 'voice_74080a81-5951-4b5f-972b-72b4064d116a'
+            })
         });
         
         if (!response.ok) {
-            console.warn(`⚠️ Backend TTS returned ${response.status}. Falling back to Browser SpeechSynthesis...`);
-            return await fallbackToBrowserTTS(text, { forceLanguage: ttsLang });
+            const errBody = await response.text();
+            throw new Error(`Gemini 3.8 Flash TTS returned ${response.status}: ${errBody}`);
         }
         
         const arrayBuffer = await response.arrayBuffer();
@@ -176,71 +174,8 @@ async function playRecordableChunk(text, audioContext, destinationNode, options 
         });
 
     } catch (err) {
-        console.error("❌ Google Cloud TTS failed, falling back to browser speech synthesis:", err);
-        await fallbackToBrowserTTS(text, options);
-    }
-}
-
-/**
- * Consolidate browser TTS into a reliable function
- */
-function fallbackToBrowserTTS(text, options = {}) {
-    return new Promise((resolve) => {
-        if (typeof window === 'undefined' || !window.speechSynthesis) return resolve();
-
-        const preferredLanguage = options.forceLanguage || new URLSearchParams(window.location.search).get('lang') || localStorage.getItem('preferredLanguage') || 'en';
-
-        // Cancel any existing speech
-        window.speechSynthesis.cancel();
-
-        const sanitizedSpeechText = sanitizeTextForTTS(text, preferredLanguage);
-        const utterance = new SpeechSynthesisUtterance(sanitizedSpeechText);
-        utterance.lang = preferredLanguage; // Help browser pick the right voice automatically
-
-        // Find specific voice based on preferredLanguage
-        const voices = window.speechSynthesis.getVoices();
-        
-        let targetVoice = null;
-        if (preferredLanguage === 'hi') {
-            targetVoice = voices.find(v => v.lang.startsWith('hi') || v.name.toLowerCase().includes('hindi'));
-        } else if (preferredLanguage === 'ml') {
-            targetVoice = voices.find(v => v.lang.startsWith('ml') || v.name.toLowerCase().includes('malayalam'));
-        } else {
-            // Default English/Indian English fallback (Also used for Thanglish since it's Latin script)
-            targetVoice = voices.find(v =>
-                v.name.toLowerCase().includes('india') ||
-                v.lang.includes('en-IN') ||
-                v.name.toLowerCase().includes('heera') ||
-                v.name.toLowerCase().includes('ravi')
-            );
-        }
-
-        if (targetVoice) {
-            utterance.voice = targetVoice;
-            utterance.rate = 0.95;
-            utterance.pitch = 1.0;
-        }
-
-        utterance.onend = () => {
-            console.log("✅ Browser TTS finished");
-            resolve();
-        };
-        utterance.onerror = (e) => {
-            if (e.error === 'interrupted' || e.error === 'canceled') return resolve();
-            console.warn("⚠️ Browser TTS notice:", e.error || e);
-            resolve();
-        };
-
-        window.speechSynthesis.speak(utterance);
-    });
-}
-
-
-// Pre-fetch voices for browser TTS
-if (typeof window !== 'undefined' && window.speechSynthesis) {
-    window.speechSynthesis.getVoices();
-    if (window.speechSynthesis.onvoiceschanged !== undefined) {
-        window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
+        console.error("❌ Gemini 3.8 Flash TTS playback failed:", err);
+        throw err;
     }
 }
 
@@ -260,12 +195,6 @@ export function stopSpeaking() {
             console.warn("⚠️ Error stopping audio source:", e);
         }
         activeSource = null;
-    }
-
-    // 2. Stop Browser TTS
-    if (window.speechSynthesis) {
-        window.speechSynthesis.cancel();
-        console.log("⏹ Browser Synthesis cancelled");
     }
 }
 

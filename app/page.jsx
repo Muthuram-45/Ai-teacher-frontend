@@ -31,15 +31,15 @@ export default function Home() {
 
   const [loading, setLoading] = useState(false);
   const [isClient, setIsClient] = useState(false);
-  const [availableVoices, setAvailableVoices] = useState([]);
-  const [selectedVoice, setSelectedVoice] = useState('Female');
+  const [availableVoices, setAvailableVoices] = useState(['Mohan']);
+  const [selectedVoice, setSelectedVoice] = useState('Mohan');
   const [showRejoinPopup, setShowRejoinPopup] = useState(false);
 
   // Video Generation State
   const [videoLanguages, setVideoLanguages] = useState(['ta', 'hi', 'ml', 'te', 'kn']);
   const [videoDuration, setVideoDuration] = useState(5);
   const [videoVoices, setVideoVoices] = useState([]);
-  const [selectedVideoVoice, setSelectedVideoVoice] = useState('Female');
+  const [selectedVideoVoice, setSelectedVideoVoice] = useState('Mohan');
   const [isGeneratingVideo, setIsGeneratingVideo] = useState(false);
   const [videoProgress, setVideoProgress] = useState(0);
   const [generatedVideo, setGeneratedVideo] = useState(null);
@@ -630,14 +630,7 @@ export default function Home() {
                         className="inputTight"
                         disabled={isGeneratingVideo}
                       >
-                        <option value="" disabled>Select Voice</option>
-                        {availableVoices
-                          .map(v => (
-                            <option key={v} value={v}>
-                              {v.replace('.wav', '').replace(/_/g, ' ')}
-                            </option>
-                          ))
-                        }
+                        <option value="Mohan">Mohan</option>
                       </select>
                     </div>
                   </div>
@@ -722,8 +715,7 @@ export default function Home() {
                           className="inputTight"
                           disabled={isGeneratingVideo}
                         >
-                          <option value="Female">Female</option>
-                          <option value="Male">Male</option>
+                          <option value="Mohan">Mohan</option>
                         </select>
                       </div>
                     </div>

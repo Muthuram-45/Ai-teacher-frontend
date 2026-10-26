@@ -5,7 +5,7 @@ import { DataPacket_Kind } from 'livekit-client';
 import { useRoomContext } from '@livekit/components-react';
 import { TeacherVideoPublisher } from './TeacherVideoPublisher';
 import { speakText } from '@/app/lib/aiTTS';
-import { SUPPORTED_LANGUAGES } from '@/app/lib/config';
+import { SUPPORTED_LANGUAGES, BACKEND_URL } from '@/app/lib/config';
 import { MdUploadFile, MdOutlineCancel } from "react-icons/md";
 import { BsRecordCircle, BsStopCircle, BsFileText, BsPauseCircle, BsPlayCircle, BsCloudUpload } from "react-icons/bs";
 
@@ -141,15 +141,36 @@ export default function TeacherVideoController({
       // ✅ Show quiz pop-in to teacher automatically
       setShowQuizPopup(true);
 
-      // ✅ speak only once when video completes
+      // ✅ speak only once when video completes using teacher's session language
       if (!endedAnnouncedRef.current) {
         endedAnnouncedRef.current = true;
         try {
+          let teacherLang = 'ta';
+          if (room?.name) {
+            try {
+              const tlRes = await fetch(`${BACKEND_URL}/api/multilingual/teacher-language/${encodeURIComponent(room.name)}`);
+              const tlData = await tlRes.json();
+              if (tlData.teacherAudioLanguage) {
+                teacherLang = tlData.teacherAudioLanguage;
+              }
+            } catch (tlErr) {
+              console.warn('Teacher language lookup failed:', tlErr);
+            }
+          }
+
           const txt = "Ok guys, I have finished the class. ask doubt box enter your doubt i am clarify one by one .";
-          await speakText(txt);
+          await speakText(txt, {
+            forceLanguage: teacherLang,
+            roomName: room?.name,
+            role: 'teacher'
+          });
           if (room) {
             room.localParticipant.publishData(
-              new TextEncoder().encode(JSON.stringify({ action: "AI_SPEAK_BROADCAST", text: txt })),
+              new TextEncoder().encode(JSON.stringify({
+                action: "AI_SPEAK_BROADCAST",
+                text: txt,
+                teacherLanguage: teacherLang
+              })),
               { reliable: true }
             );
           }

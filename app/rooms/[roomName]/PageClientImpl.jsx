@@ -2469,10 +2469,13 @@ function RoomContent() {
                         let speechText = msg.isDirectResponse ? msg.answer : `${msg.name} asked: ${msg.text}. ${msg.answer}`;
                         let skipTrans = (role === "teacher");
 
+                        // For teachers, prefer the teacherLanguage selected from student preferences
+                        const effectiveLang = (role === "teacher" && msg.teacherLanguage) ? msg.teacherLanguage : prefLang;
+
                         if (msg.tracks) {
-                            const track = msg.tracks[prefLang] || msg.tracks['en'];
+                            const track = msg.tracks[effectiveLang] || (msg.teacherLanguage && msg.tracks[msg.teacherLanguage]) || msg.tracks[prefLang];
                             if (track && track.error) {
-                                console.warn(`⚠️ Multilingual track error for lang '${prefLang}'. Skipping playback to avoid wrong language fallback.`);
+                                console.warn(`⚠️ Multilingual track error for lang '${effectiveLang}'. Skipping playback to avoid wrong language fallback.`);
                                 return;
                             }
                             if (track && track.text) {
@@ -2485,7 +2488,10 @@ function RoomContent() {
                             audioContext: recordingAudioContext.current,
                             destinationNode: recordingDestNode.current,
                             skipTranslation: skipTrans,
-                            startAt: msg.startAt
+                            startAt: msg.startAt,
+                            forceLanguage: effectiveLang,
+                            roomName: room?.name || roomName,
+                            role
                         };
                         speakText(speechText, ttsOpts).catch((err) => console.error("Broadcast TTS error:", err));
                     }
@@ -2732,13 +2738,21 @@ function RoomContent() {
         console.log("✅ sendToStudent: Published AI_ANSWER_BROADCAST with payload:", broadcastPayload);
 
         // Play locally for the Teacher — AWAIT completion before moving to next doubt
-        const audioString = doubt.isDirectResponse ? doubt.answer : `${doubt.name} asked: ${doubt.text}. ${doubt.answer}`;
+        // Use teacher's optimized audio language selected from student preferences
+        const teacherLang = broadcastPayload.teacherLanguage || 'ta';
+        const teacherTrack = broadcastPayload.tracks && broadcastPayload.tracks[teacherLang];
+        const teacherAudioString = (teacherTrack && teacherTrack.text)
+            ? teacherTrack.text
+            : (doubt.isDirectResponse ? doubt.answer : `${doubt.name} asked: ${doubt.text}. ${doubt.answer}`);
+
         try {
-            await speakText(audioString, {
+            await speakText(teacherAudioString, {
                 audioContext: recordingAudioContext.current,
                 destinationNode: recordingDestNode.current,
                 skipTranslation: true,
-                ...(doubt.isDirectResponse && { forceLanguage: 'en' })
+                forceLanguage: teacherLang,
+                roomName: room.name || roomName,
+                role: 'teacher'
             });
         } catch (err) {
             console.error("Teacher local TTS error:", err);
