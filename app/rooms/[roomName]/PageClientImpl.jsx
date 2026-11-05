@@ -9,6 +9,7 @@ import {
 } from "react";
 import { useSearchParams } from "next/navigation";
 import { BACKEND_URL, ATTENTION_POPUP_INTERVAL } from "../../lib/config";
+import toast from "react-hot-toast";
 import {
     startClassRecording,
     stopClassRecording,
@@ -232,6 +233,27 @@ function MeetingEndedOverlay() {
 }
 
 /* ---------------- WAITING ROOM UI (TEACHER) ---------------- */
+
+function playAdmitChime() {
+    try {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (!AudioCtx) return;
+        const ctx = new AudioCtx();
+        const now = ctx.currentTime;
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = "sine";
+        osc.frequency.setValueAtTime(587.33, now); // D5
+        osc.frequency.setValueAtTime(880, now + 0.12); // A5
+        gain.gain.setValueAtTime(0.25, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.45);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.45);
+    } catch (e) {}
+}
+
 function WaitingRoom({ waitingStudents, onAdmit, onReject }) {
     const [isExpanded, setIsExpanded] = useState(false);
 
@@ -252,10 +274,10 @@ function WaitingRoom({ waitingStudents, onAdmit, onReject }) {
         <div
             className="waiting-room-container"
             style={{
-                position: "absolute",
+                position: "fixed",
                 top: 24,
                 right: 24,
-                zIndex: 10000,
+                zIndex: 99999,
                 display: "flex",
                 flexDirection: "column",
                 gap: "12px",
@@ -1813,20 +1835,38 @@ function RoomContent() {
     }, [participants, role]);
 
     // Polling for Waiting Students (Teacher Only)
+    const prevWaitingCountRef = useRef(0);
     useEffect(() => {
         if (role !== "teacher" || !room?.name) return;
 
-        const interval = setInterval(() => {
-            fetch(`${BACKEND_URL}/waiting-students/${room.name}`)
+        const fetchWaiting = () => {
+            const encodedRoom = encodeURIComponent(room.name);
+            fetch(`${BACKEND_URL}/waiting-students/${encodedRoom}`)
                 .then((r) => r.json())
                 .then((data) => {
-                    setWaitingStudents(data.waiting || []);
+                    const list = data.waiting || [];
+                    if (list.length > prevWaitingCountRef.current) {
+                        playAdmitChime();
+                        const newStudent = list[list.length - 1];
+                        if (newStudent) {
+                            toast(`🔔 ${newStudent.name} is waiting to join!`, {
+                                id: `admit-${newStudent.id}`,
+                                duration: 8000,
+                                icon: '👋'
+                            });
+                        }
+                    }
+                    prevWaitingCountRef.current = list.length;
+                    setWaitingStudents(list);
                 })
                 .catch((err) => console.error("Error fetching waiting students:", err));
-        }, 5000);
+        };
+
+        fetchWaiting();
+        const interval = setInterval(fetchWaiting, 2000);
 
         return () => clearInterval(interval);
-    }, [role, room?.name]);
+    }, [role, room?.name, localParticipant?.metadata]);
 
     const handleAdmit = async (requestId) => {
         try {
