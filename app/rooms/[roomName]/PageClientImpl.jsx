@@ -1842,6 +1842,8 @@ function RoomContent() {
         const fetchWaiting = () => {
             const encodedRoom = encodeURIComponent(room.name);
             fetch(`${BACKEND_URL}/waiting-students/${encodedRoom}`)
+        const fetchWaiting = () => {
+            fetch(`${BACKEND_URL}/waiting-students/${encodeURIComponent(room.name)}`)
                 .then((r) => r.json())
                 .then((data) => {
                     const list = data.waiting || [];
@@ -1863,7 +1865,7 @@ function RoomContent() {
         };
 
         fetchWaiting();
-        const interval = setInterval(fetchWaiting, 2000);
+        const interval = setInterval(fetchWaiting, 3000);
 
         return () => clearInterval(interval);
     }, [role, room?.name, localParticipant?.metadata]);
