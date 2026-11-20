@@ -1840,9 +1840,6 @@ function RoomContent() {
         if (role !== "teacher" || !room?.name) return;
 
         const fetchWaiting = () => {
-            const encodedRoom = encodeURIComponent(room.name);
-            fetch(`${BACKEND_URL}/waiting-students/${encodedRoom}`)
-        const fetchWaiting = () => {
             fetch(`${BACKEND_URL}/waiting-students/${encodeURIComponent(room.name)}`)
                 .then((r) => r.json())
                 .then((data) => {
