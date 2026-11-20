@@ -1,8 +1,7 @@
 
-const rawBackendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'https://ai-teacher-backend-891990564907.asia-south1.run.app';
-export const BACKEND_URL = rawBackendUrl.replace(/\/+$/, '');
+// Hardcoded Google Cloud Run Backend URLs
+export const BACKEND_URL = 'https://ai-teacher-backend-891990564907.asia-south1.run.app';
 export const PYTHON_BACKEND_URL = process.env.NEXT_PUBLIC_PYTHON_BACKEND_URL || 'http://localhost:5000';
-// Hardcoded Video Generator Cloud Run Backend URL
 export const VIDEOGEN_URL = 'https://video-generator-backend-891990564907.asia-south1.run.app';
 export const ATTENTION_POPUP_INTERVAL = process.env.NEXT_PUBLIC_ATTENTION_POPUP_INTERVAL || '10';
 
