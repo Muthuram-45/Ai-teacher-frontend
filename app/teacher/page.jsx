@@ -881,7 +881,7 @@ export default function TeacherPage() {
                         const getFullVideoUrl = (url) => {
                           if (!url) return '';
                           if (url.startsWith('http://') || url.startsWith('https://')) return url;
-                          const baseUrl = (VIDEOGEN_URL || 'https://videogenerator-backend-ws81.onrender.com').replace(/\/+$/, '');
+                          const baseUrl = (VIDEOGEN_URL || 'https://video-generator-backend-891990564907.asia-south1.run.app').replace(/\/+$/, '');
                           return `${baseUrl}${url.startsWith('/') ? '' : '/'}${url}`;
                         };
 
