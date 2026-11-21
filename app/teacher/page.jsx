@@ -33,7 +33,7 @@ export default function TeacherPage() {
 
   const [loading, setLoading] = useState(false);
   const [isClient, setIsClient] = useState(false);
-  const [availableVoices, setAvailableVoices] = useState(['Mohan']);
+  const [availableVoices, setAvailableVoices] = useState(['Mohan', 'muthu', 'yeswanth']);
   const [selectedVoice, setSelectedVoice] = useState('Mohan');
   const [showRejoinPopup, setShowRejoinPopup] = useState(false);
   const [dashboardTab, setDashboardTab] = useState('session'); // 'session' | 'voiceStudio'
@@ -707,7 +707,9 @@ export default function TeacherPage() {
                         className="inputTight"
                         disabled={isGeneratingVideo}
                       >
-                        <option value="Mohan">Mohan</option>
+                        {availableVoices.map((v) => (
+                          <option key={v} value={v}>{v}</option>
+                        ))}
                       </select>
                     </div>
                   </div>
@@ -790,7 +792,15 @@ export default function TeacherPage() {
                           className="inputTight"
                           disabled={isGeneratingVideo}
                         >
-                          <option value="Mohan">Mohan</option>
+                          {videoVoices.length > 0 ? (
+                            videoVoices.map((v) => (
+                              <option key={v.id || v.name} value={v.name || v.id}>{v.name || v.id}</option>
+                            ))
+                          ) : (
+                            availableVoices.map((v) => (
+                              <option key={v} value={v}>{v}</option>
+                            ))
+                          )}
                         </select>
                       </div>
                     </div>
