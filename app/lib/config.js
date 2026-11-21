@@ -3,7 +3,7 @@
 export const BACKEND_URL = 'https://ai-teacher-backend-891990564907.asia-south1.run.app';
 export const PYTHON_BACKEND_URL = process.env.NEXT_PUBLIC_PYTHON_BACKEND_URL || 'http://localhost:5000';
 export const VIDEOGEN_URL = 'https://video-generator-backend-891990564907.asia-south1.run.app';
-export const LIVEKIT_URL = 'wss://meet-vrmadeb4.livekit.cloud';
+export const LIVEKIT_URL = 'wss://ai-4zquqj5n.livekit.cloud';
 export const ATTENTION_POPUP_INTERVAL = process.env.NEXT_PUBLIC_ATTENTION_POPUP_INTERVAL || '10';
 
 export const INACTIVITY_THRESHOLD_MS = 2 * 60 * 1000; // 2 minutes

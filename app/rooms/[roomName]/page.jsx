@@ -13,7 +13,7 @@ export default async function Page({
 
     const roomName = resolvedParams.roomName;
     const token = resolvedSearchParams.token;
-    const url = resolvedSearchParams.url || 'wss://meet-vrmadeb4.livekit.cloud';
+    const url = resolvedSearchParams.url || 'wss://ai-4zquqj5n.livekit.cloud';
 
     // ✅ Safety check (very important)
     if (!token) {

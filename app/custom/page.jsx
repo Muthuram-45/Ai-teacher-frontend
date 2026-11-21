@@ -4,7 +4,7 @@ import { isVideoCodec } from '@/lib/types';
 
 export default async function CustomRoomConnection(props) {
     const resolvedSearchParams = await props.searchParams;
-    const liveKitUrl = resolvedSearchParams.liveKitUrl || 'wss://meet-vrmadeb4.livekit.cloud';
+    const liveKitUrl = resolvedSearchParams.liveKitUrl || 'wss://ai-4zquqj5n.livekit.cloud';
     const token = resolvedSearchParams.token;
     const codec = resolvedSearchParams.codec;
     const singlePC = resolvedSearchParams.singlePC;

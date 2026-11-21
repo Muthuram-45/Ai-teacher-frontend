@@ -77,7 +77,7 @@ export default function StudentJoinPage() {
                     .then(data => {
                         if (data.status === 'admitted' && data.token) {
                             router.push(
-                                `/rooms/${roomName}?token=${encodeURIComponent(data.token)}&url=${encodeURIComponent(data.url || 'wss://meet-vrmadeb4.livekit.cloud')}&lang=${preferredLanguage}`
+                                `/rooms/${roomName}?token=${encodeURIComponent(data.token)}&url=${encodeURIComponent(data.url || 'wss://ai-4zquqj5n.livekit.cloud')}&lang=${preferredLanguage}`
                             );
                             clearInterval(interval);
                         } else if (data.status === 'rejected') {
