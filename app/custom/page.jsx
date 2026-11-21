@@ -3,7 +3,11 @@ import { VideoConferenceClientImpl } from './VideoConferenceClientImpl';
 import { isVideoCodec } from '@/lib/types';
 
 export default async function CustomRoomConnection(props) {
-    const { liveKitUrl, token, codec, singlePC } = await props.searchParams;
+    const resolvedSearchParams = await props.searchParams;
+    const liveKitUrl = resolvedSearchParams.liveKitUrl || 'wss://meet-vrmadeb4.livekit.cloud';
+    const token = resolvedSearchParams.token;
+    const codec = resolvedSearchParams.codec;
+    const singlePC = resolvedSearchParams.singlePC;
     if (typeof liveKitUrl !== 'string') {
         return <h2>Missing LiveKit URL</h2>;
     }

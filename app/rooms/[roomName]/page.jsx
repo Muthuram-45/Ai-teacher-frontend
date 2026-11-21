@@ -13,13 +13,13 @@ export default async function Page({
 
     const roomName = resolvedParams.roomName;
     const token = resolvedSearchParams.token;
-    const url = resolvedSearchParams.url;
+    const url = resolvedSearchParams.url || 'wss://meet-vrmadeb4.livekit.cloud';
 
     // ✅ Safety check (very important)
-    if (!token || !url) {
+    if (!token) {
         return (
             <div style={{ padding: 40, color: 'red' }}>
-                ❌ Missing token or LiveKit URL
+                ❌ Missing token
             </div>
         );
     }

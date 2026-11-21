@@ -3957,7 +3957,7 @@ export function PageClientImpl({ token, url }) {
     return (
         <LiveKitRoom
             token={token}
-            serverUrl={url}
+            serverUrl={url || 'wss://meet-vrmadeb4.livekit.cloud'}
             connect={true}
             options={{
                 adaptiveStream: { pixelDensity: 'screen' },

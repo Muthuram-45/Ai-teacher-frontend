@@ -373,7 +373,7 @@ export default function TeacherPage() {
       if (typeof data.token === 'string') {
         router.push(
           `/rooms/${createdRoom}?token=${encodeURIComponent(data.token)}&url=${encodeURIComponent(
-            data.url,
+            data.url || 'wss://meet-vrmadeb4.livekit.cloud',
           )}&className=${encodeURIComponent(meetingName)}`,
         );
       } else {
@@ -448,7 +448,7 @@ export default function TeacherPage() {
       if (typeof data.token === 'string') {
         router.push(
           `/rooms/${r}?token=${encodeURIComponent(data.token)}&url=${encodeURIComponent(
-            data.url,
+            data.url || 'wss://meet-vrmadeb4.livekit.cloud',
           )}&className=${encodeURIComponent(m)}`,
         );
       } else {
